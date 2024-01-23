@@ -1,8 +1,6 @@
-// app.module.ts
-
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-//import { User } from './user/user.model'; //
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -14,8 +12,9 @@ import { SequelizeModule } from '@nestjs/sequelize';
       password: 'root',
       database: 'crystal_user',
       autoLoadModels: true,
-      synchronize: false,
+      synchronize: true,
     }),
+    UserModule,
   ],
   controllers: [],
   providers: [],
