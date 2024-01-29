@@ -43,6 +43,10 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false,
       },
+      last_modified: {  // Add this line to include the last_modified column
+        type: Sequelize.DATE,
+        allowNull: false,
+      },
     });
   },
 
