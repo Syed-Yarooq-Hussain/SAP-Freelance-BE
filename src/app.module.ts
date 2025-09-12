@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModule } from './user/user.module';
-import { User } from '../models/user';  
+import { User } from '../models/user.model';  
 import { ModelCtor } from 'sequelize/types';
 import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
+import { ConsultantDetail } from 'models/consultant-detail.model';
 
 @Module({
   imports: [
@@ -14,10 +15,10 @@ import { PassportModule } from '@nestjs/passport';
       port: 5432,
       username: 'postgres',
       password: 'root',
-      database: 'crystal_user',
+      database: 'sap_freelancer_portal',
       autoLoadModels: true,
       synchronize: true,
-      models: [User as any], // Use ModelCtor<Model> as the correct type
+      models: [User, ConsultantDetail], // Use ModelCtor<Model> as the correct type
     }),
     UserModule,
     AuthModule, PassportModule

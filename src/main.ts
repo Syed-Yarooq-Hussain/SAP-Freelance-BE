@@ -10,8 +10,8 @@ async function bootstrap() {
 
   //swagger 
   const options = new DocumentBuilder()
-    .setTitle('Crud-with-node')
-    .setDescription('This applicatin is just created for test purpose')
+    .setTitle('SAP-freelance-portal-api')
+    .setDescription('This application is a freelance portal API')
     .setVersion('1.0')
     .addTag('Crystal')
     .build();
