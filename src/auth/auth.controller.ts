@@ -1,7 +1,9 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { CreateUserDto } from '../user/dto/create-user.dto';
+import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { CustomResponse } from 'src/utils/CustomResponse';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
@@ -12,17 +14,41 @@ export class AuthController {
   async signupConsultant(
     @Body('user') userDto: CreateUserDto,
     @Body('consultant') consultantDto: CreateConsultantDetailDto,
+    @Res() res: Response,
   ) {
-    return this.authService.signupConsultant(userDto, consultantDto);
+    const result = await this.authService.signupConsultant(
+      userDto,
+      consultantDto,
+    );
+    return CustomResponse.success(res, {
+      data: result,
+      message: 'Consultant signed up successfully',
+    });
   }
 
   @Post('signup/user')
-  async signupUser(@Body() userDto: CreateUserDto) {
-    return this.authService.signupUser(userDto);
+  async signupUser(@Body() userDto: CreateUserDto, @Res() res: Response) {
+    const result = await this.authService.signupUser(userDto);
+    return CustomResponse.success(res, {
+      data: result,
+      message: 'User signed up successfully',
+    });
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto.email, loginDto.password);
+  async login(@Body() loginDto: LoginDto, @Res() res: Response) {
+    const result = await this.authService.login(
+      loginDto.email,
+      loginDto.password,
+    );
+    return CustomResponse.success(res, {
+      data: result,
+      message: 'Login successful',
+    });
+  }
+
+  @Get('/test')
+  async test(@Res() res: Response) {
+    return CustomResponse.success(res, { message: '' });
   }
 }

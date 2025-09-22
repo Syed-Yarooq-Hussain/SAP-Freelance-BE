@@ -14,7 +14,7 @@ import { ConsultantDetail } from 'models/consultant-detail.model';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'root',
+      password: 'admin',
       database: 'sap_freelancer_portal',
       autoLoadModels: true,
       synchronize: true,
