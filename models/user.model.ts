@@ -41,4 +41,7 @@ export class User extends Model<User> {
 
   @HasOne(() => ConsultantDetail)
   consultantDetail: ConsultantDetail;
+
+  @Column({ type: DataType.VIRTUAL })
+  token: string;
 }

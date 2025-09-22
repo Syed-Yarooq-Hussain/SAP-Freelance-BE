@@ -5,6 +5,7 @@ import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { User } from 'models/user.model';
 
 @Controller('auth')
 export class AuthController {
@@ -20,7 +21,7 @@ export class AuthController {
       userDto,
       consultantDto,
     );
-    return CustomResponse.success(res, {
+    return CustomResponse.success<User>(res, {
       data: result,
       message: 'Consultant signed up successfully',
     });
@@ -29,7 +30,7 @@ export class AuthController {
   @Post('signup/user')
   async signupUser(@Body() userDto: CreateUserDto, @Res() res: Response) {
     const result = await this.authService.signupUser(userDto);
-    return CustomResponse.success(res, {
+    return CustomResponse.success<User>(res, {
       data: result,
       message: 'User signed up successfully',
     });
@@ -41,7 +42,7 @@ export class AuthController {
       loginDto.email,
       loginDto.password,
     );
-    return CustomResponse.success(res, {
+    return CustomResponse.success<User>(res, {
       data: result,
       message: 'Login successful',
     });
@@ -49,6 +50,6 @@ export class AuthController {
 
   @Get('/test')
   async test(@Res() res: Response) {
-    return CustomResponse.success(res, { message: '' });
+    return CustomResponse.success(res, {});
   }
 }

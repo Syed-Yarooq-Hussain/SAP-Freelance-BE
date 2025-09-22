@@ -18,7 +18,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message: 'Internal server error',
       code: HttpStatus.INTERNAL_SERVER_ERROR,
     };
-    console.log(exception.constructor.name);
+    
     if (exception instanceof CustomError) {
       errorBody.message = exception.message;
       errorBody.code = exception.getStatus();
