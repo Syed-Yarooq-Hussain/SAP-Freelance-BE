@@ -1,13 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UserRepository } from '../../repository/user.repository';
-import { ConsultantDetailRepository } from '../../repository/consultant-detail.repository';
-import { CreateUserDto } from '../user/dto/create-user.dto';
-import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
-import { User } from 'models/user.model';
 import { ConsultantDetail } from 'models/consultant-detail.model';
+import { User } from 'models/user.model';
 import { CustomError } from 'src/config/custom-error.exception';
+import { ConsultantDetailRepository } from '../../repository/consultant-detail.repository';
+import { UserRepository } from '../../repository/user.repository';
+import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -24,15 +24,11 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const consultantDetail = await this.consultantRepo.createDetail(
-      consultantDto,
-      user.id,
-    );
+    await this.consultantRepo.createDetail(consultantDto, user.id);
 
     const userWithConsultant = await User.findOne({
       where: { id: user.id },
       include: [ConsultantDetail],
-      // attributes: { exclude: ['password'] },
     });
     return userWithConsultant;
   }

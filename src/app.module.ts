@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { UserModule } from './user/user.module';
-import { User } from '../models/user.model';  
-import { ModelCtor } from 'sequelize/types';
-import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { ConsultantDetail } from 'models/consultant-detail.model';
+import { User } from '../models/user.model';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -21,7 +20,8 @@ import { ConsultantDetail } from 'models/consultant-detail.model';
       models: [User, ConsultantDetail], // Use ModelCtor<Model> as the correct type
     }),
     UserModule,
-    AuthModule, PassportModule
+    AuthModule,
+    PassportModule,
   ],
   controllers: [],
   providers: [],
