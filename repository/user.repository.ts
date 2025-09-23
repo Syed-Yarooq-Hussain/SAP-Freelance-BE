@@ -1,5 +1,5 @@
 import { User } from '../models/user.model';
-import { Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 
 class UserRepository {
   private readonly userModel: typeof User;
@@ -32,6 +32,36 @@ class UserRepository {
     const result = await this.userModel.destroy({ where: { id } });
     return result;
   }
+
+  async findAllWithFilters(
+    excludeUserId: number,
+    page: number,
+    limit: number,
+    search?: string,
+    role?: number,
+  ) {
+    const where: any = { id: { [Op.ne]: excludeUserId } };
+
+    if (role) where.role = role;
+    if (search) {
+      where[Op.or] = [
+        { username: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await this.userModel.findAndCountAll({
+      where,
+      offset,
+      limit,
+      order: [['created_at', 'DESC']],
+    });
+
+    return { data: rows, total: count, page, limit };
+  }
+
 }
 
 export { UserRepository };

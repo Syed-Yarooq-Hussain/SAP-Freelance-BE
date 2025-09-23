@@ -1,11 +1,12 @@
 // src/user/user.controller.ts
 
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Query, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetUsersDto } from './dto/get-user.dto';
 
-
+@UseGuards(JwtAuthGuard)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -15,13 +16,20 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Get('all')
+  async getUsers(@Req() req, @Query() query: GetUsersDto) {
+
+    console.log('Current User:', req.user);
+    console.log('Current User:', req.query);
+    return this.userService.getUsers(req.user.id, query);
+  }
+
   @Get()
   findAll() {
     return this.userService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('oauth2'))
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);
   }
@@ -35,4 +43,6 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+  
 }

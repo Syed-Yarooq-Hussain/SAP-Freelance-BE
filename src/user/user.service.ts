@@ -1,6 +1,7 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { User } from '../../models/user.model'
 import { UserRepository } from 'repository/user.repository';
+import { GetUsersDto } from './dto/get-user.dto';
 
 @Injectable()
 export class UserService {
@@ -26,5 +27,18 @@ export class UserService {
   async remove(id: number): Promise<number> {
     const result = await this.userRepository.deleteUser(id);
     return result;
+  }
+
+  async getUsers(currentUserId: number, query: GetUsersDto) {
+    const page = parseInt(query.page as any, 10) || 1;
+    const limit = parseInt(query.limit as any, 10) || 10;
+
+    return this.userRepository.findAllWithFilters(
+      currentUserId,
+      page,
+      limit,
+      query.search,
+      query.role,
+    );
   }
 }
