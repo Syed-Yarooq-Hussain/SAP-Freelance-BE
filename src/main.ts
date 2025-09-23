@@ -2,13 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
+import { AllExceptionsFilter } from './config/allexceptions.filter';
 
 async function bootstrap() {
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
+  app.enableCors({ origin: '*' });
+  app.useGlobalFilters(new AllExceptionsFilter());
 
-  //swagger 
+  //swagger
   const options = new DocumentBuilder()
     .setTitle('SAP-freelance-portal-api')
     .setDescription('This application is a freelance portal API')

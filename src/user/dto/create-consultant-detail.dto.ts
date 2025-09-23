@@ -1,6 +1,7 @@
 import { IsString, IsNotEmpty, IsInt, IsUrl, IsJSON } from 'class-validator';
+import { CreateUserDto } from './create-user.dto';
 
-export class CreateConsultantDetailDto {
+export class CreateConsultantDetailDto extends CreateUserDto {
   @IsString()
   @IsNotEmpty()
   module: string;

@@ -1,6 +1,16 @@
-import { Table, Column, DataType, Model, HasOne } from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  DataType,
+  Model,
+  HasOne,
+  DefaultScope,
+} from 'sequelize-typescript';
 import { ConsultantDetail } from './consultant-detail.model';
 
+@DefaultScope(() => ({
+  attributes: { exclude: ['password'] },
+}))
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
   @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
@@ -41,4 +51,7 @@ export class User extends Model<User> {
 
   @HasOne(() => ConsultantDetail)
   consultantDetail: ConsultantDetail;
+
+  @Column({ type: DataType.VIRTUAL })
+  token: string;
 }
