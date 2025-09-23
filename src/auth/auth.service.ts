@@ -17,13 +17,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signupConsultant(
-    userDto: CreateUserDto,
-    consultantDto: CreateConsultantDetailDto,
-  ) {
-    const hashedPassword = await bcrypt.hash(userDto.password, 10);
+  async signupConsultant(consultantDto: CreateConsultantDetailDto) {
+    const hashedPassword = await bcrypt.hash(consultantDto.password, 10);
     const user = await this.userRepo.createUser({
-      ...userDto,
+      ...consultantDto,
       password: hashedPassword,
     });
 
@@ -35,6 +32,7 @@ export class AuthService {
     const userWithConsultant = await User.findOne({
       where: { id: user.id },
       include: [ConsultantDetail],
+      // attributes: { exclude: ['password'] },
     });
     return userWithConsultant;
   }
@@ -48,7 +46,10 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<User> {
-    const user = await this.userRepo.findByEmail(email);
+    const user = await User.findOne({
+      where: { email },
+      attributes: { include: ['password'] },
+    });
     if (!user) {
       throw new CustomError(404, 'User not found');
     }
@@ -62,7 +63,7 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     user.token = token;
-
+    user.password = undefined;
     return user;
   }
 }

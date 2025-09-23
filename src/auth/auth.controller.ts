@@ -13,14 +13,10 @@ export class AuthController {
 
   @Post('signup/consultant')
   async signupConsultant(
-    @Body('user') userDto: CreateUserDto,
-    @Body('consultant') consultantDto: CreateConsultantDetailDto,
+    @Body() consultantDto: CreateConsultantDetailDto,
     @Res() res: Response,
   ) {
-    const result = await this.authService.signupConsultant(
-      userDto,
-      consultantDto,
-    );
+    const result = await this.authService.signupConsultant(consultantDto);
     return CustomResponse.success<User>(res, {
       data: result,
       message: 'Consultant signed up successfully',
