@@ -1,13 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UserRepository } from '../../repository/user.repository';
-import { ConsultantDetailRepository } from '../../repository/consultant-detail.repository';
-import { CreateUserDto } from '../user/dto/create-user.dto';
-import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
-import { User } from 'models/user.model';
 import { ConsultantDetail } from 'models/consultant-detail.model';
+import { User } from 'models/user.model';
 import { CustomError } from 'src/config/custom-error.exception';
+import { ConsultantDetailRepository } from '../../repository/consultant-detail.repository';
+import { UserRepository } from '../../repository/user.repository';
+import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,20 +17,14 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signupConsultant(
-    userDto: CreateUserDto,
-    consultantDto: CreateConsultantDetailDto,
-  ) {
-    const hashedPassword = await bcrypt.hash(userDto.password, 10);
+  async signupConsultant(consultantDto: CreateConsultantDetailDto) {
+    const hashedPassword = await bcrypt.hash(consultantDto.password, 10);
     const user = await this.userRepo.createUser({
-      ...userDto,
+      ...consultantDto,
       password: hashedPassword,
     });
 
-    const consultantDetail = await this.consultantRepo.createDetail(
-      consultantDto,
-      user.id,
-    );
+    await this.consultantRepo.createDetail(consultantDto, user.id);
 
     const userWithConsultant = await User.findOne({
       where: { id: user.id },
@@ -48,7 +42,10 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<User> {
-    const user = await this.userRepo.findByEmail(email);
+    const user = await User.findOne({
+      where: { email },
+      attributes: { include: ['password'] },
+    });
     if (!user) {
       throw new CustomError(404, 'User not found');
     }
@@ -62,7 +59,7 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     user.token = token;
-
+    user.password = undefined;
     return user;
   }
 }

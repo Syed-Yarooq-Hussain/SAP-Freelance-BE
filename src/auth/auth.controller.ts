@@ -1,11 +1,11 @@
-import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { User } from 'models/user.model';
 import { CustomResponse } from 'src/utils/CustomResponse';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { User } from 'models/user.model';
 
 @Controller('auth')
 export class AuthController {
@@ -13,14 +13,10 @@ export class AuthController {
 
   @Post('signup/consultant')
   async signupConsultant(
-    @Body('user') userDto: CreateUserDto,
-    @Body('consultant') consultantDto: CreateConsultantDetailDto,
+    @Body() consultantDto: CreateConsultantDetailDto,
     @Res() res: Response,
   ) {
-    const result = await this.authService.signupConsultant(
-      userDto,
-      consultantDto,
-    );
+    const result = await this.authService.signupConsultant(consultantDto);
     return CustomResponse.success<User>(res, {
       data: result,
       message: 'Consultant signed up successfully',
