@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConsultantDetail } from 'models/consultant-detail.model';
 import { User } from 'models/user.model';
-import { CustomError } from 'src/config/custom-error.exception';
+import { CustomError } from '../config/custom-error.exception';
 import { ConsultantDetailRepository } from '../../repository/consultant-detail.repository';
 import { UserRepository } from '../../repository/user.repository';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
