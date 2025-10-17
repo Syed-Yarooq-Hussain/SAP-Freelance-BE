@@ -1,6 +1,7 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateProjectScopeDto {
+  @IsNumber()
   project_id: number;
 
   @IsString()

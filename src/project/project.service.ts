@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectRepository } from '../../repository/project.repository';
 import { ProjectConsultantRepository } from '../../repository/project-consultant.repository';
 import { ConsultantInterviewRepository } from '../../repository/consultant-interview.repository';
@@ -7,6 +6,10 @@ import { ProjectSummaryRepository } from '../../repository/project-summary.repos
 import { ProjectScopeOfWorkRepository } from '../../repository/project-scope-of-work.repository';
 import { ProjectMilestoneRepository } from '../../repository/project-milestone.repository';
 import { ProjectResponsibilityMatrixRepository } from '../../repository/project-responsibility-matrix.repository';
+
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+
 @Injectable()
 export class ProjectService {
   constructor(
@@ -19,47 +22,64 @@ export class ProjectService {
     private readonly responsibilityRepo: ProjectResponsibilityMatrixRepository,
   ) {}
 
-  // 🔹 Project
-  createProject(data: any) {
+  async createProject(data: CreateProjectDto) {
     return this.projectRepo.create(data);
   }
-  getProjects() {
+
+  async getProjects() {
     return this.projectRepo.findAll();
   }
-  getProjectById(id: number) {
-    return this.projectRepo.findById(id);
+
+  async getProjectById(id: number) {
+    const project = await this.projectRepo.findById(id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+    return project;
   }
 
-  // 🔹 Consultants
-  addConsultant(data: any) {
+  async updateProject(id: number, updateData: UpdateProjectDto) {
+    const project = await this.projectRepo.findById(id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+
+    return this.projectRepo.update(id, updateData);
+  }
+
+  async deleteProject(id: number) {
+    const project = await this.projectRepo.findById(id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+    return this.projectRepo.delete(id);
+  }
+
+  async addConsultant(data: any) {
     return this.consultantRepo.create(data);
   }
-  getConsultants(projectId: number) {
+
+  async getConsultants(projectId: number) {
     return this.consultantRepo.findAll();
   }
 
-  // 🔹 Interviews
-  scheduleInterview(data: any) {
+  async scheduleInterview(data: any) {
     return this.interviewRepo.create(data);
   }
 
-  // 🔹 Summary
-  addSummary(data: any) {
+  async addSummary(data: any) {
     return this.summaryRepo.create(data);
   }
 
-  // 🔹 Scope
-  addScope(data: any) {
+  async addScope(data: any) {
     return this.scopeRepo.create(data);
   }
 
-  // 🔹 Milestone
-  addMilestone(data: any) {
+  async addMilestone(data: any) {
     return this.milestoneRepo.create(data);
   }
 
-  // 🔹 Responsibility
-  addResponsibility(data: any) {
+  async addResponsibility(data: any) {
     return this.responsibilityRepo.create(data);
   }
 }

@@ -1,11 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ConsultantDetail } from 'models/consultant-detail.model';
+
 import { User } from '../models/user.model';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { ProjectModule } from './project/project.module';
+import { ConsultantDetail } from 'models/consultant-detail.model';
 import { Project } from 'models/project.model';
 import { ConsultantInterview } from 'models/consultant-interview.model';
 import { ProjectResponsibilityMatrix } from 'models/project-responsibility-matrix.model';
@@ -13,6 +11,13 @@ import { ProjectMilestone } from 'models/project-milestone.model';
 import { ProjectScopeOfWork } from 'models/project-scope-of-work.model';
 import { ProjectSummary } from 'models/project-summary.model';
 import { ProjectConsultant } from 'models/project-consultant.model';
+
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { ProjectModule } from './project/project.module';
+
+import { ClientModule } from './client/client.module';
+import { ConsultantModule } from './consultant/consultant.module';
 
 @Module({
   imports: [
@@ -35,15 +40,14 @@ import { ProjectConsultant } from 'models/project-consultant.model';
         ProjectScopeOfWork,
         ProjectMilestone,
         ProjectResponsibilityMatrix,
-        
       ],
     }),
+    PassportModule,
     UserModule,
     AuthModule,
-    PassportModule,
-    ProjectModule
+    ProjectModule,
+    ClientModule,      
+    ConsultantModule,
   ],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}

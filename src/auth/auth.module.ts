@@ -13,7 +13,7 @@ import { ConsultantDetailRepository } from '../../repository/consultant-detail.r
 @Module({
   imports: [
     SequelizeModule.forFeature([User, ConsultantDetail]),
-    PassportModule.register({ defaultStrategy: 'jwt' }), // ✅ Register JWT strategy
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
@@ -24,7 +24,7 @@ import { ConsultantDetailRepository } from '../../repository/consultant-detail.r
     AuthService,
     UserRepository,
     ConsultantDetailRepository,
-    JwtStrategy, // ✅ Add JwtStrategy
+    JwtStrategy, 
   ],
   exports: [AuthService, JwtStrategy],
 })
