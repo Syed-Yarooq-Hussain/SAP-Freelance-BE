@@ -4,7 +4,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('Clients') 
+@ApiTags('Clients')
 @Controller('clients')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
@@ -38,5 +38,13 @@ export class ClientController {
   @ApiOperation({ summary: 'Delete a client' })
   remove(@Param('id') id: string) {
     return this.clientService.remove(+id);
+  }
+
+  // ✅ NEW ENDPOINT: Get consultants (users with id = 1 or specific criteria)
+  @Get('consultants/:id')
+  @ApiOperation({ summary: 'Get consultant by user ID' })
+  @ApiResponse({ status: 200, description: 'consultants fetched from User table' })
+   async getConsultantById(@Param('id') id: string) {
+    return this.clientService.findConsultantById(+id);
   }
 }
