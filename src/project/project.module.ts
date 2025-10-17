@@ -3,7 +3,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 
-// Models
 import { Project } from '../../models/project.model';
 import { ProjectConsultant } from '../../models/project-consultant.model';
 import { ConsultantInterview } from '../../models/consultant-interview.model';
@@ -12,7 +11,6 @@ import { ProjectScopeOfWork } from '../../models/project-scope-of-work.model';
 import { ProjectMilestone } from '../../models/project-milestone.model';
 import { ProjectResponsibilityMatrix } from '../../models/project-responsibility-matrix.model';
 
-// Repositories
 import { ProjectRepository } from '../../repository/project.repository';
 import { ProjectConsultantRepository } from '../../repository/project-consultant.repository';
 import { ConsultantInterviewRepository } from '../../repository/consultant-interview.repository';
@@ -44,5 +42,6 @@ import { ProjectResponsibilityMatrixRepository } from '../../repository/project-
     ProjectMilestoneRepository,
     ProjectResponsibilityMatrixRepository,
   ],
+  exports: [ProjectService],
 })
 export class ProjectModule {}

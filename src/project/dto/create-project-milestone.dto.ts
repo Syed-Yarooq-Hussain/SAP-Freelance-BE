@@ -1,6 +1,7 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 
 export class CreateProjectMilestoneDto {
+  @IsNumber()
   project_id: number;
 
   @IsString()
@@ -15,6 +16,7 @@ export class CreateProjectMilestoneDto {
   description?: string;
 
   @IsOptional()
+  @IsNumber()
   owner?: number;
 
   @IsOptional()
