@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {Body,Controller,Delete,Get,Param,Post,Put,} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectConsultantDto } from './dto/create-project-consultant.dto';
 import { CreateConsultantInterviewDto } from './dto/create-consultant-interview.dto';
 import { CreateProjectSummaryDto } from './dto/create-project-summary.dto';
@@ -8,64 +10,93 @@ import { CreateProjectScopeDto } from './dto/create-project-scope.dto';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import { CreateProjectResponsibilityDto } from './dto/create-project-responsibility.dto';
 
+@ApiTags('Projects')
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
-  // Project
   @Post()
+  @ApiOperation({ summary: 'Create a new project' })
+  @ApiResponse({ status: 201, description: 'Project created successfully' })
+  @ApiBody({ type: CreateProjectDto })
   create(@Body() dto: CreateProjectDto) {
     return this.projectService.createProject(dto);
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all projects' })
+  @ApiResponse({ status: 200, description: 'List of all projects' })
   findAll() {
     return this.projectService.getProjects();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.projectService.getProjectById(id);
+  @ApiOperation({ summary: 'Get project by ID' })
+  @ApiResponse({ status: 200, description: 'Project details' })
+  findOne(@Param('id') id: string) {
+    return this.projectService.getProjectById(+id);
   }
 
-  // Consultants
+  @Put(':id')
+  @ApiOperation({ summary: 'Update project by ID' })
+  @ApiResponse({ status: 200, description: 'Project updated successfully' })
+  @ApiBody({ type: UpdateProjectDto })
+  updateProject(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
+    return this.projectService.updateProject(+id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete project by ID' })
+  @ApiResponse({ status: 200, description: 'Project deleted successfully' })
+  deleteProject(@Param('id') id: string) {
+    return this.projectService.deleteProject(+id);
+  }
+
   @Post(':id/consultants')
-  addConsultant(@Param('id') projectId: number, @Body() dto: CreateProjectConsultantDto) {
-    return this.projectService.addConsultant({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Add consultant to a project' })
+  @ApiBody({ type: CreateProjectConsultantDto })
+  addConsultant(@Param('id') projectId: string, @Body() dto: CreateProjectConsultantDto) {
+    return this.projectService.addConsultant({ ...dto, project_id: +projectId });
   }
 
   @Get(':id/consultants')
-  getConsultants(@Param('id') projectId: number) {
-    return this.projectService.getConsultants(projectId);
+  @ApiOperation({ summary: 'Get consultants for a project' })
+  getConsultants(@Param('id') projectId: string) {
+    return this.projectService.getConsultants(+projectId);
   }
 
-  // Interviews
   @Post(':id/interviews')
-  scheduleInterview(@Param('id') projectId: number, @Body() dto: CreateConsultantInterviewDto) {
-    return this.projectService.scheduleInterview({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Schedule consultant interview for project' })
+  @ApiBody({ type: CreateConsultantInterviewDto })
+  scheduleInterview(@Param('id') projectId: string, @Body() dto: CreateConsultantInterviewDto) {
+    return this.projectService.scheduleInterview({ ...dto, project_id: +projectId });
   }
 
-  // Summary
   @Post(':id/summary')
-  addSummary(@Param('id') projectId: number, @Body() dto: CreateProjectSummaryDto) {
-    return this.projectService.addSummary({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Add project summary' })
+  @ApiBody({ type: CreateProjectSummaryDto })
+  addSummary(@Param('id') projectId: string, @Body() dto: CreateProjectSummaryDto) {
+    return this.projectService.addSummary({ ...dto, project_id: +projectId });
   }
 
-  // Scope
   @Post(':id/scopes')
-  addScope(@Param('id') projectId: number, @Body() dto: CreateProjectScopeDto) {
-    return this.projectService.addScope({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Add project scope' })
+  @ApiBody({ type: CreateProjectScopeDto })
+  addScope(@Param('id') projectId: string, @Body() dto: CreateProjectScopeDto) {
+    return this.projectService.addScope({ ...dto, project_id: +projectId });
   }
 
-  // Milestones
   @Post(':id/milestones')
-  addMilestone(@Param('id') projectId: number, @Body() dto: CreateProjectMilestoneDto) {
-    return this.projectService.addMilestone({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Add project milestone' })
+  @ApiBody({ type: CreateProjectMilestoneDto })
+  addMilestone(@Param('id') projectId: string, @Body() dto: CreateProjectMilestoneDto) {
+    return this.projectService.addMilestone({ ...dto, project_id: +projectId });
   }
 
-  // Responsibilities
   @Post(':id/responsibilities')
-  addResponsibility(@Param('id') projectId: number, @Body() dto: CreateProjectResponsibilityDto) {
-    return this.projectService.addResponsibility({ ...dto, project_id: projectId });
+  @ApiOperation({ summary: 'Add project responsibility' })
+  @ApiBody({ type: CreateProjectResponsibilityDto })
+  addResponsibility(@Param('id') projectId: string, @Body() dto: CreateProjectResponsibilityDto) {
+    return this.projectService.addResponsibility({ ...dto, project_id: +projectId });
   }
 }

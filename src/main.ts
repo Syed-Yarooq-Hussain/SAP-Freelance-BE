@@ -11,7 +11,6 @@ async function bootstrap() {
   app.enableCors({ origin: '*' });
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  //swagger
   const options = new DocumentBuilder()
     .setTitle('SAP-freelance-portal-api')
     .setDescription('This application is a freelance portal API')
