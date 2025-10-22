@@ -1,57 +1,76 @@
-import {
-  Table,
-  Column,
-  DataType,
-  Model,
-  HasOne,
-  DefaultScope,
-} from 'sequelize-typescript';
-import { ConsultantDetail } from './consultant-detail.model';
+import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
+import { Consultant } from './consultant.model';
+import { Project } from './project.model';
+import { ProjectConsultant } from './project-consultant.model';
 
-@DefaultScope(() => ({
-  attributes: { exclude: ['password'] },
-}))
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
-  @Column({ type: DataType.INTEGER, autoIncrement: true, primaryKey: true })
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
   id: number;
 
-  @Column(DataType.STRING)
-  username: string;
 
-  @Column(DataType.INTEGER)
-  role: number;
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  name: string;
 
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    unique: true,
+  })
   email: string;
 
-  @Column(DataType.STRING)
-  phone: string;
-
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
   password: string;
 
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
   currency: string;
 
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.NUMBER,
+    allowNull: true,
+  })
+  role?: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
   city: string;
 
-  @Column(DataType.STRING)
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
   country: string;
 
-  @Column(DataType.INTEGER)
-  status: number;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    defaultValue: 'active',
+  })
+  status: string;
 
-  @Column(DataType.DATE)
-  created_at: Date;
+  @HasMany(() => Consultant)
+  consultants: Consultant[];
 
-  @Column(DataType.DATE)
-  updated_at: Date;
+  @HasMany(() => Project)
+  projects: Project[];
 
-  @HasOne(() => ConsultantDetail)
-  consultantDetail: ConsultantDetail;
-
-  @Column({ type: DataType.VIRTUAL })
+  @HasMany(() => ProjectConsultant)
+  projectConsultants: ProjectConsultant[];
   token: string;
+  username: any;
 }

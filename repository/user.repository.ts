@@ -4,42 +4,48 @@ import { Op, Sequelize } from 'sequelize';
 class UserRepository {
   private readonly userModel: typeof User;
 
-  constructor(sequelize: Sequelize) {
-      this.userModel = User;
+  constructor(private readonly sequelize: Sequelize) {
+    this.userModel = User;
   }
 
-  async findAll(): Promise<User[] | null> {
+  // 🟢 Get all users
+  async findAll(): Promise<User[]> {
     return this.userModel.findAll();
   }
 
+  // 🔍 Get user by ID
   async findById(id: number): Promise<User | null> {
     return this.userModel.findByPk(id);
   }
 
+  // 📧 Find by email
   async findByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ where: { email } });
   }
 
-  async createUser(userAttributes: Partial<any>): Promise<User> {
+  // ➕ Create new user
+  async createUser(userAttributes: Partial<User>): Promise<User> {
     return this.userModel.create(userAttributes);
   }
 
-  async updateUser(id: number, userAttributes: Partial<any>) {
+  // 🔄 Update user
+  async updateUser(id: number, userAttributes: Partial<User>): Promise<[number]> {
     return this.userModel.update(userAttributes, { where: { id } });
   }
 
+  // ❌ Delete user
   async deleteUser(id: number): Promise<number> {
-    const result = await this.userModel.destroy({ where: { id } });
-    return result;
+    return this.userModel.destroy({ where: { id } });
   }
 
+  // ⚙️ Filtered + Paginated list
   async findAllWithFilters(
     excludeUserId: number,
     page: number,
     limit: number,
     search?: string,
-    role?: number,
-  ) {
+    role?: number
+  ): Promise<{ data: User[]; total: number; page: number; limit: number }> {
     const where: any = { id: { [Op.ne]: excludeUserId } };
 
     if (role) where.role = role;
@@ -61,7 +67,6 @@ class UserRepository {
 
     return { data: rows, total: count, page, limit };
   }
-
 }
 
 export { UserRepository };

@@ -1,41 +1,61 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
+
 import { Project } from './project.model';
-import { User } from './user.model';
 
-@Table({ tableName: 'project_milestones', timestamps: false })
+
+@Table({
+  tableName: 'project_milestones',
+  timestamps: false,
+})
 export class ProjectMilestone extends Model<ProjectMilestone> {
-  @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  project_id: number;
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  id: number;
 
-  @Column({ type: DataType.STRING, allowNull: false })
-  name: string;
+  @Column({
+    type: DataType.STRING(255),
+    allowNull: false,
+  })
+  milestone_name: string;
 
-  @Column(DataType.STRING)
-  expected_name: string;
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  description?: string;
 
-  @Column(DataType.TEXT)
-  description: string;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  due_date?: Date;
 
-  @ForeignKey(() => User)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  owner: number;
-
-  @Column(DataType.TEXT)
-  dependencies: string;
-
-  @Column({ type: DataType.BOOLEAN, defaultValue: false })
-  approval: boolean;
-
-  @Column(DataType.TEXT)
-  comments: string;
-
-  @Column({ type: DataType.STRING, defaultValue: 'pending' })
+  @Column({
+    type: DataType.STRING(100),
+    defaultValue: 'Pending',
+  })
   status: string;
 
-  @BelongsTo(() => Project)
-  project: Project;
+  @Column({
+    type: DataType.DECIMAL(10, 2),
+    allowNull: true,
+  })
+  amount?: number;
 
-  @BelongsTo(() => User, 'owner')
-  ownerUser: User;
+  // ✅ Foreign key setup
+  @ForeignKey(() => Project)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    field: 'project_id', // optional: maps DB column correctly
+  })
+  projectId: number;
+
+  // ✅ Proper BelongsTo association
+  @BelongsTo(() => Project, 'projectId')
+  project: Project;
+  
 }

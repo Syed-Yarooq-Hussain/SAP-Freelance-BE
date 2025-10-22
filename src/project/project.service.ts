@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectRepository } from '../../repository/project.repository';
 import { ProjectConsultantRepository } from '../../repository/project-consultant.repository';
-import { ConsultantInterviewRepository } from '../../repository/consultant-interview.repository';
-import { ProjectSummaryRepository } from '../../repository/project-summary.repository';
-import { ProjectScopeOfWorkRepository } from '../../repository/project-scope-of-work.repository';
+import { ProjectIndustriesRepository } from '../../repository/project-indestries.repository';
 import { ProjectMilestoneRepository } from '../../repository/project-milestone.repository';
-import { ProjectResponsibilityMatrixRepository } from '../../repository/project-responsibility-matrix.repository';
-
+import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
+import { ProjectTaskRepository } from '../../repository/project-task.repository';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
@@ -15,11 +13,10 @@ export class ProjectService {
   constructor(
     private readonly projectRepo: ProjectRepository,
     private readonly consultantRepo: ProjectConsultantRepository,
-    private readonly interviewRepo: ConsultantInterviewRepository,
-    private readonly summaryRepo: ProjectSummaryRepository,
-    private readonly scopeRepo: ProjectScopeOfWorkRepository,
+    private readonly industryRepo: ProjectIndustriesRepository,
     private readonly milestoneRepo: ProjectMilestoneRepository,
-    private readonly responsibilityRepo: ProjectResponsibilityMatrixRepository,
+    private readonly paymentRepo: ProjectPaymentRepository,
+    private readonly taskRepo: ProjectTaskRepository,
   ) {}
 
   async createProject(data: CreateProjectDto) {
@@ -43,7 +40,6 @@ export class ProjectService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
-
     return this.projectRepo.update(id, updateData);
   }
 
@@ -59,27 +55,57 @@ export class ProjectService {
     return this.consultantRepo.create(data);
   }
 
-  async getConsultants(projectId: number) {
-    return this.consultantRepo.findAll();
+  async getProjectConsultants(projectId: number) {
+    return this.consultantRepo.findAll({
+      where: { project_id: projectId },
+    });
   }
 
-  async scheduleInterview(data: any) {
-    return this.interviewRepo.create(data);
+  async addIndustry(data: any) {
+    return this.industryRepo.create(data);
   }
 
-  async addSummary(data: any) {
-    return this.summaryRepo.create(data);
-  }
-
-  async addScope(data: any) {
-    return this.scopeRepo.create(data);
+  async getProjectIndustries(projectId: number) {
+    return this.industryRepo.findAll({
+      where: { project_id: projectId },
+    });
   }
 
   async addMilestone(data: any) {
     return this.milestoneRepo.create(data);
   }
 
-  async addResponsibility(data: any) {
-    return this.responsibilityRepo.create(data);
+  async getProjectMilestones(projectId: number) {
+    return this.milestoneRepo.findAll({
+      where: { project_id: projectId },
+    });
+  }
+
+  async addPayment(data: any) {
+    return this.paymentRepo.create(data);
+  }
+
+  async getProjectPayments(projectId: number) {
+    return this.paymentRepo.findAll({
+      where: { project_id: projectId },
+    });
+  }
+
+  async addTask(data: any) {
+    return this.taskRepo.create(data);
+  }
+
+  async getProjectTasks(projectId: number) {
+    return this.taskRepo.findAll({
+      where: { project_id: projectId },
+    });
+  }
+  async scheduleInterview(data: any) {
+   return { message: 'Interview scheduled (mock response)', data };
+  }
+  async getTasksByMilestone(milestoneId: number) {
+    return this.taskRepo.findAll({
+      where: { milestone_id: milestoneId },
+    });
   }
 }
