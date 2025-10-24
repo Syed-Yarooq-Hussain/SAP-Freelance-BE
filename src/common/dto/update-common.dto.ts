@@ -16,4 +16,5 @@ export class UpdateCommonDto {
   @IsOptional()
   @IsNumber()
   priority?: number;
+  id: number;
 }
