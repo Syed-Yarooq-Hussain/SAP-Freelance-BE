@@ -1,23 +1,26 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
-
 import { User } from '../models/user.model';
-import { ConsultantDetail } from 'models/consultant-detail.model';
-import { Project } from 'models/project.model';
-import { ConsultantInterview } from 'models/consultant-interview.model';
-import { ProjectResponsibilityMatrix } from 'models/project-responsibility-matrix.model';
-import { ProjectMilestone } from 'models/project-milestone.model';
-import { ProjectScopeOfWork } from 'models/project-scope-of-work.model';
-import { ProjectSummary } from 'models/project-summary.model';
-import { ProjectConsultant } from 'models/project-consultant.model';
-
+import { ModuleEntity } from '../models/module.model';
+import { Consultant } from '../models/consultant.model';
+import { ConsultantModule as ConsultantModuleModel } from '../models/consultant-module.model';
+import { Industries } from '../models/industries.model';
+import { Project } from '../models/project.model';
+import { ProjectIndustry } from '../models/project-industries.model';
+import { ProjectConsultant } from '../models/project-consultant.model';
+import { ProjectDetail } from '../models/project-detail.model';
+import { ProjectMilestone } from '../models/project-milestone.model';
+import { ProjectTask } from '../models/project-task.model';
+import { Document } from '../models/document.model';
+import { MilestoneDocs } from '../models/milestone-docs.model';
+import { ProjectPayment } from '../models/project-payment.model';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
-
 import { ClientModule } from './client/client.module';
 import { ConsultantModule } from './consultant/consultant.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -32,21 +35,27 @@ import { ConsultantModule } from './consultant/consultant.module';
       synchronize: false,
       models: [
         User,
-        ConsultantDetail,
+        ModuleEntity,
+        Consultant,
+        ConsultantModuleModel,
+        Industries,
         Project,
+        ProjectIndustry,
         ProjectConsultant,
-        ConsultantInterview,
-        ProjectSummary,
-        ProjectScopeOfWork,
+        ProjectDetail,
         ProjectMilestone,
-        ProjectResponsibilityMatrix,
+        ProjectTask,
+        Document,
+        MilestoneDocs,
+        ProjectPayment,
       ],
     }),
+    CommonModule,
     PassportModule,
     UserModule,
     AuthModule,
     ProjectModule,
-    ClientModule,      
+    ClientModule,
     ConsultantModule,
   ],
 })

@@ -1,40 +1,65 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany, CreatedAt, UpdatedAt } from 'sequelize-typescript';
+import {Table,Column,Model,DataType,ForeignKey,BelongsTo,HasMany,} from 'sequelize-typescript';
 import { User } from './user.model';
 import { ProjectConsultant } from './project-consultant.model';
-import { ConsultantInterview } from './consultant-interview.model';
-
-@Table({ tableName: 'projects', timestamps: true })
+import { ProjectIndustry } from './project-industries.model';
+import { ProjectDetail } from './project-detail.model';
+import { ProjectMilestone } from './project-milestone.model';
+import { ProjectTask } from './project-task.model';
+import { ProjectPayment } from './project-payment.model';
+@Table({ tableName: 'project', timestamps: false })
 export class Project extends Model<Project> {
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  id: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
   name: string;
 
   @ForeignKey(() => User)
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
   client_id: number;
 
-  @Column({ type: DataType.STRING, defaultValue: 'pending' })
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  company_name: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    defaultValue: 'pending',
+  })
   status: string;
 
-  @Column(DataType.DATE)
-  start_date: Date;
-
-  @Column(DataType.DATE)
-  end_date: Date;
-
-  @BelongsTo(() => User, 'client_id')
+  @BelongsTo(() => User)
   client: User;
-
-  @CreatedAt
-  @Column({ field: 'created_at', type: DataType.DATE })
-  createdAt: Date;
-
-  @UpdatedAt
-  @Column({ field: 'updated_at', type: DataType.DATE })
-  updatedAt: Date;
+  
 
   @HasMany(() => ProjectConsultant)
-  consultants: ProjectConsultant[];
+  projectConsultants: ProjectConsultant[];
 
-  @HasMany(() => ConsultantInterview)
-  interviews: ConsultantInterview[];
+  @HasMany(() => ProjectIndustry)
+  projectIndustries: ProjectIndustry[];
+
+  @HasMany(() => ProjectDetail)
+  projectDetails: ProjectDetail[];
+
+  @HasMany(() => ProjectMilestone)
+  milestones: ProjectMilestone[];
+
+  @HasMany(() => ProjectTask)
+  tasks: ProjectTask[];
+
+  @HasMany(() => ProjectPayment)
+  payments: ProjectPayment[];
 }

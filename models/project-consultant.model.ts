@@ -1,33 +1,62 @@
-import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
 import { Project } from './project.model';
 import { User } from './user.model';
 
-@Table({ tableName: 'project_consultants', timestamps: false })
+@Table({
+  tableName: 'project_consultants',
+  timestamps: true,
+})
 export class ProjectConsultant extends Model<ProjectConsultant> {
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  id: number;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    field: 'consultant_id',
+  })
+  consultantId: number;
+
+  @BelongsTo(() => User, 'consultantId')
+  consultant: User;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    field: 'client_id',
+  })
+  clientId: number;
+
+  @BelongsTo(() => User, 'clientId')
+  client: User;
+
   @ForeignKey(() => Project)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  project_id: number;
-
-  @ForeignKey(() => User)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  consultant_id: number;
-
-  @ForeignKey(() => User)
-  @Column({ type: DataType.INTEGER, allowNull: false })
-  client_id: number;
-
-  @Column({ type: DataType.STRING, defaultValue: 'shortlisted' })
-  status: string;
-
-  @Column({ type: DataType.DATE, defaultValue: DataType.NOW })
-  selected_at: Date;
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    field: 'project_id',
+  })
+  projectId: number;
 
   @BelongsTo(() => Project)
   project: Project;
 
-  @BelongsTo(() => User, 'consultant_id')
-  consultant: User;
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  role: string;
 
-  @BelongsTo(() => User, 'client_id')
-  client: User;
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    field: 'assigned_at',
+  })
+  assignedAt: Date;
 }

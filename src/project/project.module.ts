@@ -3,32 +3,32 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 
+// ✅ Models import
 import { Project } from '../../models/project.model';
 import { ProjectConsultant } from '../../models/project-consultant.model';
-import { ConsultantInterview } from '../../models/consultant-interview.model';
-import { ProjectSummary } from '../../models/project-summary.model';
-import { ProjectScopeOfWork } from '../../models/project-scope-of-work.model';
+import { ProjectIndustry } from '../../models/project-industries.model';
 import { ProjectMilestone } from '../../models/project-milestone.model';
-import { ProjectResponsibilityMatrix } from '../../models/project-responsibility-matrix.model';
+import { ProjectPayment } from '../../models/project-payment.model';
+import { ProjectTask } from '../../models/project-task.model';
 
+
+// ✅ Repositories import
 import { ProjectRepository } from '../../repository/project.repository';
 import { ProjectConsultantRepository } from '../../repository/project-consultant.repository';
-import { ConsultantInterviewRepository } from '../../repository/consultant-interview.repository';
-import { ProjectSummaryRepository } from '../../repository/project-summary.repository';
-import { ProjectScopeOfWorkRepository } from '../../repository/project-scope-of-work.repository';
+import { ProjectIndustriesRepository } from '../../repository/project-indestries.repository';
 import { ProjectMilestoneRepository } from '../../repository/project-milestone.repository';
-import { ProjectResponsibilityMatrixRepository } from '../../repository/project-responsibility-matrix.repository';
+import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
+import { ProjectTaskRepository } from '../../repository/project-task.repository';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([
       Project,
       ProjectConsultant,
-      ConsultantInterview,
-      ProjectSummary,
-      ProjectScopeOfWork,
+      ProjectIndustry,
       ProjectMilestone,
-      ProjectResponsibilityMatrix,
+      ProjectPayment,
+      ProjectTask,
     ]),
   ],
   controllers: [ProjectController],
@@ -36,12 +36,18 @@ import { ProjectResponsibilityMatrixRepository } from '../../repository/project-
     ProjectService,
     ProjectRepository,
     ProjectConsultantRepository,
-    ConsultantInterviewRepository,
-    ProjectSummaryRepository,
-    ProjectScopeOfWorkRepository,
+    ProjectIndustriesRepository,
     ProjectMilestoneRepository,
-    ProjectResponsibilityMatrixRepository,
+    ProjectPaymentRepository,
+    ProjectTaskRepository,
   ],
-  exports: [ProjectService],
+  exports: [
+    ProjectRepository,
+    ProjectConsultantRepository,
+    ProjectIndustriesRepository,
+    ProjectMilestoneRepository,
+    ProjectPaymentRepository,
+    ProjectTaskRepository,
+  ],
 })
 export class ProjectModule {}

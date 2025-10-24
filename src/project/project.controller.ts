@@ -62,7 +62,7 @@ export class ProjectController {
   @Get(':id/consultants')
   @ApiOperation({ summary: 'Get consultants for a project' })
   getConsultants(@Param('id') projectId: string) {
-    return this.projectService.getConsultants(+projectId);
+    return this.projectService.getProjectConsultants(+projectId);
   }
 
   @Post(':id/interviews')
@@ -72,20 +72,6 @@ export class ProjectController {
     return this.projectService.scheduleInterview({ ...dto, project_id: +projectId });
   }
 
-  @Post(':id/summary')
-  @ApiOperation({ summary: 'Add project summary' })
-  @ApiBody({ type: CreateProjectSummaryDto })
-  addSummary(@Param('id') projectId: string, @Body() dto: CreateProjectSummaryDto) {
-    return this.projectService.addSummary({ ...dto, project_id: +projectId });
-  }
-
-  @Post(':id/scopes')
-  @ApiOperation({ summary: 'Add project scope' })
-  @ApiBody({ type: CreateProjectScopeDto })
-  addScope(@Param('id') projectId: string, @Body() dto: CreateProjectScopeDto) {
-    return this.projectService.addScope({ ...dto, project_id: +projectId });
-  }
-
   @Post(':id/milestones')
   @ApiOperation({ summary: 'Add project milestone' })
   @ApiBody({ type: CreateProjectMilestoneDto })
@@ -93,10 +79,4 @@ export class ProjectController {
     return this.projectService.addMilestone({ ...dto, project_id: +projectId });
   }
 
-  @Post(':id/responsibilities')
-  @ApiOperation({ summary: 'Add project responsibility' })
-  @ApiBody({ type: CreateProjectResponsibilityDto })
-  addResponsibility(@Param('id') projectId: string, @Body() dto: CreateProjectResponsibilityDto) {
-    return this.projectService.addResponsibility({ ...dto, project_id: +projectId });
-  }
 }

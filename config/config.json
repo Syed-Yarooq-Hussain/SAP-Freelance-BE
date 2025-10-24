@@ -4,8 +4,10 @@
     "password": "admin",
     "database": "sap_freelancer_portal",
     "host": "localhost",
-    "dialect": "postgres"
-  },
+    "dialect": "postgres",
+    "schema": "public"
+  }
+,
   "test": {
       "username": "postgres",
       "password": "admin",

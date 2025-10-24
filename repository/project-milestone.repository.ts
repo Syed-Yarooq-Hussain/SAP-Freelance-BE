@@ -1,25 +1,47 @@
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { ProjectMilestone } from '../models/project-milestone.model';
 
+@Injectable()
 export class ProjectMilestoneRepository {
-  async create(data: any) {
-    return await ProjectMilestone.create(data);
+  constructor(
+    @InjectModel(ProjectMilestone)
+    private readonly projectMilestoneModel: typeof ProjectMilestone,
+  ) {}
+
+  // 🆕 Create new milestone
+  async create(data: Partial<ProjectMilestone>): Promise<ProjectMilestone> {
+    return this.projectMilestoneModel.create(data);
   }
 
-  async findAll() {
-    return await ProjectMilestone.findAll();
+  // 📋 Get all milestones (with optional filter)
+  async findAll(options?: any): Promise<ProjectMilestone[]> {
+    return this.projectMilestoneModel.findAll(options);
   }
 
-  async findById(id: number) {
-    return await ProjectMilestone.findByPk(id);
+  // 🔍 Find milestone by ID
+  async findById(id: number): Promise<ProjectMilestone | null> {
+    return this.projectMilestoneModel.findByPk(id);
   }
 
-  async update(id: number, data: any) {
-    const milestone = await ProjectMilestone.findByPk(id);
-    if (!milestone) return null;
-    return await milestone.update(data);
+  // 🔎 Find milestones by project ID
+  async findByProjectId(projectId: number): Promise<ProjectMilestone[]> {
+    return this.projectMilestoneModel.findAll({ where: { projectId } });
   }
 
-  async delete(id: number) {
-    return await ProjectMilestone.destroy({ where: { id } });
+  // 🧠 Update milestone
+  async update(
+    id: number,
+    data: Partial<ProjectMilestone>,
+  ): Promise<[number, ProjectMilestone[]]> {
+    return this.projectMilestoneModel.update(data, {
+      where: { id },
+      returning: true,
+    });
+  }
+
+  // ❌ Delete milestone
+  async delete(id: number): Promise<number> {
+    return this.projectMilestoneModel.destroy({ where: { id } });
   }
 }

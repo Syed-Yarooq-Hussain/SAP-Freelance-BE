@@ -4,42 +4,54 @@ import { Op, Sequelize } from 'sequelize';
 class UserRepository {
   private readonly userModel: typeof User;
 
-  constructor(sequelize: Sequelize) {
-      this.userModel = User;
+  constructor(private readonly sequelize: Sequelize) {
+    this.userModel = User;
   }
 
-  async findAll(): Promise<User[] | null> {
+  // 🟢 Get all users
+  async findAll(): Promise<User[]> {
     return this.userModel.findAll();
   }
 
+  // 🔍 Get user by ID
   async findById(id: number): Promise<User | null> {
     return this.userModel.findByPk(id);
   }
 
+  // 📧 Find by email
   async findByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ where: { email } });
   }
 
-  async createUser(userAttributes: Partial<any>): Promise<User> {
-    return this.userModel.create(userAttributes);
+  // ➕ Create new user
+  async createUser(userAttributes: Partial<User>): Promise<User> {
+    try {
+      const user = await this.userModel.create(userAttributes);
+      return user;
+    } catch (error) {
+      console.error('❌ Error creating user:', error);
+      throw error;
+    }
   }
 
-  async updateUser(id: number, userAttributes: Partial<any>) {
-    return this.userModel.update(userAttributes, { where: { id } });
+  // 🔄 Update user
+  async updateUser(id: number, userAttributes: Partial<User>): Promise<[number, User[]]> {
+    return this.userModel.update(userAttributes, { where: { id }, returning: true });
   }
 
+  // ❌ Delete user
   async deleteUser(id: number): Promise<number> {
-    const result = await this.userModel.destroy({ where: { id } });
-    return result;
+    return this.userModel.destroy({ where: { id } });
   }
 
+  // ⚙️ Filtered + Paginated list
   async findAllWithFilters(
     excludeUserId: number,
     page: number,
     limit: number,
     search?: string,
     role?: number,
-  ) {
+  ): Promise<{ data: User[]; total: number; page: number; limit: number }> {
     const where: any = { id: { [Op.ne]: excludeUserId } };
 
     if (role) where.role = role;
@@ -51,7 +63,6 @@ class UserRepository {
     }
 
     const offset = (page - 1) * limit;
-
     const { rows, count } = await this.userModel.findAndCountAll({
       where,
       offset,
@@ -61,7 +72,6 @@ class UserRepository {
 
     return { data: rows, total: count, page, limit };
   }
-
 }
 
 export { UserRepository };
