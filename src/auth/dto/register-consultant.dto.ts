@@ -6,30 +6,30 @@ export class RegisterConsultantDto {
     example: 'consultant@example.com',
     description: 'Consultant email address',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
   email: string;
 
   @ApiProperty({
     example: 'Jane Consultant',
     description: 'Full name of the consultant',
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty({ message: 'Name cannot be empty' })
   name: string;
 
   @ApiProperty({
     example: 'consultingExpert#2025',
     description: 'Password (minimum 6 characters)',
   })
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: 'Password must be a string' })
+  @MinLength(6, { message: 'Password must be at least 6 characters long' })
   password: string;
 
   @ApiProperty({
     example: 'AI & Full Stack Development',
     description: 'Consultant expertise area',
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Expertise must be a string' })
+  @IsNotEmpty({ message: 'Expertise cannot be empty' })
   expertise: string;
 }

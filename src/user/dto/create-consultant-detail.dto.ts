@@ -9,7 +9,7 @@ export class CreateConsultantDetailDto extends CreateUserDto {
   @IsString()
   @IsNotEmpty()
   level: string;
-
+  password: string; 
   @IsInt()
   experience: number;
 
@@ -24,4 +24,10 @@ export class CreateConsultantDetailDto extends CreateUserDto {
 
   @IsUrl()
   cv_url: string;
+  currency: string;
+  user: any;
+  consultant: CreateConsultantDetailDto;
+  username: any;
+  city: string;
+  country: string;
 }

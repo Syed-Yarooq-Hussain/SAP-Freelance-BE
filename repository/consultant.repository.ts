@@ -5,18 +5,21 @@ import { CreateConsultantDetailDto } from 'src/user/dto/create-consultant-detail
 
 @Injectable()
 export class ConsultantRepository {
-  createDetail(consultantDto: CreateConsultantDetailDto, id: number) {
-    throw new Error('Method not implemented.');
-  }
   constructor(
     @InjectModel(Consultant)
     private readonly consultantModel: typeof Consultant,
   ) {}
 
-  // 🧩 Create new consultant
-  async create(data: Partial<Consultant>): Promise<Consultant> {
-    return this.consultantModel.create(data);
-  }
+  // 🟢 Create new consultant detail
+async createDetail(dto: CreateConsultantDetailDto, userId: number) {
+  return this.consultantModel.create({
+    user_id: userId,
+    module: dto.module,
+    experience: dto.experience,
+    rate: dto.rate,
+    weekly_available_hours: dto.weekly_available_hours,
+  });
+}
 
   // 📋 Get all consultants
   async findAll(): Promise<Consultant[]> {
@@ -35,10 +38,7 @@ export class ConsultantRepository {
 
   // 🧠 Update consultant
   async update(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
-    return this.consultantModel.update(data, {
-      where: { id },
-      returning: true,
-    });
+    return this.consultantModel.update(data, { where: { id }, returning: true });
   }
 
   // ❌ Delete consultant

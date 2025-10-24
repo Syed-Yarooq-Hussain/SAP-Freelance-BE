@@ -2,16 +2,28 @@ import { Injectable } from '@nestjs/common';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ConsultantService {
   private consultants: GetConsultantDto[] = [
-    { id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'Frontend Developer' },
-    { id: 2, name: 'Bob Ahmed', email: 'bob@example.com', expertise: 'Backend Developer' },
+    {id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'FrontendDeveloper',password:"" },
+    { id: 2, name: 'Bob Ahmed', email: 'bob@example.com', expertise: 'Backend Developer',password:"" },
   ];
 
-  create(dto: CreateConsultantDto) {
-    const newConsultant: GetConsultantDto = { id: Date.now(), ...dto };
+  async create(dto: CreateConsultantDto) {
+    if (!dto.password) {
+      throw new Error('Password is required');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const newConsultant: GetConsultantDto = {
+      id: Date.now(),
+      ...dto,
+      password: hashedPassword,
+    };
+
     this.consultants.push(newConsultant);
     return newConsultant;
   }

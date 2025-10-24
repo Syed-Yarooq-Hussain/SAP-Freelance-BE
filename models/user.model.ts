@@ -2,6 +2,7 @@ import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
 import { Consultant } from './consultant.model';
 import { Project } from './project.model';
 import { ProjectConsultant } from './project-consultant.model';
+import { ProjectDetail } from './project-detail.model'; // ✅ ADD THIS
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -12,12 +13,11 @@ export class User extends Model<User> {
   })
   id: number;
 
-
   @Column({
     type: DataType.STRING,
     allowNull: false,
   })
-  name: string;
+  username: string;
 
   @Column({
     type: DataType.STRING,
@@ -39,7 +39,7 @@ export class User extends Model<User> {
   currency: string;
 
   @Column({
-    type: DataType.NUMBER,
+    type: DataType.INTEGER,
     allowNull: true,
   })
   role?: number;
@@ -71,6 +71,9 @@ export class User extends Model<User> {
 
   @HasMany(() => ProjectConsultant)
   projectConsultants: ProjectConsultant[];
+
+  @HasMany(() => ProjectDetail) // ✅ Add this line
+  projectDetails: ProjectDetail[];
+
   token: string;
-  username: any;
 }

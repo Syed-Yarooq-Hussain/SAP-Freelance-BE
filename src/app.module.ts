@@ -20,6 +20,7 @@ import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 import { ClientModule } from './client/client.module';
 import { ConsultantModule } from './consultant/consultant.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ConsultantModule } from './consultant/consultant.module';
         ProjectPayment,
       ],
     }),
+    CommonModule,
     PassportModule,
     UserModule,
     AuthModule,

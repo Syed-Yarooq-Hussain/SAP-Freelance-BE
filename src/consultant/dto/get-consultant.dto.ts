@@ -12,4 +12,5 @@ export class GetConsultantDto {
 
   @ApiProperty({ example: 'Frontend Developer', description: 'Expertise or role of the consultant' })
   expertise: string;
+  password: string;
 }

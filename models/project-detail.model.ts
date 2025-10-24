@@ -1,5 +1,13 @@
-import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+} from 'sequelize-typescript';
 import { Project } from './project.model';
+import { User } from './user.model'; // ✅ Added import
 
 @Table({ tableName: 'project_detail', timestamps: false })
 export class ProjectDetail extends Model<ProjectDetail> {
@@ -49,4 +57,16 @@ export class ProjectDetail extends Model<ProjectDetail> {
 
   @BelongsTo(() => Project)
   project: Project;
+
+  // ✅ NEW: Add relation with User
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  user_id: number;
+
+  @BelongsTo(() => User)
+  user: User;
 }
+ 

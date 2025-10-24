@@ -25,12 +25,18 @@ class UserRepository {
 
   // ➕ Create new user
   async createUser(userAttributes: Partial<User>): Promise<User> {
-    return this.userModel.create(userAttributes);
+    try {
+      const user = await this.userModel.create(userAttributes);
+      return user;
+    } catch (error) {
+      console.error('❌ Error creating user:', error);
+      throw error;
+    }
   }
 
   // 🔄 Update user
-  async updateUser(id: number, userAttributes: Partial<User>): Promise<[number]> {
-    return this.userModel.update(userAttributes, { where: { id } });
+  async updateUser(id: number, userAttributes: Partial<User>): Promise<[number, User[]]> {
+    return this.userModel.update(userAttributes, { where: { id }, returning: true });
   }
 
   // ❌ Delete user
@@ -44,7 +50,7 @@ class UserRepository {
     page: number,
     limit: number,
     search?: string,
-    role?: number
+    role?: number,
   ): Promise<{ data: User[]; total: number; page: number; limit: number }> {
     const where: any = { id: { [Op.ne]: excludeUserId } };
 
@@ -57,7 +63,6 @@ class UserRepository {
     }
 
     const offset = (page - 1) * limit;
-
     const { rows, count } = await this.userModel.findAndCountAll({
       where,
       offset,

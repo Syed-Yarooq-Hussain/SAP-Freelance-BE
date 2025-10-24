@@ -28,7 +28,7 @@ export class Consultant extends Model<Consultant> {
     type: DataType.STRING,
     allowNull: true,
   })
-  experience: string;
+  experience: number;
 
   @Column({
     type: DataType.FLOAT,
@@ -69,7 +69,7 @@ export class Consultant extends Model<Consultant> {
 
   // Relations
   @BelongsTo(() => ModuleEntity)
-  module: ModuleEntity;
+  module: string;
 
   @BelongsTo(() => User)
   user: User;
