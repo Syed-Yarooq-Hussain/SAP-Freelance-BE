@@ -59,6 +59,12 @@ export class User extends Model<User> {
   @Column({
     type: DataType.STRING,
     allowNull: true,
+  })
+  phone: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
     defaultValue: 'active',
   })
   status: string;

@@ -6,10 +6,7 @@ export class RegisterDto {
     example: 'John Doe',
     description: 'Full name of the user',
   })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
-
+  
   @ApiProperty({
     example: 'user@example.com',
     description: 'User email address',

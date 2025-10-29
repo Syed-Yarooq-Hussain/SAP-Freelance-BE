@@ -9,8 +9,17 @@ class UserRepository {
   }
 
   // 🟢 Get all users
-  async findAll(): Promise<User[]> {
+  async findAll(email: string): Promise<User[]> {
     return this.userModel.findAll();
+  }
+ 
+  // 🟢 Get user including password
+  async userLogin(email): Promise<User | null> {
+    return this.userModel.findOne({
+      where: { email },
+      attributes: { include: ['password'] },
+      raw: true,
+    });
   }
 
   // 🔍 Get user by ID

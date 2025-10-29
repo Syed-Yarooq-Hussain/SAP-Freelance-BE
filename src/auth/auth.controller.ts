@@ -60,7 +60,7 @@ export class AuthController {
       loginDto.email,
       loginDto.password,
     );
-    return CustomResponse.success<User>(res, {
+    return CustomResponse.success<any>(res, {
       data: result,
       message: 'Login successful',
     });

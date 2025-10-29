@@ -11,7 +11,7 @@ export class ConsultantRepository {
   ) {}
 
   // 🟢 Create new consultant detail
-async createDetail(dto: CreateConsultantDetailDto, userId: number) {
+async createDetail(dto: any, userId: number) {
   return this.consultantModel.create({
     user_id: userId,
     module: dto.module,

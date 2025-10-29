@@ -26,7 +26,7 @@ export class CreateConsultantDetailDto extends CreateUserDto {
   cv_url: string;
   currency: string;
   user: any;
-  consultant: CreateConsultantDetailDto;
+  consultant: any;
   username: any;
   city: string;
   country: string;
