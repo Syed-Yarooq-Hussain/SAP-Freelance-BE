@@ -51,7 +51,6 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
       username: undefined,
       city: '',
       country: '',
-      name: '',
       email: ''
     },
     user.id,

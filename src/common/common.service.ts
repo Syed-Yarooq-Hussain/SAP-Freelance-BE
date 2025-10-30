@@ -37,4 +37,34 @@ export class CommonService {
       data: this.industry[index],
     };
 }
+
+  private countries = [
+    { id: 1, name: 'Pakistan' },
+    { id: 2, name: 'United States' },
+    { id: 3, name: 'United Kingdom' },
+    { id: 4, name: 'India' },
+    { id: 5, name: 'Germany' },
+  ];
+
+  private currencies = [
+    { id: 1, code: 'PKR', name: 'Pakistani Rupee' },
+    { id: 2, code: 'USD', name: 'US Dollar' },
+    { id: 3, code: 'EUR', name: 'Euro' },
+    { id: 4, code: 'GBP', name: 'British Pound' },
+    { id: 5, code: 'INR', name: 'Indian Rupee' },
+  ]; 
+
+ getCountries() {
+    return {
+      message: 'Countries fetched successfully',
+      data: this.countries,
+    };
+  }
+
+  getCurrencies() {
+    return {
+      message: 'Currencies fetched successfully',
+      data: this.currencies,
+    };
+  }
 }

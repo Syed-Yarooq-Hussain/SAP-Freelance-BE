@@ -8,7 +8,7 @@ export class RegisterDto {
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  username: string;
 
   @ApiProperty({
     example: 'user@example.com',
@@ -56,5 +56,4 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   currency?: string;
-  username: string;
 }

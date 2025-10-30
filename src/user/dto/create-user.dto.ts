@@ -9,7 +9,7 @@ export class CreateUserDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Name is required' })
-  name: string;
+  username: string;
 
   @ApiProperty({
     description: 'Valid email address',
