@@ -20,38 +20,32 @@ export class AuthService {
  // 🟢 Consultant Signup
 async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   // ✅ Step 1: Password hashing
-  const hashedPassword = await bcrypt.hash(consultantDto.password, 10);
+  console.log('Hashed password:', consultantDto.user);
 
+  const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
   // ✅ Step 2: Create user record
   const user = await this.userRepo.createUser({
-    username: consultantDto.username,
-    email: consultantDto.email,
+    username: consultantDto.user.username,
+    email: consultantDto.user.email,
     password: hashedPassword,
-    role: Number(consultantDto.role) || 3,
+    role: Number(consultantDto.user.role) || 3,
     status: 'active',
-    currency: consultantDto.currency || 'USD',
-    city: consultantDto.city || null,
-    country: consultantDto.country || null,
+    phone: consultantDto.user.phone || null,
+    currency: consultantDto.user.currency || 'USD',
+    city: consultantDto.user.city || null,
+    country: consultantDto.user.country || null,
   });
 
   // ✅ Step 3: Create consultant details (link with user.id)
   await this.consultantRepo.createDetail(
     {
-      module: consultantDto.module,
-      level: consultantDto.level,
-      experience: consultantDto.experience,
-      rate: consultantDto.rate,
-      weekly_available_hours: consultantDto.weekly_available_hours,
-      schedule: consultantDto.schedule,
-      cv_url: consultantDto.cv_url,
-      password: '',
-      currency: '',
-      user: undefined,
-      consultant: new CreateConsultantDetailDto,
-      username: undefined,
-      city: '',
-      country: '',
-      email: ''
+      module: consultantDto.consultant.module,
+      level: consultantDto.consultant.level,
+      experience: consultantDto.consultant.experience,
+      rate: consultantDto.consultant.rate,
+      weekly_available_hours: consultantDto.consultant.weekly_available_hours,
+      schedule: consultantDto.consultant.schedule,
+      cv_url: consultantDto.consultant.cv_url
     },
     user.id,
   );
@@ -76,8 +70,9 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
       username: userDto.username, // ✅ username instead of name
       email: userDto.email,
       password: hashedPassword,
-      role: 2, // Default: Normal user
+      role: 2, 
       status: 'active',
+      phone: userDto.phone || null,
       currency: userDto.currency || 'USD',
       city: userDto.city || 'Karachi',
       country: userDto.country || 'Pakistan',
@@ -88,10 +83,11 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   }
 
   // 🔵 Login Service
-  async login(email: string, password: string): Promise<User> {
+  async login(email: string, password: string): Promise<any> {
     const user = await User.findOne({
       where: { email },
       attributes: { include: ['password'] },
+      raw: true,
     });
 
     if (!user) throw new CustomError(404, 'User not found');
@@ -102,8 +98,9 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
     const payload = { sub: user.id, role: user.role, email: user.email };
     const token = await this.jwtService.signAsync(payload);
 
-    user.token = token;
+    user['token'] = token;
     (user as any).password = undefined;
+    console.log('Attempting login for email:', user);
 
     return user;
   }

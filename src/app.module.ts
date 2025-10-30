@@ -29,7 +29,7 @@ import { CommonModule } from './common/common.module';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'admin',
+      password: 'root',
       database: 'sap_freelancer_portal',
       autoLoadModels: true,
       synchronize: false,

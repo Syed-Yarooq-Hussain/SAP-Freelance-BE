@@ -1,3 +1,4 @@
+import { Consultant } from 'models/consultant.model';
 import { User } from '../models/user.model';
 import { Op, Sequelize } from 'sequelize';
 
@@ -9,8 +10,17 @@ class UserRepository {
   }
 
   // 🟢 Get all users
-  async findAll(): Promise<User[]> {
+  async findAll(email: string): Promise<User[]> {
     return this.userModel.findAll();
+  }
+ 
+  // 🟢 Get user including password
+  async userLogin(email): Promise<User | null> {
+    return this.userModel.findOne({
+      where: { email },
+      attributes: { include: ['password'] },
+      raw: true,
+    });
   }
 
   // 🔍 Get user by ID
@@ -71,6 +81,20 @@ class UserRepository {
     });
 
     return { data: rows, total: count, page, limit };
+  }
+
+  async findAllUsersWithConsultants(): Promise<User[]> {
+    return await this.userModel.findAll({
+      where: { role: 2 },
+      include: [
+        {
+          model: Consultant,
+          required: false,
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
   }
 }
 
