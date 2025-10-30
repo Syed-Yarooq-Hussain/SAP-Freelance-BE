@@ -9,6 +9,13 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
+    // ✅ Get all consultants
+  @Get('consultants')
+  @ApiOperation({ summary: 'Get all consultants' })
+  getAllConsultants() {
+    console.log('Fetching all consultants');
+    return this.clientService.getAllConsultants();
+  }
   // ✅ Create new client
   @Post()
   @ApiOperation({ summary: 'Create a new client' })
@@ -45,12 +52,7 @@ export class ClientController {
     return this.clientService.remove(+id);
   }
 
-  // ✅ Get all consultants
-  @Get('consultants')
-  @ApiOperation({ summary: 'Get all consultants' })
-  getAllConsultants() {
-    return this.clientService.getAllConsultants();
-  }
+
 
   // ✅ Get consultant by ID
   @Get('consultants/:id')

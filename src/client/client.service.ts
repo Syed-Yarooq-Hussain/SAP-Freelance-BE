@@ -3,10 +3,12 @@ import { InjectModel } from '@nestjs/sequelize';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { User } from '../../models/user.model';
+import { UserRepository } from 'repository/user.repository';
 
 @Injectable()
 export class ClientService {
    constructor(
+    private readonly userRepository: UserRepository,
     @InjectModel(User)
     private userModel: typeof User
   ) {}
@@ -57,9 +59,8 @@ export class ClientService {
 
   // ✅ Get all consultants
  async getAllConsultants() {
-  const users = await this.userModel.findAll();
-  console.log('Fetched users:', users); // Debug line
-  return users;
+  const consultants = await this.userRepository.findAllUsersWithConsultants();
+  return consultants;
 }
 
  // ✅ Get consultant by ID
