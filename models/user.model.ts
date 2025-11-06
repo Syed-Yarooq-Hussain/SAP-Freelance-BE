@@ -1,8 +1,7 @@
-import { Table, Column, Model, DataType, HasMany } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, HasOne } from 'sequelize-typescript';
 import { Consultant } from './consultant.model';
 import { Project } from './project.model';
-import { ProjectConsultant } from './project-consultant.model';
-import { ProjectDetail } from './project-detail.model'; // ✅ ADD THIS
+import { ProjectDetail } from './project-detail.model';
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -69,16 +68,13 @@ export class User extends Model<User> {
   })
   status: string;
 
-  @HasMany(() => Consultant)
-  consultants: Consultant[];
+  @HasOne(() => Consultant)
+  consultants: Consultant;
 
   @HasMany(() => Project)
   projects: Project[];
 
-  @HasMany(() => ProjectConsultant)
-  projectConsultants: ProjectConsultant[];
-
-  @HasMany(() => ProjectDetail) // ✅ Add this line
+  @HasMany(() => ProjectDetail)
   projectDetails: ProjectDetail[];
 
   token: string;

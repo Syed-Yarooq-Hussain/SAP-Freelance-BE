@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectConsultant } from '../models/project-consultant.model';
+import { User } from 'models/user.model';
+import { Consultant } from 'models/consultant.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -9,15 +11,29 @@ export class ProjectConsultantRepository {
     private readonly projectConsultantModel: typeof ProjectConsultant,
   ) {}
 
-  // 🆕 Naya project consultant entry create karne ke liye
+  // 🆕 Add project consultant
   async create(data: Partial<ProjectConsultant>): Promise<ProjectConsultant> {
     return this.projectConsultantModel.create(data);
   }
 
   // 📋 Sab project-consultants get karne ke liye (optionally filter bhi kar sakte ho)
   async findAll(options?: any): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll(options);
-  }
+  return this.projectConsultantModel.findAll({
+    ...options,
+    include: [
+      {
+        model: User,
+        as: 'user',
+        include: [
+          {
+            model: Consultant,
+            as: 'consultants',
+          },
+        ],
+      },
+    ],
+  });
+}
 
   // 🔍 Specific consultant ko ID se find karne ke liye
   async findById(id: number): Promise<ProjectConsultant | null> {
@@ -25,13 +41,13 @@ export class ProjectConsultantRepository {
   }
 
   // 🔎 Consultant ko projectId ke zariye dhoondhne ke liye
-  async findByProjectId(projectId: number): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll({ where: { projectId } });
+  async findByProjectId(project_id: number): Promise<ProjectConsultant[]> {
+    return this.projectConsultantModel.findAll({ where: { project_id } });
   }
 
   // 🔎 Consultant ko consultantId ke zariye dhoondhne ke liye
-  async findByConsultantId(consultantId: number): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll({ where: { consultantId } });
+  async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
+    return this.projectConsultantModel.findAll({ where: { consultant_id } });
   }
 
   // 🧠 Consultant update karne ke liye

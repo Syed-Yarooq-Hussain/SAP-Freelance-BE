@@ -9,7 +9,7 @@ export class ProjectRepository {
     private readonly projectModel: typeof Project,
   ) {}
 
-  // 🆕 Naya project create karne ke liye
+  // Add new project
   async create(data: Partial<Project>): Promise<Project> {
     return this.projectModel.create(data);
   }

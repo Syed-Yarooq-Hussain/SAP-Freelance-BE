@@ -15,7 +15,7 @@ import { ConsultantModule } from '../consultant/consultant.module';
     SequelizeModule.forFeature([User, ProjectDetail]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret', // fallback secret
+      secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
     }),
     ConsultantModule, 

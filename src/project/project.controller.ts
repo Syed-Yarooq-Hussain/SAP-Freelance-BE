@@ -1,26 +1,24 @@
-import {Body,Controller,Delete,Get,Param,Post,Put,} from '@nestjs/common';
+import {Body,Controller,Delete,Get,Param,Post,Put, Req, UseGuards,} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectConsultantDto } from './dto/create-project-consultant.dto';
 import { CreateConsultantInterviewDto } from './dto/create-consultant-interview.dto';
-import { CreateProjectSummaryDto } from './dto/create-project-summary.dto';
-import { CreateProjectScopeDto } from './dto/create-project-scope.dto';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
-import { CreateProjectResponsibilityDto } from './dto/create-project-responsibility.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('Projects')
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
-
-  @Post()
+  
+  @Post('create')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new project' })
-  @ApiResponse({ status: 201, description: 'Project created successfully' })
-  @ApiBody({ type: CreateProjectDto })
-  create(@Body() dto: CreateProjectDto) {
-    return this.projectService.createProject(dto);
+  @ApiResponse({ status: 201, description: 'Initiate the project with client details' })
+  createProject(@Req() req: any) {
+    return this.projectService.createProject(req.user);
   }
 
   @Get()
@@ -55,8 +53,8 @@ export class ProjectController {
   @Post(':id/consultants')
   @ApiOperation({ summary: 'Add consultant to a project' })
   @ApiBody({ type: CreateProjectConsultantDto })
-  addConsultant(@Param('id') projectId: string, @Body() dto: CreateProjectConsultantDto) {
-    return this.projectService.addConsultant({ ...dto, project_id: +projectId });
+  addConsultant(@Param('id') projectId: string, @Body() body: CreateProjectConsultantDto[]) {
+    return this.projectService.addConsultant(body, +projectId );
   }
 
   @Get(':id/consultants')

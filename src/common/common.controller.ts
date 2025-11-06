@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Param, Post, Put, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CreateMeetingDto } from './dto/meeting-invite.dto';
 
 @ApiTags('Common')
 @Controller('common')
@@ -29,5 +31,14 @@ export class CommonController {
   @ApiBody({ type: UpdateCommonDto })
   updateIndustry(@Param('id') id: string,@Body() dto: UpdateCommonDto) {
     return this.commonService.updateIndustry(+id,dto);
+  }
+
+  @Post("meeting-invite")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Send meeting/interview Invite' })
+  @ApiResponse({ status: 201, description: 'Invitition created successfully.' })
+  @ApiBody({ type: CreateMeetingDto })
+  sendInvite(@Body() body: CreateMeetingDto, @Req() req: any) {
+    return this.commonService.sendInvite(body, req.user.id);
   }
 }

@@ -5,8 +5,9 @@ import { ProjectIndustriesRepository } from '../../repository/project-indestries
 import { ProjectMilestoneRepository } from '../../repository/project-milestone.repository';
 import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
 import { ProjectTaskRepository } from '../../repository/project-task.repository';
-import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { UserRepository } from 'repository/user.repository';
+import { CreateProjectConsultantDto } from './dto/create-project-consultant.dto';
 
 @Injectable()
 export class ProjectService {
@@ -17,10 +18,17 @@ export class ProjectService {
     private readonly milestoneRepo: ProjectMilestoneRepository,
     private readonly paymentRepo: ProjectPaymentRepository,
     private readonly taskRepo: ProjectTaskRepository,
+    private readonly userRepo: UserRepository,
   ) {}
 
-  async createProject(data: CreateProjectDto) {
-    return this.projectRepo.create(data);
+  async createProject(user: any) {
+    return await this.projectRepo.create({ 
+      client_id: user.id,
+      name: `New Project for ${user?.name || 'Client'}`,
+      company_name: 'Unknown Company',
+      status: 'Initiated',
+
+     });
   }
 
   async getProjects() {
@@ -51,8 +59,27 @@ export class ProjectService {
     return this.projectRepo.delete(id);
   }
 
-  async addConsultant(data: any) {
-    return this.consultantRepo.create(data);
+  async addConsultant(data: CreateProjectConsultantDto[], project_id: number) {
+    try {
+      for (const item of data) {
+      let projectConsultant = {
+        ...item,
+        project_id,
+        status: 'shortlisted',
+        decided_rate: 0,
+        booking_schedules: null,
+        is_joic_signed: false,
+      }
+
+      await this.consultantRepo.create(projectConsultant); 
+      //Todo: send email to consultant about being added to project
+
+    }
+    return { message: 'Consultants added successfully', data };
+    } catch (error) {
+      throw error;
+    }
+    
   }
 
   async getProjectConsultants(projectId: number) {
@@ -100,12 +127,15 @@ export class ProjectService {
       where: { project_id: projectId },
     });
   }
+
   async scheduleInterview(data: any) {
    return { message: 'Interview scheduled (mock response)', data };
   }
+
   async getTasksByMilestone(milestoneId: number) {
     return this.taskRepo.findAll({
       where: { milestone_id: milestoneId },
     });
   }
+
 }

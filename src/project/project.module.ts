@@ -19,6 +19,8 @@ import { ProjectIndustriesRepository } from '../../repository/project-indestries
 import { ProjectMilestoneRepository } from '../../repository/project-milestone.repository';
 import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
 import { ProjectTaskRepository } from '../../repository/project-task.repository';
+import { User } from 'models/user.model';
+import { UserRepository } from 'repository/user.repository';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { ProjectTaskRepository } from '../../repository/project-task.repository'
       ProjectMilestone,
       ProjectPayment,
       ProjectTask,
+      User
     ]),
   ],
   controllers: [ProjectController],
@@ -40,6 +43,7 @@ import { ProjectTaskRepository } from '../../repository/project-task.repository'
     ProjectMilestoneRepository,
     ProjectPaymentRepository,
     ProjectTaskRepository,
+    UserRepository
   ],
   exports: [
     ProjectRepository,
@@ -48,6 +52,7 @@ import { ProjectTaskRepository } from '../../repository/project-task.repository'
     ProjectMilestoneRepository,
     ProjectPaymentRepository,
     ProjectTaskRepository,
+    UserRepository
   ],
 })
 export class ProjectModule {}

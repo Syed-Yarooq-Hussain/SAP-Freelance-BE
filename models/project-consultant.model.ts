@@ -1,62 +1,80 @@
-import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+} from 'sequelize-typescript';
 import { Project } from './project.model';
+import { Consultant } from './consultant.model'; 
 import { User } from './user.model';
 
 @Table({
-  tableName: 'project_consultants',
-  timestamps: true,
+  tableName: 'project_consultant',
+  timestamps: false, 
 })
 export class ProjectConsultant extends Model<ProjectConsultant> {
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.BIGINT,
     autoIncrement: true,
     primaryKey: true,
   })
-  id: number;
+  id!: number;
 
   @ForeignKey(() => User)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.BIGINT,
     allowNull: false,
     field: 'consultant_id',
   })
-  consultantId: number;
+  consultant_id!: number;
 
-  @BelongsTo(() => User, 'consultantId')
-  consultant: User;
-
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-    field: 'client_id',
-  })
-  clientId: number;
-
-  @BelongsTo(() => User, 'clientId')
-  client: User;
+  @BelongsTo(() => User)
+  user!: User;
 
   @ForeignKey(() => Project)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.BIGINT,
     allowNull: false,
     field: 'project_id',
   })
-  projectId: number;
+  project_id!: number;
 
   @BelongsTo(() => Project)
-  project: Project;
+  project!: Project;
 
   @Column({
     type: DataType.STRING,
     allowNull: true,
   })
-  role: string;
+  status?: string;
 
   @Column({
-    type: DataType.DATE,
+    type: DataType.INTEGER,
     allowNull: true,
-    field: 'assigned_at',
+    field: 'decided_rate',
   })
-  assignedAt: Date;
+  decided_rate?: number;
+
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+    field: 'booking_schedule',
+  })
+  booking_schedule?: object;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: true,
+    field: 'is_joic_signed',
+  })
+  is_joic_signed?: boolean;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    field: 'requested_hours',
+  })
+  requested_hours?: number;
 }
