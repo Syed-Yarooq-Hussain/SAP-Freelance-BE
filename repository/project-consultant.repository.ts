@@ -16,8 +16,7 @@ export class ProjectConsultantRepository {
     return this.projectConsultantModel.create(data);
   }
 
-  // 📋 Sab project-consultants get karne ke liye (optionally filter bhi kar sakte ho)
-  async findAll(options?: any): Promise<ProjectConsultant[]> {
+  async findAll(options?: any, status: string = 'shortlisted'): Promise<ProjectConsultant[]> {
   return this.projectConsultantModel.findAll({
     ...options,
     include: [
@@ -41,8 +40,8 @@ export class ProjectConsultantRepository {
   }
 
   // 🔎 Consultant ko projectId ke zariye dhoondhne ke liye
-  async findByProjectId(project_id: number): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll({ where: { project_id } });
+  async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
+    return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } , raw: true });
   }
 
   // 🔎 Consultant ko consultantId ke zariye dhoondhne ke liye

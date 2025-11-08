@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectMilestone } from '../models/project-milestone.model';
+import { raw } from 'express';
+import { ProjectTask } from 'models/project-task.model';
 
 @Injectable()
 export class ProjectMilestoneRepository {
@@ -24,9 +26,20 @@ export class ProjectMilestoneRepository {
     return this.projectMilestoneModel.findByPk(id);
   }
 
+  async findByIdWithTasks(id: number): Promise<ProjectMilestone | null> {
+    return await this.projectMilestoneModel.findOne({
+    where: { id },
+    include: [
+      {
+        association: 'tasks',
+      },
+    ],
+  });
+  }
+
   // 🔎 Find milestones by project ID
-  async findByProjectId(projectId: number): Promise<ProjectMilestone[]> {
-    return this.projectMilestoneModel.findAll({ where: { projectId } });
+  async findByProjectId(project_id: number): Promise<ProjectMilestone[]> {
+    return this.projectMilestoneModel.findAll({ where: { project_id } });
   }
 
   // 🧠 Update milestone

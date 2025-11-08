@@ -1,37 +1,35 @@
-import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsDate } from 'class-validator';
 
 export class CreateProjectMilestoneDto {
-  @IsNumber()
-  project_id: number;
-
+  
+  @ApiProperty()
   @IsString()
   name: string;
 
-  @IsOptional()
-  @IsString()
-  expected_name?: string;
-
-  @IsOptional()
+  @ApiProperty()
   @IsString()
   description?: string;
 
+  @ApiProperty({
+    description: 'Milestone Due date',
+    example: '2025-10-16',
+  })
   @IsOptional()
-  @IsNumber()
-  owner?: number;
+  @IsDate()
+  due_date?: Date;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  dependencies?: string;
+  status: string;
 
-  @IsOptional()
-  @IsBoolean()
-  approval?: boolean;
-
+  @ApiPropertyOptional()
+  @IsString()
+  required_hours: number;
+  
+  @ApiProperty()
   @IsOptional()
   @IsString()
-  comments?: string;
-
-  @IsOptional()
-  @IsString()
-  status?: string;
+  project_id: number;
 }

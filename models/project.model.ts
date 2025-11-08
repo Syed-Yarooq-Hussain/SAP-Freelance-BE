@@ -1,4 +1,4 @@
-import {Table,Column,Model,DataType,ForeignKey,BelongsTo,HasMany,} from 'sequelize-typescript';
+import {Table,Column,Model,DataType,ForeignKey,BelongsTo,HasMany, HasOne,} from 'sequelize-typescript';
 import { User } from './user.model';
 import { ProjectConsultant } from './project-consultant.model';
 import { ProjectIndustry } from './project-industries.model';
@@ -51,8 +51,8 @@ export class Project extends Model<Project> {
   @HasMany(() => ProjectIndustry)
   projectIndustries: ProjectIndustry[];
 
-  @HasMany(() => ProjectDetail)
-  projectDetails: ProjectDetail[];
+  @HasOne(() => ProjectDetail)
+  projectDetails: ProjectDetail;
 
   @HasMany(() => ProjectMilestone)
   milestones: ProjectMilestone[];

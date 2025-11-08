@@ -74,8 +74,5 @@ export class User extends Model<User> {
   @HasMany(() => Project)
   projects: Project[];
 
-  @HasMany(() => ProjectDetail)
-  projectDetails: ProjectDetail[];
-
   token: string;
 }

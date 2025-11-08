@@ -58,15 +58,6 @@ export class ProjectDetail extends Model<ProjectDetail> {
   @BelongsTo(() => Project)
   project: Project;
 
-  // ✅ NEW: Add relation with User
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  user_id: number;
 
-  @BelongsTo(() => User)
-  user: User;
 }
  

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectDetail } from '../models/project-detail.model';
+import { raw } from 'express';
 
 @Injectable()
 export class ProjectDetailRepository {
@@ -11,7 +12,7 @@ export class ProjectDetailRepository {
 
   // 🆕 Naya project detail create karne ke liye
   async create(data: Partial<ProjectDetail>): Promise<ProjectDetail> {
-    return this.projectDetailModel.create(data);
+    return this.projectDetailModel.create(data, { raw: true });
   }
 
   // 📋 Sab project details get karne ke liye

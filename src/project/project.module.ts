@@ -21,6 +21,8 @@ import { ProjectPaymentRepository } from '../../repository/project-payment.repos
 import { ProjectTaskRepository } from '../../repository/project-task.repository';
 import { User } from 'models/user.model';
 import { UserRepository } from 'repository/user.repository';
+import { ProjectDetail } from 'models/project-detail.model';
+import { ProjectDetailRepository } from 'repository/project-detail.repository';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { UserRepository } from 'repository/user.repository';
       ProjectMilestone,
       ProjectPayment,
       ProjectTask,
+      ProjectDetail,
       User
     ]),
   ],
@@ -43,6 +46,7 @@ import { UserRepository } from 'repository/user.repository';
     ProjectMilestoneRepository,
     ProjectPaymentRepository,
     ProjectTaskRepository,
+    ProjectDetailRepository,
     UserRepository
   ],
   exports: [
@@ -52,6 +56,7 @@ import { UserRepository } from 'repository/user.repository';
     ProjectMilestoneRepository,
     ProjectPaymentRepository,
     ProjectTaskRepository,
+    ProjectDetailRepository,
     UserRepository
   ],
 })

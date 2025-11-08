@@ -49,6 +49,12 @@ export class ProjectConsultant extends Model<ProjectConsultant> {
     allowNull: true,
   })
   status?: string;
+  
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  role?: string;
 
   @Column({
     type: DataType.INTEGER,

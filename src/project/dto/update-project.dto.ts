@@ -4,37 +4,32 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
+  
   @ApiPropertyOptional({
-    description: 'Project ka unique ID',
-    example: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  id?: number;
-
-  @ApiPropertyOptional({
-    description: 'Project ka naam',
+    description: 'Project name',
     example: 'AI Dashboard Redesign',
   })
   @IsOptional()
   @IsString()
   name?: string;
 
+
   @ApiPropertyOptional({
-    description: 'Client ka ID',
-    example: 5,
+    description: 'Project status (e.g. active, completed)',
+    example: 'active',
   })
   @IsOptional()
-  @IsNumber()
-  client_id?: number;
-
+  @IsString()
+  status?: string;
+  
+  
   @ApiPropertyOptional({
     description: 'Project ka status (e.g. active, completed)',
     example: 'active',
   })
   @IsOptional()
   @IsString()
-  status?: string;
+  company_name?: string;
 
   @ApiPropertyOptional({
     description: 'Project start date',
@@ -51,4 +46,28 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @IsOptional()
   @IsDate()
   end_date?: Date;
+  
+  @ApiPropertyOptional({
+    description: 'Duration of the project in hours',
+    example: '650',
+  })
+  @IsOptional()
+  @IsDate()
+  duration?: string;
+
+  @ApiPropertyOptional({
+    description: 'Cost of the project',
+    example: 45000,
+  })
+  @IsOptional()
+  @IsDate()
+  cost?: number;
+
+  @ApiPropertyOptional({
+    description: 'Amount paid for the project',
+    example: 45000,
+  })
+  @IsOptional()
+  @IsDate()
+  paid_amount?: number;
 }

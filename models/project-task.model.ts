@@ -3,66 +3,42 @@ import { ProjectMilestone } from './project-milestone.model';
 import { Project } from './project.model';
 import { User } from './user.model';
 
-@Table({ tableName: 'project_tasks', timestamps: false })
+@Table({ tableName: 'project_task', timestamps: false })
 export class ProjectTask extends Model<ProjectTask> {
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.BIGINT,
     autoIncrement: true,
     primaryKey: true,
   })
   id: number;
 
-  @ForeignKey(() => Project)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  project_id: number;
-  
-  @ForeignKey(() => ProjectMilestone)
-  @Column(DataType.INTEGER)
-  milestone_id: number; 
+  @Column({ type: DataType.STRING, allowNull: false })
+  name: string;
 
-  @ForeignKey(() => User)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: false,
-  })
-  assigned_to: number;
-
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
-  title: string;
-
-  @Column({
-    type: DataType.TEXT,
-    allowNull: true,
-  })
+  @Column({ type: DataType.TEXT, allowNull: true })
   description: string;
 
-  @Column({
-    type: DataType.ENUM('pending', 'in_progress', 'completed'),
-    defaultValue: 'pending',
-  })
-  status: string;
+  @ForeignKey(() => User)
+  @Column({ type: DataType.BIGINT })
+  assignee_id: number;
 
-  @Column({
-    type: DataType.DATE,
-    allowNull: true,
-  })
-  due_date: Date;
+  @ForeignKey(() => ProjectMilestone)
+  @Column({ type: DataType.BIGINT })
+  project_milestone_id: number;
 
-  @Column({
-    type: DataType.DATE,
-    defaultValue: DataType.NOW,
-  })
-  created_at: Date;
+  @ForeignKey(() => Project)
+  @Column({ type: DataType.BIGINT })
+  project_id: number;
 
-  @BelongsTo(() => Project)
-  project: Project;
+  @Column({ type: DataType.INTEGER })
+  required_hours: number;
 
-  @BelongsTo(() => User, 'assigned_to')
+  @BelongsTo(() => User, 'assignee_id')
   assignee: User;
+
+  @BelongsTo(() => ProjectMilestone, 'project_milestone_id')
+  milestone: ProjectMilestone;
+
+  @BelongsTo(() => Project, 'project_id')
+  project: Project;
 }

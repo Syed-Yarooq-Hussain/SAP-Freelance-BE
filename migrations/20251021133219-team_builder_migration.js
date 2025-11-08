@@ -80,7 +80,7 @@ module.exports = {
     // 🔟 Project_Milestone
     await queryInterface.createTable('project_milestone', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
-      due_date: { type: Sequelize.DATE },
+      name: { type: Sequelize.STRING },
       end_date: { type: Sequelize.DATE },
       description: { type: Sequelize.TEXT },
       status: { type: Sequelize.STRING },
@@ -93,7 +93,6 @@ module.exports = {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
       description: { type: Sequelize.TEXT },
-      new_column: { type: Sequelize.STRING },
       assignee_id: { type: Sequelize.BIGINT, references: { model: 'users', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       project_milestone_id: { type: Sequelize.BIGINT, references: { model: 'project_milestone', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },

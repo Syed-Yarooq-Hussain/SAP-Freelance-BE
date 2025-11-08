@@ -1,10 +1,17 @@
-import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
-
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+  HasMany,
+} from 'sequelize-typescript';
 import { Project } from './project.model';
-
+import { ProjectTask } from './project-task.model';
 
 @Table({
-  tableName: 'project_milestones',
+  tableName: 'project_milestone',
   timestamps: false,
 })
 export class ProjectMilestone extends Model<ProjectMilestone> {
@@ -19,7 +26,7 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
     type: DataType.STRING(255),
     allowNull: false,
   })
-  milestone_name: string;
+  name: string;
 
   @Column({
     type: DataType.TEXT,
@@ -43,19 +50,19 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
     type: DataType.DECIMAL(10, 2),
     allowNull: true,
   })
-  amount?: number;
+  required_hours?: number;
 
-  // ✅ Foreign key setup
   @ForeignKey(() => Project)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
-    field: 'project_id', // optional: maps DB column correctly
   })
-  projectId: number;
+  project_id: number;
 
-  // ✅ Proper BelongsTo association
-  @BelongsTo(() => Project, 'projectId')
+  @BelongsTo(() => Project, 'project_id')
   project: Project;
-  
+
+  // ✅ Add this
+  @HasMany(() => ProjectTask, 'project_milestone_id')
+  tasks: ProjectTask[];
 }

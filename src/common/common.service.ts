@@ -3,6 +3,7 @@ import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
+import { MEETING_STATUS_ARRAY } from 'constant/enums';
 
 @Injectable()
 export class CommonService {
@@ -29,6 +30,13 @@ export class CommonService {
       data: this.industry
     };
   }
+  
+  getMeetingStatus() {
+    return{
+      message: "list of meeting status fetched successfully",
+      data: MEETING_STATUS_ARRAY
+    };
+  }
 
   // 🔹 Update entry by ID
   updateIndustry(id:number, dto: UpdateCommonDto) {
@@ -42,7 +50,7 @@ export class CommonService {
   } 
 
   async sendInvite(dto: CreateMeetingDto, sender_id: number) {
-  // 1️⃣ Create meeting record
+
   const meeting = await this.meetingRepo.createMeeting({
     sender_id,
     url: `https://meet.com/${Date.now()}`, // or any auto-generated link logic
@@ -52,7 +60,7 @@ export class CommonService {
     event_type: dto.event_type,
   });
 
-  // 2️⃣ Add invitees
+
   const invitees = await Promise.all(
     dto.invitees_id.map(userId =>
       this.meetingRepo.addInvitee({
@@ -62,11 +70,28 @@ export class CommonService {
     ),
   );
 
-  // 3️⃣ Return success response
+
   return {
     message: 'Invitation sent successfully',
     meeting,
     invitees,
   };
+  
 }
+
+async updateMeetingStatus(meetingId: number, status: string) {
+  const meeting = await this.meetingRepo.findMeetingById(meetingId);
+  if (!meeting) {
+    throw new Error('Meeting not found');
+  }
+
+  meeting.status = status;
+  await meeting.save();
+
+  return {
+    message: 'Meeting status updated successfully',
+    meeting,
+  };
+}
+
 }

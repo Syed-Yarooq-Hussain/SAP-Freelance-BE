@@ -32,13 +32,10 @@ export class ProjectRepository {
   async findById(id: number): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
       include: [
-        'projectConsultants',
-        'projectIndustries',
-        'projectDetails',
-        'milestones',
-        'tasks',
-        'payments',
-      ],
+      {
+        association: 'projectDetails', 
+      }], 
+      raw: true
     });
   }
 
