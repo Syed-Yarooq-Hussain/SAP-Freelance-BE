@@ -3,12 +3,14 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { AllExceptionsFilter } from './config/allexceptions.filter';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: '*' });
+  app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const options = new DocumentBuilder()

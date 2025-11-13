@@ -20,7 +20,7 @@ import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 import { ClientModule } from './client/client.module';
 import { ConsultantModule } from './consultant/consultant.module';
-import { CommonModule } from './common/common.module';
+import { CommonModule } from './utility/common.module';
 import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 
