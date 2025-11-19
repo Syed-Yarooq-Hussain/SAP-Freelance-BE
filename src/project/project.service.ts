@@ -78,14 +78,13 @@ export class ProjectService {
       ? await this.projectDetailrepository.update(id, projectDetailpayload)
       : await this.projectDetailrepository.create(projectDetailpayload);
 
-
+    delete project.projectDetails;
     // 🔥 Convert Sequelize model → clean JSON
     const plainProject = project.toJSON();
 
     return {
       ...plainProject,
-      projectDetail: projectDetailpayload,
-    };
+        };
   }
 
 
