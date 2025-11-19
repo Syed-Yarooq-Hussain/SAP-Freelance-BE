@@ -7,10 +7,18 @@ import { CreateUserDto } from './dto/create-user.dto';
 
 @ApiTags('User') 
 @ApiBearerAuth() 
-@UseGuards(JwtAuthGuard)
-@Controller('user')
+@Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+    @Get('filter')
+  async getFilteredUsers(
+    @Query('experience') experience?: number,
+    @Query('availability') availability?: number,
+    @Query('budget') budget?: number,
+    @Query('country') country?: string,
+  ) {
+    return this.userService.getFilteredUsers(experience, availability, budget, country);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
