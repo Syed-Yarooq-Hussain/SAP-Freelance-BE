@@ -18,4 +18,11 @@ export class Industries extends Model<Industries> {
 
   @HasMany(() => ProjectIndustry)
   projectIndustries: ProjectIndustry[];
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

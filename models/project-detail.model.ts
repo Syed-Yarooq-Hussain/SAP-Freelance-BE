@@ -58,6 +58,12 @@ export class ProjectDetail extends Model<ProjectDetail> {
   @BelongsTo(() => Project)
   project: Project;
 
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 
 }
  

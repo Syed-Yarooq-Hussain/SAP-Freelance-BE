@@ -65,4 +65,11 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
   // ✅ Add this
   @HasMany(() => ProjectTask, 'project_milestone_id')
   tasks: ProjectTask[];
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

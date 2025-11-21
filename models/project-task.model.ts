@@ -41,4 +41,11 @@ export class ProjectTask extends Model<ProjectTask> {
 
   @BelongsTo(() => Project, 'project_id')
   project: Project;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

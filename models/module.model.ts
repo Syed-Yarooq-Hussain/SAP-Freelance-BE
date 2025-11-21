@@ -28,4 +28,11 @@ export class ModuleEntity extends Model<ModuleEntity> {
 
   @HasMany(() => ModuleEntity, 'parent_id')
   subModules: ModuleEntity[];
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

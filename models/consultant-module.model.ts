@@ -37,4 +37,11 @@ export class ConsultantModule extends Model<ConsultantModule> {
 
   @BelongsTo(() => ModuleEntity)
   module: ModuleEntity;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

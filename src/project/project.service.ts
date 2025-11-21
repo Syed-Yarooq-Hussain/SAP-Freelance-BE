@@ -183,16 +183,17 @@ export class ProjectService {
     });
   }
 
-
-
-
-
+  
+  
+  
+  
   //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      TASK   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   // 🆕 CREATE TASK (always under milestone)
   async createTask(
     milestoneId: number,
     dto: CreateProjectTaskDto,
   ): Promise<ProjectTask> {
+    console.log(dto)
     if (!dto.name?.trim()) {
       throw new BadRequestException('Task name is required');
     }
@@ -245,4 +246,25 @@ export class ProjectService {
     return task;
   }
 
+  async deleteMilestone(id: number) {
+    const milestone = await this.milestoneRepo.findById(id);
+    if (!milestone) throw new NotFoundException(`Milestone with ID ${id} not found`);
+    return this.milestoneRepo.update(id, { deleted_at: new Date() });
+  }
+  async deleteTask(id: number) {
+    const task = await this.projectTaskRepo.findById(id);
+    if (!task) throw new NotFoundException(`Milestone with ID ${id} not found`);
+    if (task.deleted_at) throw new NotFoundException(`Task with ID ${id} is already deleted`);
+  
+  
+  
+  await task.update({
+    deleted_at: new Date(),
+  });
+  
+  return {
+    message: 'Task deleted successfully',
+    deleted_id: id,
+  };
+  }
 }

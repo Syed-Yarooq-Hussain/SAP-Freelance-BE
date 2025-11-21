@@ -30,4 +30,11 @@ export class MeetingInvitee extends Model<MeetingInvitee> {
 
   @BelongsTo(() => User)
   user: User;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

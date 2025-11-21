@@ -73,4 +73,11 @@ export class Consultant extends Model<Consultant> {
 
   @BelongsTo(() => User)
   user: User;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

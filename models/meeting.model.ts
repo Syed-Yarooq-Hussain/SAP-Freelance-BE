@@ -61,4 +61,11 @@ export class Meeting extends Model<Meeting> {
 
   @HasMany(() => MeetingInvitee)
   invitees: MeetingInvitee[];
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

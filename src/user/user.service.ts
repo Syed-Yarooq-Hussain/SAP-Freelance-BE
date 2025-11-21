@@ -5,6 +5,7 @@ import { User } from 'models/user.model';
 import { CreateUserDto } from './dto/create-user.dto';
 import { GetUsersDto } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Consultant } from 'models/consultant.model';
 
 @Injectable()
 export class UserService {
@@ -87,5 +88,48 @@ export class UserService {
     const user = await this.findOne(id);
     await user.destroy();
     return { message: `User with ID ${id} has been deleted` };
+  }
+   async getFilteredUsers(
+    experience?: number,
+    availability?: number,
+    budget?: number,
+    country?: string,
+  ): Promise<User[]> {
+    const where: any = {}; // For User model
+    const consultantWhere: any = {}; // For Consultant model
+
+    // 🌍 Country filter
+    if (country) {
+      where.country = { [Op.iLike]: `%${country}%` };
+    }
+
+    // 💼 Experience filter
+    if (experience) {
+      consultantWhere.experience = { [Op.gte]: experience }; // greater or equal
+    }
+
+    // ⏱ Availability filter
+    if (availability) {
+      consultantWhere.weekly_available_hours = { [Op.gte]: availability };
+    }
+
+    // 💰 Budget filter
+    if (budget) {
+      consultantWhere.rate = { [Op.lte]: budget }; // less or equal
+    }
+
+    // 🧠 Run Sequelize query with include
+    return await this.userModel.findAll({
+      where,
+      include: [
+        {
+          model: Consultant,
+          required: true, // Only return users with consultant data that matches filters
+          where: consultantWhere,
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
   }
 }

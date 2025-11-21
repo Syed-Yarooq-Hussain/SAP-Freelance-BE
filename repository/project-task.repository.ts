@@ -21,7 +21,7 @@ export class ProjectTaskRepository {
 
   // 🔍 Find task by ID
   async findById(id: number): Promise<ProjectTask | null> {
-    return this.projectTaskModel.findByPk(id);
+    return this.projectTaskModel.findOne({where: { id } });
   }
 
   // 🔎 Find tasks by project ID

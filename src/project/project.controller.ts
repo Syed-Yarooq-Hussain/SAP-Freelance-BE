@@ -132,4 +132,18 @@ export class ProjectController {
     return this.projectService.getTaskById(+taskId);
   }
 
+  @Delete('milestones/:milestoneId')
+  @ApiOperation({ summary: 'Delete milestone by ID' })
+  @ApiResponse({ status: 200, description: 'Milestone deleted successfully' })
+  deleteMilestone(@Param('milestoneId') milestoneId: string) {
+    return this.projectService.deleteMilestone(+milestoneId);
+  }
+
+  @Delete('tasks/:taskId')
+  @ApiOperation({ summary: 'Delete task by ID' })
+  @ApiResponse({ status: 200, description: 'Task deleted successfully' })
+  deleteTask(@Param('taskId') taskId: string) {
+    return this.projectService.deleteTask(+taskId);
+  }
+
 }

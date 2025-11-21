@@ -69,18 +69,25 @@ export class ProjectConsultant extends Model<ProjectConsultant> {
     field: 'booking_schedule',
   })
   booking_schedule?: object;
-
+  
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
     field: 'is_joic_signed',
   })
   is_joic_signed?: boolean;
-
+  
   @Column({
     type: DataType.INTEGER,
     allowNull: true,
     field: 'requested_hours',
   })
   requested_hours?: number;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }
