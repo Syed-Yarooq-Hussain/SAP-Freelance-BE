@@ -31,4 +31,11 @@ export class ProjectIndustry extends Model<ProjectIndustry> {
 
   @BelongsTo(() => Industries)
   industry: Industries;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

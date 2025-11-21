@@ -62,4 +62,11 @@ export class Project extends Model<Project> {
 
   @HasMany(() => ProjectPayment)
   payments: ProjectPayment[];
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

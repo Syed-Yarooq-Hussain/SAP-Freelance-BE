@@ -4,7 +4,7 @@ import { ProjectMilestone } from './project-milestone.model';
 import { Document } from './document.model';
 
 @Table({ tableName: 'project_payments', timestamps: false })
-export class ProjectPayment extends Model<ProjectPayment> {
+export class ProjectPayment extends Model<ProjectPayment> {  
   @Column({
     type: DataType.INTEGER,
     autoIncrement: true,
@@ -65,4 +65,11 @@ export class ProjectPayment extends Model<ProjectPayment> {
 
   @BelongsTo(() => Document)
   document: Document;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }
