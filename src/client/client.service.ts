@@ -1,17 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { User } from '../../models/user.model';
 import { UserRepository } from 'repository/user.repository';
+import { url } from 'inspector';
 
 @Injectable()
 export class ClientService {
-   constructor(
+  constructor(
     private readonly userRepository: UserRepository,
     @InjectModel(User)
     private userModel: typeof User
-  ) {}
+  ) { }
   // 🧩 Dummy Clients
   private clients = [
     { id: 1, name: 'Client A', email: 'a@example.com' },
@@ -38,10 +39,104 @@ export class ClientService {
     return this.clients;
   }
 
-  // ✅ Get client by ID
-  findOne(id: number) {
-    return this.clients.find((client) => client.id === id);
+  async findOne(id: number) {
+  const user = await this.userRepository.fetchClientDashboardData(id);
+
+  if (!user) throw new NotFoundException("User not found");
+
+  const plain = user.toJSON();
+
+  // -------------------------
+  // Extract payments
+  // -------------------------
+  const allPayments = [];
+  for (const project of plain.projects) {
+    if (project.payments?.length) {
+      project.payments.forEach(p => {
+        allPayments.push({
+          id: p.id,
+          amount: p.amount,
+          is_paid: p.is_paid,
+          project_id: project.id,
+          project_name: project.name,
+        });
+      });
+    }
   }
+
+  // -------------------------
+  // Calendar
+  // -------------------------
+  const sentMeetings = (plain.sentMeetings || []).map(m => ({
+    id: m.id,
+    date_time: m.date_time,
+    duration: m.duration,
+    event_type: m.event_type,
+    status: m.status,
+    url: m.url,
+    participants: m.invitees.map(i => i.user_id)
+  }));
+
+  const receivedMeetings = (plain.receivedInvites || []).map(inv => ({
+    id: inv.meeting.id,
+    date_time: inv.meeting.date_time,
+    duration: inv.meeting.duration,
+    event_type: inv.meeting.event_type,
+    status: inv.meeting.status,
+    participants: inv.meeting.invitees.map(i => i.user_id),
+  }));
+
+  const calendar = [...sentMeetings, ...receivedMeetings].sort(
+    (a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime()
+  );
+
+  // -------------------------
+  // Project formatting
+  // -------------------------
+  const projects = plain.projects.map(project => ({
+    id: project.id,
+    name: project.name,
+    company_name: project.company_name,
+    status: project.status,
+    projectDetails: project.projectDetails,
+    projectIndustries: project.projectIndustries,
+    projectConsultants: project.projectConsultants.map(c => ({
+      id: c.id,
+      consultant_id: c.consultant_id,
+      status: c.status,
+      role: c.role,
+      decided_rate: c.decided_rate,
+      requested_hours: c.requested_hours,
+      is_joic_signed: c.is_joic_signed,
+    })),
+    payments: project.payments.map(p => ({
+      id: p.id,
+      amount: p.amount,
+      is_paid: p.is_paid,
+      project_name: project.name
+    }))
+  }));
+
+  let statistic = {
+    numberOfProjects: projects.length,
+    meetingScheduled: calendar.length,
+    totalSpendingOnProject: 36,
+    totalPendingInvoices: 3600
+
+  }
+  return {
+    ...plain,
+    projects,
+    allPayments,
+    calendar,
+    statistic
+  };
+}
+
+
+
+
+
 
   // ✅ Update client
   update(id: number, dto: UpdateClientDto) {
@@ -58,12 +153,12 @@ export class ClientService {
   }
 
   // ✅ Get all consultants
- async getAllConsultants() {
-  const consultants = await this.userRepository.findAllUsersWithConsultants();
-  return consultants;
-}
+  async getAllConsultants() {
+    const consultants = await this.userRepository.findAllUsersWithConsultants();
+    return consultants;
+  }
 
- // ✅ Get consultant by ID
+  // ✅ Get consultant by ID
   getConsultantById(id: number) {
     const consultant = this.consultants.find((c) => c.id === id);
     if (!consultant) {

@@ -56,9 +56,11 @@ export class ProjectService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
+
     project.name = updateData.name ?? project.name;
     project.company_name = updateData.company_name ?? project.company_name;
     project.status = updateData.status ?? project.status;
+
     await this.projectRepo.update(id, project);
 
     const existingProjectDetail = await this.projectDetailrepository.findByProjectId(id);
@@ -72,15 +74,19 @@ export class ProjectService {
       paid_amount: updateData.paid_amount ?? existingProjectDetail?.paid_amount ?? 0,
     };
 
-    existingProjectDetail ? await this.projectDetailrepository.update(id, projectDetailpayload)
+    existingProjectDetail
+      ? await this.projectDetailrepository.update(id, projectDetailpayload)
       : await this.projectDetailrepository.create(projectDetailpayload);
 
-    return {
-      ...project,
-      projectDetail: projectDetailpayload
-    }
+    delete project.projectDetails;
+    // 🔥 Convert Sequelize model → clean JSON
+    const plainProject = project.toJSON();
 
+    return {
+      ...plainProject,
+        };
   }
+
 
   async updateProjectConsultantStatus(body: UpdateProjectConsultantStatusDto) {
     let IsConsultantExist = await this.projectConsultantRepo.findByProjectIdConsultantId(body.project_id, body.consultant_id);
@@ -230,7 +236,7 @@ export class ProjectService {
 
   // 📋 GET ALL TASKS UNDER A MILESTONE
   async getTaskByMilestone(milestoneId: number): Promise<ProjectMilestone> {
-    return await this.milestoneRepo.findByIdWithTasks( milestoneId );
+    return await this.milestoneRepo.findByIdWithTasks(milestoneId);
   }
 
   // 🔍 GET TASK BY ID

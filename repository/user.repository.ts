@@ -13,7 +13,7 @@ class UserRepository {
   async findAll(email: string): Promise<User[]> {
     return this.userModel.findAll();
   }
- 
+
   // 🟢 Get user including password
   async userLogin(email): Promise<User | null> {
     return this.userModel.findOne({
@@ -119,13 +119,53 @@ class UserRepository {
         {
           model: Consultant,
           where: consultantWhere,
-          required: true, // only those users jinke consultant match karein
+          required: true,
         },
       ],
       raw: true,
       nest: true,
     });
   }
+
+
+  async fetchClientDashboardData(userId: number) {
+    return await this.userModel.findByPk(userId, {
+      include: [
+        {
+          association: 'projects',
+          separate: true,
+          limit: 5,
+          order: [['id', 'DESC']],
+          include: [
+            { association: 'projectDetails' },
+            { association: 'payments', limit: 5, order: [['id', 'DESC']] },
+            { association: 'projectConsultants' },
+            { association: 'projectIndustries' },
+          ]
+        },
+        {
+          association: 'sentMeetings',
+          include: [
+            { association: 'invitees', attributes: ['user_id'] },
+            { association: 'project', attributes: ['name'] },
+          ]
+        },
+        {
+          association: 'receivedInvites',
+          include: [
+            {
+              association: 'meeting',
+              include: [
+                { association: 'invitees', attributes: ['user_id'] },
+                { association: 'project', attributes: ['name'] },
+              ]
+            }
+          ]
+        }
+      ]
+    });
+  }
+
 }
 
 export { UserRepository };

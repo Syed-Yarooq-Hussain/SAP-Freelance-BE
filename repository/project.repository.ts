@@ -34,8 +34,11 @@ export class ProjectRepository {
       include: [
       {
         association: 'projectDetails', 
+        
+      },{
+        association: 'client',
       }], 
-      raw: true
+      raw: false
     });
   }
 
