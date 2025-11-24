@@ -3,7 +3,7 @@ import { Project } from './project.model';
 import { ProjectMilestone } from './project-milestone.model';
 import { Document } from './document.model';
 
-@Table({ tableName: 'project_payments', timestamps: false })
+@Table({ tableName: 'project_payment', timestamps: false })
 export class ProjectPayment extends Model<ProjectPayment> {
   @Column({
     type: DataType.INTEGER,
@@ -51,11 +51,6 @@ export class ProjectPayment extends Model<ProjectPayment> {
   })
   is_paid: boolean;
 
-  @Column({
-    type: DataType.DATE,
-    defaultValue: DataType.NOW,
-  })
-  created_at: Date;
 
   @BelongsTo(() => Project)
   project: Project;

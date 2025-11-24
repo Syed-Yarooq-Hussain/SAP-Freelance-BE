@@ -1,4 +1,4 @@
-import {Table,Column,Model,DataType,ForeignKey,BelongsTo,HasMany, HasOne,} from 'sequelize-typescript';
+import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany, HasOne, } from 'sequelize-typescript';
 import { User } from './user.model';
 import { ProjectConsultant } from './project-consultant.model';
 import { ProjectIndustry } from './project-industries.model';
@@ -6,6 +6,7 @@ import { ProjectDetail } from './project-detail.model';
 import { ProjectMilestone } from './project-milestone.model';
 import { ProjectTask } from './project-task.model';
 import { ProjectPayment } from './project-payment.model';
+import { Meeting } from './meeting.model';
 @Table({ tableName: 'project', timestamps: false })
 export class Project extends Model<Project> {
   @Column({
@@ -43,7 +44,7 @@ export class Project extends Model<Project> {
 
   @BelongsTo(() => User)
   client: User;
-  
+
 
   @HasMany(() => ProjectConsultant)
   projectConsultants: ProjectConsultant[];
@@ -62,4 +63,8 @@ export class Project extends Model<Project> {
 
   @HasMany(() => ProjectPayment)
   payments: ProjectPayment[];
+
+  @HasMany(() => Meeting)
+  meetings: Meeting[];
+
 }

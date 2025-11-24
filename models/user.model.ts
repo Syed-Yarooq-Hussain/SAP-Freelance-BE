@@ -2,6 +2,8 @@ import { Table, Column, Model, DataType, HasMany, HasOne } from 'sequelize-types
 import { Consultant } from './consultant.model';
 import { Project } from './project.model';
 import { ProjectDetail } from './project-detail.model';
+import { Meeting } from './meeting.model';
+import { MeetingInvitee } from './meeting-invitee.model';
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -73,6 +75,12 @@ export class User extends Model<User> {
 
   @HasMany(() => Project)
   projects: Project[];
+
+  @HasMany(() => Meeting, 'sender_id')
+  sentMeetings: Meeting[];
+
+  @HasMany(() => MeetingInvitee, 'user_id')
+  receivedInvites: MeetingInvitee[];
 
   token: string;
 }

@@ -1,6 +1,7 @@
 import { Table, Column, Model, DataType, ForeignKey, BelongsTo, HasMany } from 'sequelize-typescript';
 import { User } from './user.model';
 import { MeetingInvitee } from './meeting-invitee.model';
+import { Project } from './project.model';
 
 @Table({ tableName: 'meetings', timestamps: false })
 export class Meeting extends Model<Meeting> {
@@ -52,6 +53,13 @@ export class Meeting extends Model<Meeting> {
   })
   event_type: string;
 
+  @ForeignKey(() => Project)
+  @Column({ type: DataType.INTEGER })
+  project_id: number;
+
+  @BelongsTo(() => Project)
+  project: Project;
+  
   @Column({
     type: DataType.DATE,
     allowNull: false,
