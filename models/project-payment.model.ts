@@ -60,4 +60,11 @@ export class ProjectPayment extends Model<ProjectPayment> {
 
   @BelongsTo(() => Document)
   document: Document;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

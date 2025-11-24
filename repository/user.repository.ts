@@ -79,17 +79,47 @@ class UserRepository {
       limit,
       order: [['created_at', 'DESC']],
     });
-
+    
     return { data: rows, total: count, page, limit };
   }
 
   async findAllUsersWithConsultants(): Promise<User[]> {
     return await this.userModel.findAll({
-      where: { role: 2 },
+      where: { role: 3 },
       include: [
         {
           model: Consultant,
           required: false,
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
+  }
+   async findFilteredUsers(
+    experience?: number,
+    availability?: number,
+    budget?: number,
+    country?: string,
+  ): Promise<User[]> {
+    const where: any = {};
+
+    // 💼 Country
+    if (country) where.country = { [Op.iLike]: `%${country}%` };
+
+    // Consultant-based filters
+    const consultantWhere: any = {};
+    if (experience) consultantWhere.experience = { [Op.gte]: experience };
+    if (availability) consultantWhere.weekly_available_hours = { [Op.gte]: availability };
+    if (budget) consultantWhere.rate = { [Op.lte]: budget };
+
+    return await this.userModel.findAll({
+      where,
+      include: [
+        {
+          model: Consultant,
+          where: consultantWhere,
+          required: true,
         },
       ],
       raw: true,

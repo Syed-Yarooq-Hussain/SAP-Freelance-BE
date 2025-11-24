@@ -2,7 +2,7 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { ProjectMilestone } from './project-milestone.model';
 
 @Table({ tableName: 'milestone_docs', timestamps: false })
-export class MilestoneDocs extends Model<MilestoneDocs> {
+export class MilestoneDocs extends Model<MilestoneDocs> {  
   @Column({
     type: DataType.INTEGER,
     autoIncrement: true,
@@ -37,4 +37,11 @@ export class MilestoneDocs extends Model<MilestoneDocs> {
 
   @BelongsTo(() => ProjectMilestone)
   milestone: ProjectMilestone;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }

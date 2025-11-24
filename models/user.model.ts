@@ -66,9 +66,9 @@ export class User extends Model<User> {
   @Column({
     type: DataType.STRING,
     allowNull: true,
-    defaultValue: 'active',
+    defaultValue: 1 || 'active',
   })
-  status: string;
+  status: string | number;
 
   @HasOne(() => Consultant)
   consultants: Consultant;
@@ -83,4 +83,11 @@ export class User extends Model<User> {
   receivedInvites: MeetingInvitee[];
 
   token: string;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  deleted_at: Date | null;
 }
