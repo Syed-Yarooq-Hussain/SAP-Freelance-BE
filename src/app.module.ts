@@ -23,6 +23,7 @@ import { ConsultantModule } from './consultant/consultant.module';
 import { CommonModule } from './utility/common.module';
 import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
+import { PdfModule } from './common/pdf/pdf.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { MeetingInvitee } from 'models/meeting-invitee.model';
         MeetingInvitee
       ],
     }),
+    PdfModule,
     CommonModule,
     PassportModule,
     UserModule,
