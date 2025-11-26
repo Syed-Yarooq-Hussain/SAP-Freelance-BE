@@ -15,6 +15,7 @@ import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import { CreateProjectTaskDto, UpdateProjectTaskDto } from './dto/project_task.dto';
 import { ProjectTask } from 'models/project-task.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class ProjectService {
@@ -177,11 +178,20 @@ export class ProjectService {
     return this.paymentRepo.create(data);
   }
 
-  async getProjectPayments(projectId: number) {
-    return this.paymentRepo.findAll({
-      where: { project_id: projectId },
-    });
-  }
+async getProjectPayments(projectId: number) {
+  const project = await this.projectRepo.findById(projectId);
+  if (!project) {throw new NotFoundException(`Project with ID ${projectId} not found`);}
+  const payments = await this.paymentRepo.findAll({
+    where: { project_id: projectId },
+    include: [
+      {
+        model: Project,
+        attributes: ['id', 'name', 'status', 'company_name'], 
+      },
+    ],
+  });
+  return payments;
+}
 
   
   
