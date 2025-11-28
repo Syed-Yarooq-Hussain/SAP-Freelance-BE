@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { AllExceptionsFilter } from './config/allexceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   dotenv.config();
@@ -12,6 +14,9 @@ async function bootstrap() {
   app.enableCors({ origin: '*' });
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
+
+app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
+
 
   const options = new DocumentBuilder()
     .setTitle('SAP-freelance-portal-api')

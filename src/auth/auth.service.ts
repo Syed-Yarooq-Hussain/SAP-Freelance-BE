@@ -28,7 +28,7 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
     username: consultantDto.user.username,
     email: consultantDto.user.email,
     password: hashedPassword,
-    role: Number(consultantDto.user.role) || 3,
+    role: Number(consultantDto.user.role) || 2,
     status: consultantDto.user.status === 'active' ? 1 : 0,
     phone: consultantDto.user.phone || null,
     currency: consultantDto.user.currency || 'USD',
