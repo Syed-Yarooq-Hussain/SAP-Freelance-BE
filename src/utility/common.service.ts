@@ -3,11 +3,12 @@ import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
-import { MEETING_STATUS_ARRAY } from 'constant/enums';
+import { ConsultantStatus, MEETING_STATUS_ARRAY } from 'constant/enums';
+import { UserRepository } from 'repository/user.repository';
 
 @Injectable()
 export class CommonService {
-  constructor(private readonly meetingRepo: MeetingRepository) {}
+  constructor(private readonly meetingRepo: MeetingRepository, private readonly userRepo: UserRepository) {}
   private industry = [
     {id:1, name:"Information tecnology"},
     {id:2, name:"Healthcare"}
@@ -50,6 +51,13 @@ export class CommonService {
   } 
 
   async sendInvite(dto: CreateMeetingDto, sender_id: number) {
+
+  if(dto.event_type === 'Meeting') {
+    for (const userId of dto.invitees_id) {
+      await this.userRepo.updateUser(userId, {status: ConsultantStatus.INTERVIEW_SCHEDULED});
+    }
+
+  }
 
   const meeting = await this.meetingRepo.createMeeting({
     sender_id,

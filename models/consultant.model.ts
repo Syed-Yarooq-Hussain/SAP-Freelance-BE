@@ -67,10 +67,6 @@ export class Consultant extends Model<Consultant> {
   })
   career_details: string;
 
-  // Relations
-  @BelongsTo(() => ModuleEntity)
-  module: string;
-
   @BelongsTo(() => User)
   user: User;
 

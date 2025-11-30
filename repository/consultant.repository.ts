@@ -14,7 +14,6 @@ export class ConsultantRepository {
 async createDetail(dto: any, userId: number) {
   return this.consultantModel.create({
     user_id: userId,
-    module: dto.module,
     experience: dto.experience,
     rate: dto.rate,
     weekly_available_hours: dto.weekly_available_hours,

@@ -12,7 +12,7 @@ export class ClientController {
 
   // ✅ Get all consultants
   @Get('consultants')
-  @ApiOperation({ summary: 'Get all consultants' })
+  @ApiOperation({ summary: '+ all consultants' })
   getAllConsultants() {
     console.log('Fetching all consultants');
     return this.clientService.getAllConsultants();

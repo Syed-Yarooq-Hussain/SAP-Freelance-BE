@@ -134,10 +134,6 @@ export class ClientService {
 }
 
 
-
-
-
-
   // ✅ Update client
   update(id: number, dto: UpdateClientDto) {
     const index = this.clients.findIndex((c) => c.id === id);
@@ -155,7 +151,26 @@ export class ClientService {
   // ✅ Get all consultants
   async getAllConsultants() {
     const consultants = await this.userRepository.findAllUsersWithConsultants();
-    return consultants;
+    let consultantList = [];
+    for(const consultant of consultants){
+      let modules = {core:'',others:''};
+      for(const mod of consultant.modules){
+        if(mod.module.is_core) 
+          modules.core += mod.module.name + ', ';
+        else 
+          modules.others += mod.module.name + ' ';
+      }
+      consultantList.push({
+        id: consultant.id,
+        name: consultant.username,
+        experience: consultant.consultants.experience,
+        rate: consultant.consultants.rate,
+        weekly_available_hours: consultant.consultants.weekly_available_hours,
+        working_schedule: consultant.consultants.working_schedule,
+        modules
+      });
+    }
+    return consultantList;
   }
 
   // ✅ Get consultant by ID
