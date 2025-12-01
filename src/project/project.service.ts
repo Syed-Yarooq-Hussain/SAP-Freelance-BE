@@ -96,23 +96,27 @@ export class ProjectService {
     if (!IsConsultantExist) {
       throw new NotFoundException(`Consultant with ID ${body.consultant_id} not found in project ID ${body.project_id}`);
     }
-    if (body.status == ConsultantStatus.HIRED) {
+    let where = { project_id: body.project_id, consultant_id: body.consultant_id };
+    if (body.status == ConsultantStatus.OFFERED) {
       //Todo: send NDA 
       //Todo: send email
       //set user role as well 
+      await this.projectConsultantRepo.update(where, { role: body.role ?? 'consultant', status: body.status, booking_schedule: body.booking_schedule ?? null });
     } else if (body.status == ConsultantStatus.REJECTED) {
       //Todo: send rejection email
     }
-    return await this.projectConsultantRepo.update(IsConsultantExist.id, { status: body.status });
+    return await this.projectConsultantRepo.update(where, { status: body.status });
 
   }
 
   async updateProjectConsultantRole(body: UpdateProjectConsultantStatusDto) {
+    console.log("service role dto", body)
     let IsConsultantExist = await this.projectConsultantRepo.findByProjectIdConsultantId(body.project_id, body.consultant_id);
     if (!IsConsultantExist) {
       throw new NotFoundException(`Consultant with ID ${body.consultant_id} not found in project ID ${body.project_id}`);
     }
-    return await this.projectConsultantRepo.update(IsConsultantExist.id, { role: body.role });
+    let where = { project_id: body.project_id, consultant_id: body.consultant_id };
+    return await this.projectConsultantRepo.update(where, { role: body.role ?? null, booking_schedule: body.booking_schedule ?? null });
   }
 
   async deleteProject(id: number) {

@@ -30,6 +30,7 @@ export enum ConsultantStatus {
   INTERVIEW_DONE = 'interviewed',
   HIRED = 'hired',
   REJECTED = 'rejected',
+  OFFERED = 'offered',
 }
 export const CONSULTANT_STATUS_ARRAY = Object.values(ConsultantStatus);
 
@@ -40,3 +41,11 @@ export enum ConsultantLevel {
   LEAD = 'lead',
 }
 export const CONSULTANT_LEVEL_ARRAY = Object.values(ConsultantLevel);
+
+export enum MeetingType {
+  INTERVIEW = 'interview',
+  ADMIN_MEETING = 'admin_meeting',
+  PROJECT_MEETING = 'project_meeting',
+}
+
+export const MEETING_TYPE_ARRAY = Object.values(MeetingType);

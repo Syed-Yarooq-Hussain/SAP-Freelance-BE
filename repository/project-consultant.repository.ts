@@ -67,11 +67,11 @@ export class ProjectConsultantRepository {
 
   // 🧠 Consultant update karne ke liye
   async update(
-    id: number,
+    option: any,
     data: Partial<ProjectConsultant>,
   ): Promise<[number, ProjectConsultant[]]> {
     return this.projectConsultantModel.update(data, {
-      where: { id },
+      where: option,
       returning: true,
     });
   }

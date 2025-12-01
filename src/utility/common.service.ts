@@ -3,12 +3,14 @@ import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
-import { ConsultantStatus, MEETING_STATUS_ARRAY } from 'constant/enums';
-import { UserRepository } from 'repository/user.repository';
+import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
+import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 
 @Injectable()
 export class CommonService {
-  constructor(private readonly meetingRepo: MeetingRepository, private readonly userRepo: UserRepository) {}
+  constructor(
+    private readonly meetingRepo: MeetingRepository, 
+    private readonly projectConsultantRepo: ProjectConsultantRepository) {}
   private industry = [
     {id:1, name:"Information tecnology"},
     {id:2, name:"Healthcare"}
@@ -52,9 +54,10 @@ export class CommonService {
 
   async sendInvite(dto: CreateMeetingDto, sender_id: number) {
 
-  if(dto.event_type === 'Meeting') {
+  if(dto.event_type.toLowerCase() === MeetingType.INTERVIEW) {
     for (const userId of dto.invitees_id) {
-      await this.userRepo.updateUser(userId, {status: ConsultantStatus.INTERVIEW_SCHEDULED});
+      const where= { project_id: dto.project_id, consultant_id: userId }; 
+      await this.projectConsultantRepo.update(where, {status: ConsultantStatus.INTERVIEW_SCHEDULED});
     }
 
   }
