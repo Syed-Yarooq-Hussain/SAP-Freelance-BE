@@ -107,7 +107,7 @@ export class ClientService {
       role: c.role,
       decided_rate: c.decided_rate,
       requested_hours: c.requested_hours,
-      is_joic_signed: c.is_joic_signed,
+      is_doc_signed: c.is_doc_signed,
     })),
     payments: project.payments.map(p => ({
       id: p.id,

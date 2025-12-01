@@ -11,19 +11,6 @@ export class Consultant extends Model<Consultant> {
   })
   id: number;
 
-  @ForeignKey(() => ModuleEntity)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  module_id: number;
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  level_id: number;
-
   @Column({
     type: DataType.STRING,
     allowNull: true,

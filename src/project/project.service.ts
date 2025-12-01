@@ -16,6 +16,8 @@ import { CreateProjectTaskDto, UpdateProjectTaskDto } from './dto/project_task.d
 import { ProjectTask } from 'models/project-task.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
 import { Project } from 'models/project.model';
+import { transformProjectConsultant } from './transformers/project-consultant-transformer';
+import { GetConsultantsQueryDto } from './dto/get-query.dto';
 
 @Injectable()
 export class ProjectService {
@@ -85,7 +87,7 @@ export class ProjectService {
 
     return {
       ...plainProject,
-        };
+    };
   }
 
 
@@ -130,7 +132,7 @@ export class ProjectService {
           status: 'shortlisted',
           decided_rate: 0,
           booking_schedules: null,
-          is_joic_signed: false,
+          is_doc_signed: false,
         }
 
         await this.projectConsultantRepo.create(projectConsultant);
@@ -144,67 +146,78 @@ export class ProjectService {
 
   }
 
-  async getProjectConsultants(projectId: number, status: string[] = ['shortlisted']) {
-    return this.projectConsultantRepo.findAll({
-      where: { project_id: projectId, status: { [Op.in]: status } },
-    });
-  }
+  async getProjectConsultants(projectId: number, query: GetConsultantsQueryDto) {
+    const where: any = { project_id: projectId };
+
+    if (query.status && query.status.length > 0) {
+      let statuses = query.status.split(',').map(s => s.trim());
+      where.status = { [Op.in]: statuses };
+    }
+
+      let proj_consultants = await this.projectConsultantRepo.findAll({
+        where,
+      });
+
+      return transformProjectConsultant(proj_consultants);
+
+
+    }
 
   async getProjectIndustries(projectId: number) {
-    return this.industryRepo.findAll({
-      where: { project_id: projectId },
-    });
-  }
+      return this.industryRepo.findAll({
+        where: { project_id: projectId },
+      });
+    }
 
   async addMilestone(data: CreateProjectMilestoneDto) {
-    return this.milestoneRepo.create(data);
-  }
+      return this.milestoneRepo.create(data);
+    }
 
   async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
-    let isMMilestoneExist = await this.milestoneRepo.findById(id);
-    if (!isMMilestoneExist) {
-      throw new NotFoundException(`Milestone with ID ${id} not found`);
+      let isMMilestoneExist = await this.milestoneRepo.findById(id);
+      if (!isMMilestoneExist) {
+        throw new NotFoundException(`Milestone with ID ${id} not found`);
+      }
+      return this.milestoneRepo.update(id, data);
     }
-    return this.milestoneRepo.update(id, data);
-  }
 
   async getProjectMilestones(projectId: number) {
-    return this.milestoneRepo.findAll({
-      where: { project_id: projectId },
-    });
-  }
+      return this.milestoneRepo.findAll({
+        where: { project_id: projectId },
+      });
+    }
 
   async addPayment(data: any) {
-    return this.paymentRepo.create(data);
-  }
+      return this.paymentRepo.create(data);
+    }
 
 async getProjectPayments(projectId: number) {
-  const project = await this.projectRepo.findById(projectId);
-  if (!project) {throw new NotFoundException(`Project with ID ${projectId} not found`);}
-  const payments = await this.paymentRepo.findAll({
-    where: { project_id: projectId },
-    include: [
-      {
-        model: Project,
-        attributes: ['id', 'name', 'status', 'company_name'], 
-      },
-    ],
-  });
-  return payments;
-}
+      const project = await this.projectRepo.findById(projectId);
+      if (!project) { throw new NotFoundException(`Project with ID ${projectId} not found`); }
+      const payments = await this.paymentRepo.findAll({
+        where: { project_id: projectId },
+        include: [
+          {
+            model: Project,
+            attributes: ['id', 'name', 'status', 'company_name'],
+          },
+        ],
+      });
+      return payments;
+    }
 
-  
-  
-  
-  
+
+
+
+
   //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      TASK   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   // 🆕 CREATE TASK (always under milestone)
   async createTask(
-    milestoneId: number,
-    dto: CreateProjectTaskDto,
-  ): Promise<ProjectTask> {
-    console.log(dto)
-    if (!dto.name?.trim()) {
+      milestoneId: number,
+      dto: CreateProjectTaskDto,
+    ): Promise < ProjectTask > {
+      console.log(dto)
+    if(!dto.name?.trim()) {
       throw new BadRequestException('Task name is required');
     }
 
@@ -265,16 +278,16 @@ async getProjectPayments(projectId: number) {
     const task = await this.projectTaskRepo.findById(id);
     if (!task) throw new NotFoundException(`Milestone with ID ${id} not found`);
     if (task.deleted_at) throw new NotFoundException(`Task with ID ${id} is already deleted`);
-  
-  
-  
-  await task.update({
-    deleted_at: new Date(),
-  });
-  
-  return {
-    message: 'Task deleted successfully',
-    deleted_id: id,
-  };
+
+
+
+    await task.update({
+      deleted_at: new Date(),
+    });
+
+    return {
+      message: 'Task deleted successfully',
+      deleted_id: id,
+    };
   }
 }
