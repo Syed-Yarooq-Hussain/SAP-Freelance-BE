@@ -32,7 +32,7 @@ import { PdfModule } from './common/pdf/pdf.module';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'root',
+      password: 'admin',
       database: 'sap_freelancer_portal',
       autoLoadModels: true,
       synchronize: false,
