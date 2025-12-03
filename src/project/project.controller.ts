@@ -142,10 +142,4 @@ export class ProjectController {
   deleteTask(@Param('taskId') taskId: string) {
     return this.projectService.deleteTask(+taskId);
   }
-
-  @Get(':id/payments')
-  @ApiOperation({ summary: 'Get project payments' })
-  getProjectPayments(@Param('id') id: string) {
-    return this.projectService.getProjectPayments(+id);
-  }
 }
