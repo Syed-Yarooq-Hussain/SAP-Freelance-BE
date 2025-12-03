@@ -4,12 +4,16 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { User } from '../../models/user.model';
 import { UserRepository } from 'repository/user.repository';
+import { ProjectRepository } from 'repository/project.repository';
+import { ProjectPaymentRepository} from 'repository/project-payment.repository';
 import { url } from 'inspector';
 
 @Injectable()
 export class ClientService {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly projectRepository: ProjectRepository,
+    private readonly projectPaymentRepository: ProjectPaymentRepository,
     @InjectModel(User)
     private userModel: typeof User
   ) { }
@@ -181,4 +185,26 @@ export class ClientService {
     }
     return consultant;
   }
+
+  async getAllProjectByClientId(user_id: number) {
+    let projects = await this.projectRepository.findAllByClient(user_id);
+     const projectsWithMembers = projects.map(project => ({
+      ...project,
+      members: 3,
+    }));
+
+    return projectsWithMembers;
+  }
+
+
+  async getAllProjectsPaymentsByClientId(client_id: number) {
+    let payments= await this.projectPaymentRepository.projectPaymentsByClientId(client_id);
+    const paymentsWithDueDate = payments.map(payments => ({
+      ...payments,
+      due_date: '2026-02-28T14:30:00.000Z',
+    }));
+    return paymentsWithDueDate;
+
+  }
+
 }

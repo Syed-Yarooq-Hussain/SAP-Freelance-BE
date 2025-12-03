@@ -25,6 +25,7 @@ export function transformProjectConsultant(project_consultants_list: any) {
             weekly_available_hours: pc.user.consultants.weekly_available_hours,
             working_schedule: pc.user.consultants.working_schedule,
             modules,
+            interview_date: '2026-02-28T14:30:00.000Z'
         })
     }
 

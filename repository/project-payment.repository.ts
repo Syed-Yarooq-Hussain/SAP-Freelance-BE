@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectPayment } from '../models/project-payment.model';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class ProjectPaymentRepository {
@@ -25,9 +26,19 @@ export class ProjectPaymentRepository {
   }
 
   // 🔎 Find payments by project ID
-  async findByProjectId(project_id: number): Promise<ProjectPayment[]> {
-    return this.projectPaymentModel.findAll({ where: { project_id } });
-  }
+  async projectPaymentsByClientId(client_id: number): Promise<ProjectPayment[] | null> {
+  return this.projectPaymentModel.findAll({
+    include: [
+      {
+        model: Project,
+        as: 'project', 
+        where: { client_id },
+      },
+    ],
+    raw: true,
+    nest: true,
+  });
+}
 
   // 🧠 Update payment record
   async update(

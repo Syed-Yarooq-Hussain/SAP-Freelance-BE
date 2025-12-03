@@ -42,10 +42,6 @@ export class ProjectService {
     });
   }
 
-  async getProjects() {
-    return this.projectRepo.findAll();
-  }
-
   async getProjectById(id: number) {
     const project = await this.projectRepo.findById(id);
     if (!project) {
@@ -196,8 +192,7 @@ export class ProjectService {
     }
 
 async getProjectPayments(projectId: number) {
-      const project = await this.projectRepo.findById(projectId);
-      if (!project) { throw new NotFoundException(`Project with ID ${projectId} not found`); }
+
       const payments = await this.paymentRepo.findAll({
         where: { project_id: projectId },
         include: [

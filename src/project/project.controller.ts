@@ -22,13 +22,6 @@ export class ProjectController {
     return this.projectService.createProject(req.user);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all projects' })
-  @ApiResponse({ status: 200, description: 'List of all projects' })
-  findAll() {
-    return this.projectService.getProjects();
-  }
-
   @Get(':id')
   @ApiOperation({ summary: 'Get project by ID' })
   @ApiResponse({ status: 200, description: 'Project details' })

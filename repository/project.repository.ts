@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Project } from '../models/project.model';
+import { ProjectPayment } from 'models/project-payment.model';
 
 @Injectable()
 export class ProjectRepository {
@@ -15,16 +16,14 @@ export class ProjectRepository {
   }
 
   // 📋 Sab projects get karne ke liye
-  async findAll(): Promise<Project[]> {
+  async findAllByClient(user_id: number): Promise<Project[]> {
     return this.projectModel.findAll({
+      where: { client_id: user_id },
       include: [
-        'projectConsultants',
-        'projectIndustries',
         'projectDetails',
-        'milestones',
-        'tasks',
-        'payments',
       ],
+      raw: true,
+      nest: true,
     });
   }
 
@@ -42,12 +41,12 @@ export class ProjectRepository {
     });
   }
 
-  // 🔎 Client ID ke zariye projects laane ke liye
+  // 🔎 Client ID  projects
   async findByClientId(client_id: number): Promise<Project[]> {
     return this.projectModel.findAll({ where: { client_id } });
   }
 
-  // 🧠 Project update karne ke liye
+  // 🧠 Project update 
   async update(
     id: number,
     data: Partial<Project>,
@@ -62,4 +61,17 @@ export class ProjectRepository {
   async delete(id: number): Promise<number> {
     return this.projectModel.destroy({ where: { id } });
   }
+
+  async projectPaymentsByClientId(client_id: number): Promise<Project[] | null> {
+    return this.projectModel.findAll({
+      where: { client_id },
+      include: [
+        {
+          model: ProjectPayment,
+          as: 'payments',
+        },
+      ],
+    });
+  }
+
 }

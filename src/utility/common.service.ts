@@ -1,10 +1,11 @@
-import { Injectable} from '@nestjs/common';
+import { Injectable, NotFoundException} from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
 import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
+import { getAllMeetingResponse } from './transformer/meeting.transformer';
 
 @Injectable()
 export class CommonService {
@@ -35,10 +36,7 @@ export class CommonService {
   }
   
   getMeetingStatus() {
-    return{
-      message: "list of meeting status fetched successfully",
-      data: MEETING_STATUS_ARRAY
-    };
+    return MEETING_STATUS_ARRAY
   }
 
   // 🔹 Update entry by ID
@@ -104,5 +102,11 @@ async updateMeetingStatus(meetingId: number, status: string) {
     meeting,
   };
 }
+
+async getAllMeeting(userId: number) {
+    const meetings = await this.meetingRepo.getMeetingWithDetails(userId);
+    const transformedData = getAllMeetingResponse(meetings)
+    return transformedData
+  }
 
 }

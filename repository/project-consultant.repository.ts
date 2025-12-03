@@ -5,6 +5,7 @@ import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
