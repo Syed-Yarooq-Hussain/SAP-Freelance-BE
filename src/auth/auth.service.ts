@@ -8,6 +8,7 @@ import { ConsultantRepository } from '../../repository/consultant.repository';
 import { UserRepository } from '../../repository/user.repository';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UserRole } from 'constant/enums';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +29,7 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
     username: consultantDto.user.username,
     email: consultantDto.user.email,
     password: hashedPassword,
-    role: Number(consultantDto.user.role) || 2,
+    role: +UserRole.CONSULTANT,
     status: consultantDto.user.status === 'active' ? 1 : 0,
     phone: consultantDto.user.phone || null,
     currency: consultantDto.user.currency || 'USD',
@@ -70,7 +71,7 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
       username: userDto.username, // ✅ username instead of name
       email: userDto.email,
       password: hashedPassword,
-      role: 2, 
+      role: +UserRole.CLIENT, 
       status: 1 || "active",
       phone: userDto.phone || null,
       currency: userDto.currency || 'USD',

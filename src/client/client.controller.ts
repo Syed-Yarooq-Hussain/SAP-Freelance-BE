@@ -12,7 +12,7 @@ export class ClientController {
 
   // ✅ Get all consultants
   @Get('consultants')
-  @ApiOperation({ summary: 'Get all consultants' })
+  @ApiOperation({ summary: '+ all consultants' })
   getAllConsultants() {
     console.log('Fetching all consultants');
     return this.clientService.getAllConsultants();
@@ -53,12 +53,24 @@ export class ClientController {
     return this.clientService.remove(+id);
   }
 
-
-
   // ✅ Get consultant by ID
   @Get('consultants/:id')
   @ApiOperation({ summary: 'Get consultant by ID' })
   getConsultantById(@Param('id') id: string) {
     return this.clientService.getConsultantById(+id);
+  }
+
+
+  @Get('projects')
+  @UseGuards(AuthGuard('jwt'))
+  getAllProjects(@Req() req) {
+    return this.clientService.getAllProjectByClientId(req.user.id);
+  }
+  
+  
+  @Get('payments')
+  @UseGuards(AuthGuard('jwt'))
+  getAllProjectsPayments(@Req() req) {
+    return this.clientService.getAllProjectsPaymentsByClientId(req.user.id);
   }
 }

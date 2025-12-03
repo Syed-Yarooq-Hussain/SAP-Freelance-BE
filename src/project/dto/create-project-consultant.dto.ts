@@ -24,12 +24,11 @@ export class CreateProjectConsultantDto {
 
 
 export class UpdateProjectConsultantStatusDto {
-  
-  @ApiProperty({description: 'Consultant ID',  })
+  @ApiProperty({ description: 'Consultant ID' })
   @IsNumber()
   consultant_id: number;
 
-  @ApiProperty({description: 'Project ID',  })
+  @ApiProperty({ description: 'Project ID' })
   @IsNumber()
   project_id: number;
 
@@ -43,11 +42,22 @@ export class UpdateProjectConsultantStatusDto {
 
   @ApiProperty({
     description: 'Set role for the consultant in the project',
-    example: 'Junior',  })
+    example: 'Junior',
+  })
   @IsOptional()
   @IsString()
   role?: string;
+
+  @ApiProperty({
+    description: 'Booking schedule for the consultant (optional)',
+    example: { weekdays: [{ day: 'Monday', start: '09:00', end: '17:00', active: true }] },
+    required: false,
+    type: Object,
+  })
+  @IsOptional()
+  booking_schedule?: any; // ya object type rakh sakte ho
 }
+
 
 
 export class UpdateProjectConsultantRoleDto {
