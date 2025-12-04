@@ -90,6 +90,13 @@ export class ProjectController {
   addMilestone(@Param('id') projectId: string, @Body() body: CreateProjectMilestoneDto) {
     return this.projectService.addMilestone({ ...body, project_id: +projectId });
   }
+
+  @Get(':id/milestones')
+  @ApiOperation({ summary: 'Add project milestone' })
+  @ApiBody({ type: CreateProjectMilestoneDto })
+  getProjectMilestone(@Param('id') projectId: string) {
+    return this.projectService.getMilestonesByProject(+projectId);
+  }
   
   @Put('milestones/:id')
   @ApiOperation({ summary: 'Update project milestone' })
