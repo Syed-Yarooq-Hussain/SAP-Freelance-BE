@@ -8,9 +8,9 @@ export enum MeetingStatus {
 export const MEETING_STATUS_ARRAY = Object.values(MeetingStatus)
 
 export enum UserRole {
-  ADMIN = 'admin',
-  CONSULTANT = 'consultant',
-  CLIENT = 'client',
+  ADMIN = 3,
+  CONSULTANT = 2,
+  CLIENT = 1
 }
 
 export const USER_ROLE_ARRAY = Object.values(UserRole); 
@@ -26,9 +26,11 @@ export const PROJECT_STATUS_ARRAY = Object.values(ProjectStatus);
 
 export enum ConsultantStatus {
   SHORTLISTED = 'shortlisted',
-  INTERVIEW_SCHEDULED = 'interviewed',
+  INTERVIEW_SCHEDULED = 'interview-schedule',
+  INTERVIEW_DONE = 'interviewed',
   HIRED = 'hired',
   REJECTED = 'rejected',
+  OFFERED = 'offered',
 }
 export const CONSULTANT_STATUS_ARRAY = Object.values(ConsultantStatus);
 
@@ -39,3 +41,11 @@ export enum ConsultantLevel {
   LEAD = 'lead',
 }
 export const CONSULTANT_LEVEL_ARRAY = Object.values(ConsultantLevel);
+
+export enum MeetingType {
+  INTERVIEW = 'interview',
+  ADMIN_MEETING = 'admin_meeting',
+  PROJECT_MEETING = 'project_meeting',
+}
+
+export const MEETING_TYPE_ARRAY = Object.values(MeetingType);

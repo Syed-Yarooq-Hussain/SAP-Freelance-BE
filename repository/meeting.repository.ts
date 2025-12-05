@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Meeting } from '../models/meeting.model';
 import { MeetingInvitee } from '../models/meeting-invitee.model';
+import { User } from 'models/user.model';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class MeetingRepository {
@@ -42,5 +44,31 @@ export class MeetingRepository {
 
   async getInvitees(meetingId: number): Promise<MeetingInvitee[]> {
     return this.inviteeModel.findAll({ where: { meeting_id: meetingId } });
+  }
+
+  async getMeetingWithDetails(user_id: number) {
+    return this.meetingModel.findAll({
+      where: { sender_id: user_id, deleted_at: null },
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'email'],
+        },
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+        },
+        {
+          model: MeetingInvitee,
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'username', 'email'],
+            },
+          ],
+        },
+      ],
+    });
   }
 }

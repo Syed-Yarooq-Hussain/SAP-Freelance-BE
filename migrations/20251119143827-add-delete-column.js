@@ -20,6 +20,7 @@ module.exports = {
       "users",
       "meetings",
       "meeting_invitees",
+      "chat",
     ];
 
     for (const table of tables) {
@@ -50,6 +51,7 @@ module.exports = {
       "users",
       "meetings",
       "meeting_invitees",
+      "chat",
     ];
 
     for (const table of tables) {

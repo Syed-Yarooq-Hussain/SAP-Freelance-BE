@@ -1,9 +1,11 @@
-import { Table, Column, Model, DataType, HasMany, HasOne } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, HasMany, HasOne, BelongsTo } from 'sequelize-typescript';
 import { Consultant } from './consultant.model';
 import { Project } from './project.model';
 import { ProjectDetail } from './project-detail.model';
 import { Meeting } from './meeting.model';
 import { MeetingInvitee } from './meeting-invitee.model';
+import { ModuleEntity } from './module.model';
+import { ConsultantModule } from './consultant-module.model';
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -90,4 +92,8 @@ export class User extends Model<User> {
     defaultValue: null,
   })
   deleted_at: Date | null;
+
+
+  @HasMany(() => ConsultantModule)
+  modules: ConsultantModule[];
 }

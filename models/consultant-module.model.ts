@@ -1,6 +1,7 @@
 import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
 import { Consultant } from './consultant.model';
 import { ModuleEntity } from './module.model';
+import { User } from './user.model';
 
 @Table({ tableName: 'consultant_module', timestamps: false })
 export class ConsultantModule extends Model<ConsultantModule> {
@@ -11,12 +12,12 @@ export class ConsultantModule extends Model<ConsultantModule> {
   })
   id: number;
 
-  @ForeignKey(() => Consultant)
+  @ForeignKey(() => User)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  consultant_id: number;
+  user_id: number;
 
   @ForeignKey(() => ModuleEntity)
   @Column({
@@ -32,8 +33,8 @@ export class ConsultantModule extends Model<ConsultantModule> {
   is_primary: boolean;
 
   // Relations
-  @BelongsTo(() => Consultant)
-  consultant: Consultant;
+  @BelongsTo(() => User)
+  user: User;
 
   @BelongsTo(() => ModuleEntity)
   module: ModuleEntity;

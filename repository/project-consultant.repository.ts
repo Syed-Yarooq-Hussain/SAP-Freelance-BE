@@ -3,6 +3,9 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ProjectConsultant } from '../models/project-consultant.model';
 import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -16,19 +19,33 @@ export class ProjectConsultantRepository {
     return this.projectConsultantModel.create(data);
   }
 
-  async findAll(options?: any, status: string = 'shortlisted'): Promise<ProjectConsultant[]> {
+  async findAll(options?: any): Promise<ProjectConsultant[]> {
   return this.projectConsultantModel.findAll({
     ...options,
+    attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'id'],
     include: [
       {
         model: User,
-        as: 'user',
-        include: [
-          {
-            model: Consultant,
-            as: 'consultants',
-          },
-        ],
+        attributes: ['id', 'username'],
+          include: [
+            {
+              model: Consultant,
+              required: true,
+              attributes: [ 'weekly_available_hours', 'rate', 'experience', 'working_schedule' ],
+            },
+            {
+              model: ConsultantModule,
+              required: false,
+              attributes: ['id'],
+              include: [
+                {
+                  model: ModuleEntity,
+                  required: false,
+                  attributes: ['id', 'name', 'is_core'],
+                },
+              ],
+            },
+          ],
       },
     ],
   });
@@ -51,11 +68,11 @@ export class ProjectConsultantRepository {
 
   // 🧠 Consultant update karne ke liye
   async update(
-    id: number,
+    option: any,
     data: Partial<ProjectConsultant>,
   ): Promise<[number, ProjectConsultant[]]> {
     return this.projectConsultantModel.update(data, {
-      where: { id },
+      where: option,
       returning: true,
     });
   }
