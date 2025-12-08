@@ -15,7 +15,7 @@ export class ProjectRepository {
     return this.projectModel.create(data);
   }
 
-  // 📋 Sab projects get karne ke liye
+  // Get all projects
   async findAllByClient(user_id: number): Promise<Project[]> {
     return this.projectModel.findAll({
       where: { client_id: user_id },
@@ -27,7 +27,7 @@ export class ProjectRepository {
     });
   }
 
-  // 🔍 Project ko ID se find karne ke liye
+  // 🔎 Project by ID
   async findById(id: number): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
       include: [

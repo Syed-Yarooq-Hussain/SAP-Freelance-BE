@@ -6,6 +6,7 @@ import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
+import { ProjectDetail } from 'models/project-detail.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -51,22 +52,38 @@ export class ProjectConsultantRepository {
   });
 }
 
-  // 🔍 Specific consultant ko ID se find karne ke liye
   async findById(id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findByPk(id);
   }
 
-  // 🔎 Consultant ko projectId ke zariye dhoondhne ke liye
   async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } , raw: true });
   }
 
-  // 🔎 Consultant ko consultantId ke zariye dhoondhne ke liye
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll({ where: { consultant_id } });
-  }
+  return this.projectConsultantModel.findAll({
+    where: { consultant_id },
+    attributes: ['requested_hours'],
+    include: [
+      {
+        model: Project,
+        attributes: ['id', 'name', 'status'],
+        include: [
+          {
+            model: User,
+            as: 'client',
+            attributes: ['id', 'username'],
+          },
+          {
+            model: ProjectDetail,
+            attributes: ['start_date'],
+          }
+        ]
+      }
+    ]
+  });
+}
 
-  // 🧠 Consultant update karne ke liye
   async update(
     option: any,
     data: Partial<ProjectConsultant>,
@@ -77,7 +94,6 @@ export class ProjectConsultantRepository {
     });
   }
 
-  // ❌ Consultant delete karne ke liye
   async delete(id: number): Promise<number> {
     return this.projectConsultantModel.destroy({ where: { id } });
   }

@@ -3,9 +3,14 @@ import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
 import * as bcrypt from 'bcrypt';
+import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
+import { getConsultantProjectsResponse } from './transformer/consultant.transformer';
 
 @Injectable()
 export class ConsultantService {
+  constructor(
+      private readonly projectConsultantRepo: ProjectConsultantRepository,
+    ) {}
   private consultants: GetConsultantDto[] = [
     {id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'FrontendDeveloper',password:"" },
     { id: 2, name: 'Bob Ahmed', email: 'bob@example.com', expertise: 'Backend Developer',password:"" },
@@ -46,5 +51,14 @@ export class ConsultantService {
   remove(id: number) {
     this.consultants = this.consultants.filter((c) => c.id !== id);
     return { deleted: true };
+  }
+  
+  
+  async getProjectByConsultantId(id: number) {
+    let consultantProjectsList = await this.projectConsultantRepo.findByConsultantId(id);
+
+    const consultantProjects = getConsultantProjectsResponse(consultantProjectsList);
+
+    return consultantProjects;
   }
 }

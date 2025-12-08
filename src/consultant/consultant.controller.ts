@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('Consultants') 
 @Controller('consultants')
@@ -19,18 +20,16 @@ export class ConsultantController {
     return this.consultantService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.consultantService.findOne(+id);
-  }
-
-  @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateConsultantDto) {
-    return this.consultantService.update(+id, dto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.consultantService.remove(+id);
   }
+
+  @Get('projects')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get Consulatant Projects' })
+    @ApiResponse({ status: 201, description: 'Get project with client details' })
+    createProject(@Req() req: any) {
+      return this.consultantService.getProjectByConsultantId(+req.user.id);
+    }
 }
