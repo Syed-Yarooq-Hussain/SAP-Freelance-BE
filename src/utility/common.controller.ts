@@ -10,7 +10,7 @@ import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
 @ApiTags('Common')
 @Controller('common')
 export class CommonController {
-  constructor(private readonly commonService: CommonService) {}
+  constructor(private readonly commonService: CommonService) {}  
 
   @Post("industry")
   @ApiOperation({ summary: 'Create a new industry entry' })
@@ -75,4 +75,13 @@ export class CommonController {
     return this.commonService.getAllMeeting(req.user.id);
   }
 
+  @Post('send-email')
+  async sendEmail(@Body() body: any) {
+    return this.commonService.sendEmail(body);
+  }
+
+  @Post('pdf-create')
+  async generate(@Req() req: Request,@Body() body: any) {
+    return this.commonService.generatePdf(req, body);
+  }
 }
