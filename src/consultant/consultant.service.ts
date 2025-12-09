@@ -5,11 +5,13 @@ import { GetConsultantDto } from './dto/get-consultant.dto';
 import * as bcrypt from 'bcrypt';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 import { getConsultantProjectsResponse } from './transformer/consultant.transformer';
+import { ConsultantRepository } from 'repository/consultant.repository';
 
 @Injectable()
 export class ConsultantService {
   constructor(
       private readonly projectConsultantRepo: ProjectConsultantRepository,
+      private readonly consultantRepository: ConsultantRepository,
     ) {}
   private consultants: GetConsultantDto[] = [
     {id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'FrontendDeveloper',password:"" },
@@ -60,5 +62,38 @@ export class ConsultantService {
     const consultantProjects = getConsultantProjectsResponse(consultantProjectsList);
 
     return consultantProjects;
+  }
+  
+  
+  async getScheduleByConsultantId(id: number) {
+    const booking_schedule = await this.projectConsultantRepo.findBookingScheduleByConsultantId(id);
+    const consultant_schedule = await this.consultantRepository.findByUserId(id);
+
+    return {booking_schedule, consultant_schedule};
+  }
+  
+  async getConsultantPayments(id: number) {
+
+    return [
+        {
+            "id": "1",
+            "project_id": "1",
+            "project_milestone_id": null,
+            "doc_id": null,
+            "amount": 200,
+            "payment_module": "custom",
+            "is_paid": false,
+            "deleted_at": null,
+            "project": {
+                "id": "1",
+                "name": "p1",
+                "consultant_id": id,
+                "company_name": "ABC test",
+                "status": "initiated",
+                "deleted_at": null
+            },
+            "due_date": "2026-02-28T14:30:00.000Z"
+        }
+    ];
   }
 }

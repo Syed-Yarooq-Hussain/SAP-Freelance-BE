@@ -53,10 +53,10 @@ export class MeetingRepository {
       deleted_at: null,
       [Op.or]: [
         { sender_id: user_id },
-        { '$invitees.user_id$': user_id }, // use the alias defined in association
+        { '$invitees.user_id$': user_id },
       ],
     },
-    distinct: true, // duplicates hataane ke liye (when joins cause duplicates)
+    distinct: true, 
     include: [
       {
         model: User,
@@ -69,8 +69,8 @@ export class MeetingRepository {
       },
       {
         model: MeetingInvitee,
-        as: 'invitees',      // <--- alias must exactly match your association
-        required: false,     // invitees na ho to bhi meeting aaye
+        as: 'invitees',    
+        required: false,
         attributes: ['id', 'user_id'],
         include: [
           {

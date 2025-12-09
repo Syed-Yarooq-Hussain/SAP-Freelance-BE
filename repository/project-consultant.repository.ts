@@ -61,28 +61,41 @@ export class ProjectConsultantRepository {
   }
 
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
-  return this.projectConsultantModel.findAll({
-    where: { consultant_id },
-    attributes: ['requested_hours'],
-    include: [
-      {
-        model: Project,
-        attributes: ['id', 'name', 'status'],
-        include: [
-          {
-            model: User,
-            as: 'client',
-            attributes: ['id', 'username'],
-          },
-          {
-            model: ProjectDetail,
-            attributes: ['start_date'],
-          }
-        ]
-      }
-    ]
-  });
-}
+    return this.projectConsultantModel.findAll({
+      where: { consultant_id },
+      attributes: ['requested_hours'],
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+          include: [
+            {
+              model: User,
+              as: 'client',
+              attributes: ['id', 'username'],
+            },
+            {
+              model: ProjectDetail,
+              attributes: ['start_date'],
+            }
+          ]
+        }
+      ]
+    });
+  }
+  
+  async findBookingScheduleByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
+    return this.projectConsultantModel.findAll({
+      where: { consultant_id },
+      attributes: ['id', 'booking_schedule'],
+      include: [
+        {
+          model: Project,
+          attributes: ['name'],
+        }
+      ]
+    });
+  }
 
   async update(
     option: any,

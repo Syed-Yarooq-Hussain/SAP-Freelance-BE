@@ -26,10 +26,38 @@ export class ConsultantController {
   }
 
   @Get('projects')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Get Consulatant Projects' })
-    @ApiResponse({ status: 201, description: 'Get project with client details' })
-    createProject(@Req() req: any) {
-      return this.consultantService.getProjectByConsultantId(+req.user.id);
-    }
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Projects' })
+  @ApiResponse({ status: 201, description: 'Get project with client details' })
+  createProject(@Req() req: any) {
+    return this.consultantService.getProjectByConsultantId(+req.user.id);
+  }
+  
+  //To be make
+  @Get('dashboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get dashboard stats ' })
+  @ApiResponse({ status: 201, description: 'Get dashboard stats ' })
+  getConsultantStats(@Req() req: any) {
+    return { appeared_in_search: 10, interview_schedule: 5, monthly_revenue: 3000, total_earnings: 5000 };
+  }
+  
+  // To be make 
+  @Get('schedules')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Schedule' })
+  @ApiResponse({ status: 201, description: 'Get consultant schedule' })
+  getCOnsultantSchedules(@Req() req: any) {
+    return this.consultantService.getScheduleByConsultantId(+req.user.id);
+  }
+
+  //To be make 
+  @Get('payments')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Payments' })
+  @ApiResponse({ status: 201, description: 'Get consultant payments' })
+  getConsultantPayments(@Req() req: any) {
+    return this.consultantService.getProjectByConsultantId(+req.user.id);
+  }
+
 }
