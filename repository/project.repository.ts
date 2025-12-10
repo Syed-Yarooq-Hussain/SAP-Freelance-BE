@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Project } from '../models/project.model';
+import { ProjectPayment } from 'models/project-payment.model';
 
 @Injectable()
 export class ProjectRepository {
@@ -14,21 +15,19 @@ export class ProjectRepository {
     return this.projectModel.create(data);
   }
 
-  // 📋 Sab projects get karne ke liye
-  async findAll(): Promise<Project[]> {
+  // Get all projects
+  async findAllByClient(user_id: number): Promise<Project[]> {
     return this.projectModel.findAll({
+      where: { client_id: user_id },
       include: [
-        'projectConsultants',
-        'projectIndustries',
         'projectDetails',
-        'milestones',
-        'tasks',
-        'payments',
       ],
+      raw: true,
+      nest: true,
     });
   }
 
-  // 🔍 Project ko ID se find karne ke liye
+  // 🔎 Project by ID
   async findById(id: number): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
       include: [
@@ -42,12 +41,12 @@ export class ProjectRepository {
     });
   }
 
-  // 🔎 Client ID ke zariye projects laane ke liye
+  // 🔎 Client ID  projects
   async findByClientId(client_id: number): Promise<Project[]> {
     return this.projectModel.findAll({ where: { client_id } });
   }
 
-  // 🧠 Project update karne ke liye
+  // 🧠 Project update 
   async update(
     id: number,
     data: Partial<Project>,
@@ -62,4 +61,27 @@ export class ProjectRepository {
   async delete(id: number): Promise<number> {
     return this.projectModel.destroy({ where: { id } });
   }
+
+  async projectPaymentsByClientId(client_id: number): Promise<Project[] | null> {
+    return this.projectModel.findAll({
+      where: { client_id },
+      include: [
+        {
+          model: ProjectPayment,
+          as: 'payments',
+        },
+      ],
+    });
+  }
+
+  async findAllforAdmin(): Promise<Project[]> {
+    return this.projectModel.findAll({
+      include: [
+        'projectDetails',
+      ],
+      raw: true,
+      nest: true,
+    });
+  }
+
 }

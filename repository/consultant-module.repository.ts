@@ -25,7 +25,7 @@ export class ConsultantModuleRepository {
   // Consultant ke hisab se record nikalega
   async findByConsultantId(consultantId: number): Promise<ConsultantModule[]> {
     return this.consultantModuleModel.findAll({
-      where: { consultant_id: consultantId },
+      where: { user_id: consultantId },
       include: { all: true },
     });
   }

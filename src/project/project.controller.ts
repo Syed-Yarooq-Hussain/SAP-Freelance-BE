@@ -1,4 +1,4 @@
-import {Body,Controller,Delete,Get,Param,Post,Put, Req, UseGuards,} from '@nestjs/common';
+import {Body,Controller,Delete,Get,Param,Post,Put, Query, Req, UseGuards,} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -7,6 +7,7 @@ import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ConsultantStatus } from 'constant/enums';
 import { CreateProjectTaskDto, UpdateProjectTaskDto } from './dto/project_task.dto';
+import { GetConsultantsQueryDto } from './dto/get-query.dto';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -19,13 +20,6 @@ export class ProjectController {
   @ApiResponse({ status: 201, description: 'Initiate the project with client details' })
   createProject(@Req() req: any) {
     return this.projectService.createProject(req.user);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Get all projects' })
-  @ApiResponse({ status: 200, description: 'List of all projects' })
-  findAll() {
-    return this.projectService.getProjects();
   }
 
   @Get(':id')
@@ -60,8 +54,8 @@ export class ProjectController {
 
   @Get(':id/consultants')
   @ApiOperation({ summary: 'Get consultants for a project' })
-  getConsultants(@Param('id') projectId: string) {
-    return this.projectService.getProjectConsultants(+projectId);
+  getConsultants(@Param('id') projectId: string, @Query() query: GetConsultantsQueryDto) {
+    return this.projectService.getProjectConsultants(+projectId , query);
   }
 
   @Put('consultant/status')
@@ -83,7 +77,10 @@ export class ProjectController {
   @Get(':id/consultants_to_hired')
   @ApiOperation({ summary: 'Get consultants for a project' })
   getToBeHiredConsultants(@Param('id') projectId: string) {
-    return this.projectService.getProjectConsultants(+projectId, [ConsultantStatus.HIRED, ConsultantStatus.INTERVIEW_SCHEDULED, ConsultantStatus.REJECTED]);
+    let query: GetConsultantsQueryDto = {
+      status : `${ConsultantStatus.HIRED},${ConsultantStatus.SHORTLISTED},${ConsultantStatus.INTERVIEW_SCHEDULED},${ConsultantStatus.INTERVIEW_DONE}`
+    }
+    return this.projectService.getProjectConsultants(+projectId, query);
   }
 
 
@@ -92,6 +89,13 @@ export class ProjectController {
   @ApiBody({ type: CreateProjectMilestoneDto })
   addMilestone(@Param('id') projectId: string, @Body() body: CreateProjectMilestoneDto) {
     return this.projectService.addMilestone({ ...body, project_id: +projectId });
+  }
+
+  @Get(':id/milestones')
+  @ApiOperation({ summary: 'Add project milestone' })
+  @ApiBody({ type: CreateProjectMilestoneDto })
+  getProjectMilestone(@Param('id') projectId: string) {
+    return this.projectService.getMilestonesByProject(+projectId);
   }
   
   @Put('milestones/:id')
@@ -144,11 +148,5 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Task deleted successfully' })
   deleteTask(@Param('taskId') taskId: string) {
     return this.projectService.deleteTask(+taskId);
-  }
-
-  @Get(':id/payments')
-  @ApiOperation({ summary: 'Get project payments' })
-  getProjectPayments(@Param('id') id: string) {
-    return this.projectService.getProjectPayments(+id);
   }
 }

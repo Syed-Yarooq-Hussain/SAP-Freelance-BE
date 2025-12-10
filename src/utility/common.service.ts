@@ -1,13 +1,17 @@
-import { Injectable} from '@nestjs/common';
+import { Injectable, NotFoundException} from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
-import { MEETING_STATUS_ARRAY } from 'constant/enums';
+import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
+import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
+import { getAllMeetingResponse } from './transformer/meeting.transformer';
 
 @Injectable()
 export class CommonService {
-  constructor(private readonly meetingRepo: MeetingRepository) {}
+  constructor(
+    private readonly meetingRepo: MeetingRepository, 
+    private readonly projectConsultantRepo: ProjectConsultantRepository) {}
   private industry = [
     {id:1, name:"Information tecnology"},
     {id:2, name:"Healthcare"}
@@ -32,10 +36,7 @@ export class CommonService {
   }
   
   getMeetingStatus() {
-    return{
-      message: "list of meeting status fetched successfully",
-      data: MEETING_STATUS_ARRAY
-    };
+    return MEETING_STATUS_ARRAY
   }
 
   // 🔹 Update entry by ID
@@ -50,6 +51,14 @@ export class CommonService {
   } 
 
   async sendInvite(dto: CreateMeetingDto, sender_id: number) {
+
+  if(dto.event_type.toLowerCase() === MeetingType.INTERVIEW) {
+    for (const userId of dto.invitees_id) {
+      const where= { project_id: dto.project_id, consultant_id: userId }; 
+      await this.projectConsultantRepo.update(where, {status: ConsultantStatus.INTERVIEW_SCHEDULED});
+    }
+
+  }
 
   const meeting = await this.meetingRepo.createMeeting({
     sender_id,
@@ -93,5 +102,11 @@ async updateMeetingStatus(meetingId: number, status: string) {
     meeting,
   };
 }
+
+async getAllMeeting(userId: number) {
+    const meetings = await this.meetingRepo.getMeetingWithDetails(userId);
+    const transformedData = getAllMeetingResponse(meetings)
+    return transformedData
+  }
 
 }

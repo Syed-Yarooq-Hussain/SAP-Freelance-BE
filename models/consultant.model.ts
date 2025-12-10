@@ -11,19 +11,6 @@ export class Consultant extends Model<Consultant> {
   })
   id: number;
 
-  @ForeignKey(() => ModuleEntity)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  module_id: number;
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  level_id: number;
-
   @Column({
     type: DataType.STRING,
     allowNull: true,
@@ -66,10 +53,6 @@ export class Consultant extends Model<Consultant> {
     allowNull: true,
   })
   career_details: string;
-
-  // Relations
-  @BelongsTo(() => ModuleEntity)
-  module: string;
 
   @BelongsTo(() => User)
   user: User;

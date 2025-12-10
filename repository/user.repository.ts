@@ -1,6 +1,10 @@
 import { Consultant } from 'models/consultant.model';
 import { User } from '../models/user.model';
 import { Op, Sequelize } from 'sequelize';
+import { UserRole } from 'constant/enums';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
+import { Project } from 'models/project.model';
 
 class UserRepository {
   private readonly userModel: typeof User;
@@ -9,9 +13,20 @@ class UserRepository {
     this.userModel = User;
   }
 
-  // 🟢 Get all users
-  async findAll(email: string): Promise<User[]> {
-    return this.userModel.findAll();
+  // 🟢 Get all Clients for Admin Screen
+  async getAllClientsWithProjectstatus(): Promise<User[]> {
+    return this.userModel.findAll({
+      where: { role: UserRole.CLIENT },
+      attributes: ['id', 'username', 'status'],
+      include: [
+        {
+          model: Project,
+          required: true,
+          attributes: [ 'id', 'name', 'status'],
+        },
+      ],
+      raw: false,
+    });
   }
 
   // 🟢 Get user including password
@@ -85,17 +100,32 @@ class UserRepository {
 
   async findAllUsersWithConsultants(): Promise<User[]> {
     return await this.userModel.findAll({
-      where: { role: 2 },
+      where: { role: UserRole.CONSULTANT },
+      attributes: ['id', 'username'],
       include: [
         {
           model: Consultant,
+          required: true,
+          attributes: [ 'weekly_available_hours', 'rate', 'experience', 'working_schedule' ],
+        },
+        {
+          model: ConsultantModule,
           required: false,
+          attributes: ['id'],
+          include: [
+            {
+              model: ModuleEntity,
+              required: false,
+              attributes: ['id', 'name', 'is_core'],
+            },
+          ],
         },
       ],
-      raw: true,
-      nest: true,
+      raw: false,
     });
   }
+
+
    async findFilteredUsers(
     experience?: number,
     availability?: number,

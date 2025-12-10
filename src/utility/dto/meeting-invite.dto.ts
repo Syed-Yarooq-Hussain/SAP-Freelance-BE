@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, ArrayNotEmpty, IsDateString, IsNumber, IsString, IsIn } from 'class-validator';
+import { IsArray, ArrayNotEmpty, IsDateString, IsNumber, IsString, IsIn, IsOptional } from 'class-validator';
 import { MEETING_STATUS_ARRAY } from 'constant/enums';
 
 export class CreateMeetingDto {
@@ -19,6 +19,10 @@ export class CreateMeetingDto {
   @ApiProperty({ description: 'Type of meeting' })
   @IsString()
   event_type: string;
+  
+  @ApiProperty({ description: 'PROJECT ID ' })
+  @IsOptional()
+  project_id: string;
 }
 
 export class UpdateMeetingStatusDto {

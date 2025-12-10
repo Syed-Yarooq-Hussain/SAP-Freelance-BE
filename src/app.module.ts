@@ -24,6 +24,8 @@ import { CommonModule } from './utility/common.module';
 import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { PdfModule } from './common/pdf/pdf.module';
+import { AdminModule } from './admin/admin.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -63,6 +65,8 @@ import { PdfModule } from './common/pdf/pdf.module';
     ProjectModule,
     ClientModule,
     ConsultantModule,
+    AdminModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

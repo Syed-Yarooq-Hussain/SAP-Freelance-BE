@@ -66,4 +66,13 @@ export class CommonController {
   ) {
     return this.commonService.updateMeetingStatus(Number(id), dto.status);
   }
+
+  @Get("meetings")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all Meetings' })
+  @ApiResponse({ status: 200, description: 'List of all meetings' })
+  getAllMeetingByUsers(@Req() req: any) {
+    return this.commonService.getAllMeeting(req.user.id);
+  }
+
 }
