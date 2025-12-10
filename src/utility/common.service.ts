@@ -6,18 +6,15 @@ import { MeetingRepository } from 'repository/meeting.repository';
 import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 import { getAllMeetingResponse } from './transformer/meeting.transformer';
-import { EmailService } from 'src/common/emails/email.service';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as PDFDocument from 'pdfkit';
-import axios from 'axios';
+import { sendEmail } from 'src/common/emails/email.util';
+import { generatePdf } from 'src/common/pdf/pdf.util';
+
 
 @Injectable()
 export class CommonService {
   constructor(
     private readonly meetingRepo: MeetingRepository, 
-    private readonly projectConsultantRepo: ProjectConsultantRepository,
-    private readonly emailService: EmailService) {}
+    private readonly projectConsultantRepo: ProjectConsultantRepository) {}
   private industry = [
     {id:1, name:"Information tecnology"},
     {id:2, name:"Healthcare"}
@@ -118,50 +115,13 @@ async getAllMeeting(userId: number) {
 async sendEmail(body) {
   const { to, type } = body;
   if (!to || !type) {return { status: false, message: "Missing required fields: to/type" };}
-  return await this.emailService.sendEmail(to, type);
+  return await sendEmail(to, type);
 }
 
 
 async generatePdf(req, data: { text?: string; imagePath?: string; title?: string }) {
 
-  const pdfFolder = path.join(process.cwd(), 'pdf');
-  if (!fs.existsSync(pdfFolder)) fs.mkdirSync(pdfFolder)
-
-  const fileName = `file-${Date.now()}.pdf`;
-  const filePath = path.join(pdfFolder, fileName);
-
-  const doc = new PDFDocument();
-  doc.pipe(fs.createWriteStream(filePath));
-
-  if (data.title) doc.fontSize(20).text(data.title).moveDown();
-  if (data.text) doc.fontSize(14).text(data.text).moveDown();
-
-  if (data.imagePath) {
-    try {
-      let imageBuffer;
-
-      if (data.imagePath.startsWith('http')) {
-        const response = await axios.get(data.imagePath, { responseType: 'arraybuffer' });
-        imageBuffer = Buffer.from(response.data);
-      } else if (fs.existsSync(data.imagePath)) {
-        imageBuffer = fs.readFileSync(data.imagePath);
-      }
-
-      if (imageBuffer) {
-        doc.image(imageBuffer, {
-          fit: [400, 400],
-          align: 'center',
-          valign: 'center',
-        });
-        doc.moveDown();
-      }
-    } catch (error) {
-      console.log("Image Error:", error.message);
-    }
-  }
-  doc.end();
-
-  const pdfUrl = `http://localhost:3000/pdf/${fileName}`;
-  return { pdfUrl };
+  const pdfUrl = await generatePdf(data);
+  return pdfUrl;
 }
 }
