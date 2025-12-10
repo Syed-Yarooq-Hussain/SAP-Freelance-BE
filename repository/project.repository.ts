@@ -74,4 +74,14 @@ export class ProjectRepository {
     });
   }
 
+  async findAllforAdmin(): Promise<Project[]> {
+    return this.projectModel.findAll({
+      include: [
+        'projectDetails',
+      ],
+      raw: true,
+      nest: true,
+    });
+  }
+
 }
