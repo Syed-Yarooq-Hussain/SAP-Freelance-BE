@@ -4,6 +4,7 @@ import { Meeting } from '../models/meeting.model';
 import { MeetingInvitee } from '../models/meeting-invitee.model';
 import { User } from 'models/user.model';
 import { Project } from 'models/project.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class MeetingRepository {
@@ -47,28 +48,38 @@ export class MeetingRepository {
   }
 
   async getMeetingWithDetails(user_id: number) {
-    return this.meetingModel.findAll({
-      where: { sender_id: user_id, deleted_at: null },
-      include: [
-        {
-          model: User,
-          as: 'sender',
-          attributes: ['id', 'username', 'email'],
-        },
-        {
-          model: Project,
-          attributes: ['id', 'name', 'status'],
-        },
-        {
-          model: MeetingInvitee,
-          include: [
-            {
-              model: User,
-              attributes: ['id', 'username', 'email'],
-            },
-          ],
-        },
+  return this.meetingModel.findAll({
+    where: {
+      deleted_at: null,
+      [Op.or]: [
+        { sender_id: user_id },
+        { '$invitees.user_id$': user_id },
       ],
-    });
-  }
+    },
+    distinct: true, 
+    include: [
+      {
+        model: User,
+        as: 'sender',
+        attributes: ['id', 'username', 'email'],
+      },
+      {
+        model: Project,
+        attributes: ['id', 'name', 'status'],
+      },
+      {
+        model: MeetingInvitee,
+        as: 'invitees',    
+        required: false,
+        attributes: ['id', 'user_id'],
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'username', 'email'],
+          },
+        ],
+      },
+    ],
+  } as any);
+}
 }

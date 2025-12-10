@@ -23,6 +23,7 @@ import { ConsultantModule } from './consultant/consultant.module';
 import { CommonModule } from './utility/common.module';
 import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
+import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 
 @Module({
@@ -62,6 +63,7 @@ import { ChatModule } from './chat/chat.module';
     ProjectModule,
     ClientModule,
     ConsultantModule,
+    AdminModule,
     ChatModule,
   ],
 })

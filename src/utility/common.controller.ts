@@ -69,7 +69,7 @@ export class CommonController {
 
   @Get("meetings")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get all Meeting Status' })
+  @ApiOperation({ summary: 'Get all Meetings' })
   @ApiResponse({ status: 200, description: 'List of all meetings' })
   getAllMeetingByUsers(@Req() req: any) {
     return this.commonService.getAllMeeting(req.user.id);

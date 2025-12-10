@@ -16,11 +16,12 @@ export enum UserRole {
 export const USER_ROLE_ARRAY = Object.values(UserRole); 
 
 export enum ProjectStatus {
-  INITIATED = 'Initiated',
-  IN_PROGRESS = 'In Progress',
-  COMPLETED = 'Completed',
-  ON_HOLD = 'On Hold',
-  CANCELLED = 'Cancelled',
+  INITIATED = 'initiated',
+  IN_PROGRESS = 'in_progress',
+  ON_HOLD = 'on_hold',
+  UNDER_REVIEW = 'under_review',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
 }
 export const PROJECT_STATUS_ARRAY = Object.values(ProjectStatus);
 
@@ -49,3 +50,4 @@ export enum MeetingType {
 }
 
 export const MEETING_TYPE_ARRAY = Object.values(MeetingType);
+
