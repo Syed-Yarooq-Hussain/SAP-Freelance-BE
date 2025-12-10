@@ -57,7 +57,7 @@ export class ConsultantController {
   @ApiOperation({ summary: 'Get Consulatant Payments' })
   @ApiResponse({ status: 201, description: 'Get consultant payments' })
   getConsultantPayments(@Req() req: any) {
-    return this.consultantService.getProjectByConsultantId(+req.user.id);
+    return this.consultantService.getConsultantPayments(+req.user.id);
   }
 
 }
