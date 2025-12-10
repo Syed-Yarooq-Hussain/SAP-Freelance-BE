@@ -76,6 +76,7 @@ export class ProjectConsultantRepository {
             },
             {
               model: ProjectDetail,
+              as: 'projectDetails',
               attributes: ['start_date'],
             }
           ]

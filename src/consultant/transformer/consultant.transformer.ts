@@ -1,22 +1,23 @@
 export function getConsultantProjectsResponse(list: any[]) {
+  return list.map((item) => ({
+    requested_hours: item.requested_hours ?? null,
 
-    let projects = [];
+    duration: item.user?.consultant?.working_schedule ?? null,
 
-    for (const item of list) {
+    project_id: item.project?.id ?? null,
+    project_name: item.project?.name ?? null,
+    project_status: item.project?.status ?? null,
 
-        projects.push({
-            requested_hours: item.requested_hours ?? null,
+    client_id: item.project?.client?.id ?? null,
+    client_name: item.project?.client?.username ?? null,
 
-            project_id: item.project?.id ?? null,
-            project_name: item.project?.name ?? null,
-            project_status: item.project?.status ?? null,
+    modules:
+      item.user?.consultantModules?.map((cm) => ({
+        id: cm.module?.id ?? null,
+        name: cm.module?.name ?? null,
+        is_core: cm.module?.is_core ?? null,
+      })) ?? [],
 
-            client_id: item.project?.client?.id ?? null,
-            client_name: item.project?.client?.username ?? null,
-
-            start_date: item.project?.projectDetails.start_date ?? null,
-        });
-    }
-
-    return projects;
+    start_date: item.project?.projectDetails?.start_date ?? null,
+  }));
 }
