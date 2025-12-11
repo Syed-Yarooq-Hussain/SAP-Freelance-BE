@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException} from '@nestjs/common';
+import { Injectable} from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto } from './dto/meeting-invite.dto';
@@ -17,7 +17,7 @@ export class CommonService {
     {id:2, name:"Healthcare"}
   ]
 
-  // 🔹 Create new entry
+  // 🔹 Create New Entry
   createIndustry(dto: CreateCommonDto) {
     const newIndustry = { id: Date.now(), ...dto };
     this.industry.push(newIndustry);
@@ -27,7 +27,7 @@ export class CommonService {
     };
   }
 
-  // 🔹 Get all entries
+  // 🔹 Get All Entries
   getAllIndustry() {
     return{
       message: "Industry created successfully",
@@ -39,7 +39,7 @@ export class CommonService {
     return MEETING_STATUS_ARRAY
   }
 
-  // 🔹 Update entry by ID
+  // 🔹 Update Entry By Id
   updateIndustry(id:number, dto: UpdateCommonDto) {
     const index = this.industry.findIndex((i) => i.id === id);
     if (index === -1){return {massage: "Industry not found"};}
@@ -57,18 +57,16 @@ export class CommonService {
       const where= { project_id: dto.project_id, consultant_id: userId }; 
       await this.projectConsultantRepo.update(where, {status: ConsultantStatus.INTERVIEW_SCHEDULED});
     }
-
   }
 
   const meeting = await this.meetingRepo.createMeeting({
     sender_id,
-    url: `https://meet.com/${Date.now()}`, // or any auto-generated link logic
+    url: `https://meet.com/${Date.now()}`,
     date_time: new Date(dto.date_time),
     duration: dto.duration,
     status: 'Pending',
     event_type: dto.event_type,
   });
-
 
   const invitees = await Promise.all(
     dto.invitees_id.map(userId =>
@@ -79,15 +77,14 @@ export class CommonService {
     ),
   );
 
-
   return {
     message: 'Invitation sent successfully',
     meeting,
     invitees,
   };
-  
 }
 
+// 🔹 Update Meeting Status
 async updateMeetingStatus(meetingId: number, status: string) {
   const meeting = await this.meetingRepo.findMeetingById(meetingId);
   if (!meeting) {
@@ -103,10 +100,10 @@ async updateMeetingStatus(meetingId: number, status: string) {
   };
 }
 
+// 🔹 Get All Meeting
 async getAllMeeting(userId: number) {
     const meetings = await this.meetingRepo.getMeetingWithDetails(userId);
     const transformedData = getAllMeetingResponse(meetings)
     return transformedData
   }
-
 }

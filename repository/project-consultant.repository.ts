@@ -5,7 +5,6 @@ import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
-import { Project } from 'models/project.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -14,11 +13,12 @@ export class ProjectConsultantRepository {
     private readonly projectConsultantModel: typeof ProjectConsultant,
   ) {}
 
-  // 🆕 Add project consultant
+  // 🆕 Create Project Consultant
   async create(data: Partial<ProjectConsultant>): Promise<ProjectConsultant> {
     return this.projectConsultantModel.create(data);
   }
 
+  // 📋 Get All Project Consultant
   async findAll(options?: any): Promise<ProjectConsultant[]> {
   return this.projectConsultantModel.findAll({
     ...options,
@@ -51,22 +51,22 @@ export class ProjectConsultantRepository {
   });
 }
 
-  // 🔍 Specific consultant ko ID se find karne ke liye
+  // 🔍 Get Consultant By Id
   async findById(id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findByPk(id);
   }
 
-  // 🔎 Consultant ko projectId ke zariye dhoondhne ke liye
+  // 🔎 Get Consultant By ProjectId
   async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } , raw: true });
   }
 
-  // 🔎 Consultant ko consultantId ke zariye dhoondhne ke liye
+  // 🔎 Get Consultant By ConsultantId
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
     return this.projectConsultantModel.findAll({ where: { consultant_id } });
   }
 
-  // 🧠 Consultant update karne ke liye
+  // 🧠 Update Consultant
   async update(
     option: any,
     data: Partial<ProjectConsultant>,
@@ -77,7 +77,7 @@ export class ProjectConsultantRepository {
     });
   }
 
-  // ❌ Consultant delete karne ke liye
+  // ❌ Delete Consultant
   async delete(id: number): Promise<number> {
     return this.projectConsultantModel.destroy({ where: { id } });
   }

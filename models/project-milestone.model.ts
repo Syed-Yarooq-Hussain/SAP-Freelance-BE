@@ -62,7 +62,6 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
   @BelongsTo(() => Project, 'project_id')
   project: Project;
 
-  // ✅ Add this
   @HasMany(() => ProjectTask, 'project_milestone_id')
   tasks: ProjectTask[];
 

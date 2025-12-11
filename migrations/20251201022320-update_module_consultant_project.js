@@ -2,11 +2,9 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    /**
-     * 1️⃣ MODULES TABLE
-     *  - Remove parent_id (if exists)
-     *  - Add is_core (if not exists)
-     */
+
+    // 1️⃣ MODULES TABLE
+
     const modulesTable = await queryInterface.describeTable('modules');
 
     if (modulesTable.parent_id) {
@@ -20,13 +18,9 @@ module.exports = {
         defaultValue: false,
       });
     }
-
-    /**
-     * 2️⃣ CONSULTANT_MODULE TABLE
-     *  - Rename consultant_id -> user_id (if still consultant_id)
-     *  - Add module_id (if missing)
-     *  - Remove level_id (if exists)
-     */
+    
+    // 2️⃣ CONSULTANT MODULE TABLE
+    
     const consultantModuleTable = await queryInterface.describeTable(
       'consultant_module'
     );
@@ -39,29 +33,25 @@ module.exports = {
       );
     }
 
-    // ➕ Ensure module_id exists (your model expects it)
     if (!consultantModuleTable.module_id) {
       await queryInterface.addColumn('consultant_module', 'module_id', {
         type: Sequelize.INTEGER,
-        allowNull: true, // keep safe for existing rows
+        allowNull: true,
         references: {
           model: 'modules',
           key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE', // or 'SET NULL' if you prefer
+        onDelete: 'CASCADE',
       });
     }
 
     if (consultantModuleTable.level_id) {
       await queryInterface.removeColumn('consultant_module', 'level_id');
     }
-
-    /**
-     * 3️⃣ CONSULTANTS TABLE
-     *  - Remove module_id & level_id
-     *  - Add level (string) if not exists
-     */
+    
+    // 3️⃣ CONSULTANTS TABLE
+     
     const consultantsTable = await queryInterface.describeTable('consultants');
 
     if (consultantsTable.module_id) {
@@ -78,12 +68,8 @@ module.exports = {
         allowNull: true,
       });
     }
-
-    /**
-     * 4️⃣ PROJECT_CONSULTANT TABLE
-     *  - Rename is_joic_signed -> is_doc_signed
-     *  - Make is_doc_signed BOOLEAN NOT NULL DEFAULT false
-     */
+    
+    // 4️⃣ PROJECT CONSULTANT TABLE
     const projectConsultantTable = await queryInterface.describeTable(
       'project_consultant'
     );
@@ -110,9 +96,9 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    /**
-     * 4️⃣ ROLLBACK PROJECT_CONSULTANT
-     */
+  
+    // 4️⃣ ROLLBACK PROJECT CONSULTANT TABLE
+    
     const projectConsultantTable = await queryInterface.describeTable(
       'project_consultant'
     );
@@ -136,9 +122,8 @@ module.exports = {
       });
     }
 
-    /**
-     * 3️⃣ ROLLBACK CONSULTANTS
-     */
+    // 3️⃣ ROLLBACK CONSULTANTS TABLE
+    
     const consultantsTable = await queryInterface.describeTable('consultants');
 
     if (consultantsTable.level) {
@@ -158,15 +143,13 @@ module.exports = {
         allowNull: true,
       });
     }
-
-    /**
-     * 2️⃣ ROLLBACK CONSULTANT_MODULE
-     */
+  
+    // 2️⃣ ROLLBACK CONSULTANT MODULE TABLE
+    
     const consultantModuleTable = await queryInterface.describeTable(
       'consultant_module'
     );
 
-    // Remove module_id again on rollback
     if (consultantModuleTable.module_id) {
       await queryInterface.removeColumn('consultant_module', 'module_id');
     }
@@ -186,9 +169,8 @@ module.exports = {
       );
     }
 
-    /**
-     * 1️⃣ ROLLBACK MODULES
-     */
+    // 1️⃣ ROLLBACK MODULES TABLE
+     
     const modulesTable = await queryInterface.describeTable('modules');
 
     if (modulesTable.is_core) {

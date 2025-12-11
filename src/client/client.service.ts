@@ -6,7 +6,6 @@ import { User } from '../../models/user.model';
 import { UserRepository } from 'repository/user.repository';
 import { ProjectRepository } from 'repository/project.repository';
 import { ProjectPaymentRepository} from 'repository/project-payment.repository';
-import { url } from 'inspector';
 
 @Injectable()
 export class ClientService {
@@ -23,7 +22,7 @@ export class ClientService {
     { id: 2, name: 'Client B', email: 'b@example.com' },
   ];
 
-  // 🧩 Dummy Consultants (linked with clients)
+  // 🧩 Dummy Consultants (Linked With Clients)
   private consultants = [
     { id: 1, name: 'Consultant Alpha', expertise: 'SAP HANA', clientId: 1, experience: 5, rate: 100 },
     { id: 2, name: 'Consultant Beta', expertise: 'SAP FICO', clientId: 1, experience: 3, rate: 80 },
@@ -31,14 +30,14 @@ export class ClientService {
     { id: 4, name: 'Consultant Delta', expertise: 'SAP ABAP', clientId: 2, experience: 4, rate: 90 },
   ];
 
-  // ✅ Create new client
+  // ✅ Create Client
   create(dto: CreateClientDto) {
     const newClient = { id: Date.now(), ...dto };
     this.clients.push(newClient);
     return newClient;
   }
 
-  // ✅ Get all clients
+  // ✅ Get All Clients
   findAll() {
     return this.clients;
   }
@@ -50,9 +49,7 @@ export class ClientService {
 
   const plain = user.toJSON();
 
-  // -------------------------
-  // Extract payments
-  // -------------------------
+  // 💸 Extract Payments
   const allPayments = [];
   for (const project of plain.projects) {
     if (project.payments?.length) {
@@ -68,9 +65,7 @@ export class ClientService {
     }
   }
 
-  // -------------------------
-  // Calendar
-  // -------------------------
+  // 📅 Calendar
   const sentMeetings = (plain.sentMeetings || []).map(m => ({
     id: m.id,
     date_time: m.date_time,
@@ -94,9 +89,7 @@ export class ClientService {
     (a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime()
   );
 
-  // -------------------------
-  // Project formatting
-  // -------------------------
+  // 📋 Project Formatting
   const projects = plain.projects.map(project => ({
     id: project.id,
     name: project.name,
@@ -138,7 +131,7 @@ export class ClientService {
 }
 
 
-  // ✅ Update client
+  // ✅ Update Client
   update(id: number, dto: UpdateClientDto) {
     const index = this.clients.findIndex((c) => c.id === id);
     if (index === -1) return null;
@@ -146,13 +139,13 @@ export class ClientService {
     return this.clients[index];
   }
 
-  // ✅ Remove client
+  // ✅ Remove Client
   remove(id: number) {
     this.clients = this.clients.filter((c) => c.id !== id);
     return { deleted: true };
   }
 
-  // ✅ Get all consultants
+  // ✅ Get All Consultants
   async getAllConsultants() {
     const consultants = await this.userRepository.findAllUsersWithConsultants();
     let consultantList = [];
@@ -177,7 +170,7 @@ export class ClientService {
     return consultantList;
   }
 
-  // ✅ Get consultant by ID
+  // ✅ Get Consultant By Id
   getConsultantById(id: number) {
     const consultant = this.consultants.find((c) => c.id === id);
     if (!consultant) {

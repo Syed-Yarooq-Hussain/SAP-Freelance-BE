@@ -10,7 +10,6 @@ import { ProjectMilestoneRepository } from '../../repository/project-milestone.r
 import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
 import { ProjectTaskRepository } from '../../repository/project-task.repository';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { UserRepository } from 'repository/user.repository';
 import {
   CreateProjectConsultantDto,
   UpdateProjectConsultantStatusDto,
@@ -25,7 +24,6 @@ import {
 } from './dto/project_task.dto';
 import { ProjectTask } from 'models/project-task.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
-import { Project } from 'models/project.model';
 import { transformProjectConsultant } from './transformers/project-consultant-transformer';
 import { GetConsultantsQueryDto } from './dto/get-query.dto';
 
@@ -90,7 +88,7 @@ export class ProjectService {
       : await this.projectDetailrepository.create(projectDetailpayload);
 
     delete project.projectDetails;
-    // 🔥 Convert Sequelize model → clean JSON
+    // 🔥 Convert Sequelize Model
     const plainProject = project.toJSON();
 
     return {
@@ -114,16 +112,16 @@ export class ProjectService {
       consultant_id: body.consultant_id,
     };
     if (body.status == ConsultantStatus.OFFERED) {
-      //Todo: send NDA
-      //Todo: send email
-      //set user role as well
+      // 🔏 Todo: Send NDA
+      // 🚀 Todo: Send Email
+      // 👤 Set User Role As Well
       await this.projectConsultantRepo.update(where, {
         role: body.role ?? 'consultant',
         status: body.status,
         booking_schedule: body.booking_schedule ?? null,
       });
     } else if (body.status == ConsultantStatus.REJECTED) {
-      //Todo: send rejection email
+      // 📧 Todo: Send Rejection Email
     }
     return await this.projectConsultantRepo.update(where, {
       status: body.status,
@@ -173,7 +171,7 @@ export class ProjectService {
         };
 
         await this.projectConsultantRepo.create(projectConsultant);
-        //Todo: send email to consultant about being added to project
+        // 📧 Todo: send email to consultant about being added to project
       }
       return { message: 'Consultants added successfully', data };
     } catch (error) {
@@ -228,16 +226,7 @@ export class ProjectService {
     return this.paymentRepo.create(data);
   }
 
-  
-
-
-
-
-
-
-
-  //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      TASK   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  // 🆕 CREATE TASK (always under milestone)
+  // 🆕 CREATE TASK (Always Under Milestone)
   async createTask(
     milestoneId: number,
     dto: CreateProjectTaskDto,
@@ -261,7 +250,7 @@ export class ProjectService {
     return this.projectTaskRepo.create(data);
   }
 
-  // ✏️ UPDATE TASK (by taskId only)
+  // ✏️ UPDATE TASK (By TaskId Only)
   async updateTask(
     taskId: number,
     dto: UpdateProjectTaskDto,
@@ -269,7 +258,7 @@ export class ProjectService {
     const task = await this.projectTaskRepo.findById(taskId);
     if (!task) throw new NotFoundException('Task not found');
 
-    // 🧭 Check if relocating task to another milestone
+    // 🧭 Check If Relocating Task To Another Milestone
     if (
       dto.project_milestone_id &&
       dto.project_milestone_id !== task.project_milestone_id
@@ -280,7 +269,7 @@ export class ProjectService {
       if (!newMilestone) {
         throw new BadRequestException('New milestone does not exist');
       }
-      // Update project_id as well when moving task to new milestone
+      // 📣 Update Project_Id As Well When Moving Task To New Milestone
       dto.project_id = newMilestone.project_id;
     }
 
@@ -294,24 +283,27 @@ export class ProjectService {
     return updatedTask;
   }
 
-  // 📋 GET ALL TASKS UNDER A MILESTONE
+  // 📋 Get All Tasks Under A Milestone
   async getTaskByMilestone(milestoneId: number): Promise<ProjectMilestone> {
     return await this.milestoneRepo.findByIdWithTasks(milestoneId);
   }
 
-  // 🔍 GET TASK BY ID
+  // 🔍 Get Task By Id
   async getTaskById(taskId: number): Promise<ProjectTask> {
     const task = await this.projectTaskRepo.findById(taskId);
     if (!task) throw new NotFoundException('Task not found');
     return task;
   }
 
+  // ❌ Detete Milestone
   async deleteMilestone(id: number) {
     const milestone = await this.milestoneRepo.findById(id);
     if (!milestone)
       throw new NotFoundException(`Milestone with ID ${id} not found`);
     return this.milestoneRepo.update(id, { deleted_at: new Date() });
   }
+
+  // ❌ Delete Task
   async deleteTask(id: number) {
     const task = await this.projectTaskRepo.findById(id);
     if (!task) throw new NotFoundException(`Milestone with ID ${id} not found`);

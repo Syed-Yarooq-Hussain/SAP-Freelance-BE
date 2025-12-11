@@ -10,12 +10,12 @@ export class ProjectRepository {
     private readonly projectModel: typeof Project,
   ) {}
 
-  // Add new project
+  // 🆕 Create Project
   async create(data: Partial<Project>): Promise<Project> {
     return this.projectModel.create(data);
   }
 
-  // 📋 Sab projects get karne ke liye
+  // 📋 Get All Projects
   async findAllByClient(user_id: number): Promise<Project[]> {
     return this.projectModel.findAll({
       where: { client_id: user_id },
@@ -27,7 +27,7 @@ export class ProjectRepository {
     });
   }
 
-  // 🔍 Project ko ID se find karne ke liye
+  // 🔍 Get Project By Id
   async findById(id: number): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
       include: [
@@ -41,12 +41,12 @@ export class ProjectRepository {
     });
   }
 
-  // 🔎 Client ID  projects
+  // 🔎 Get Project By Client Id
   async findByClientId(client_id: number): Promise<Project[]> {
     return this.projectModel.findAll({ where: { client_id } });
   }
 
-  // 🧠 Project update 
+  // 🧠 Update Project 
   async update(
     id: number,
     data: Partial<Project>,
@@ -57,7 +57,7 @@ export class ProjectRepository {
     });
   }
 
-  // ❌ Project delete karne ke liye
+  // ❌ Delete Project
   async delete(id: number): Promise<number> {
     return this.projectModel.destroy({ where: { id } });
   }

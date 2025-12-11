@@ -9,27 +9,27 @@ export class ProjectTaskRepository {
     private readonly projectTaskModel: typeof ProjectTask,
   ) {}
 
-  // 🆕 Create new task
+  // 🆕 Create Project Task
   async create(data: Partial<ProjectTask>): Promise<ProjectTask> {
     return this.projectTaskModel.create(data);
   }
 
-  // 📋 Get all tasks (with optional filters)
+  // 📋 Get All Tasks (With Optional Filters)
   async findAll(options?: any): Promise<ProjectTask[]> {
     return this.projectTaskModel.findAll(options);
   }
 
-  // 🔍 Find task by ID
+  // 🔍 Get Task By Id
   async findById(id: number): Promise<ProjectTask | null> {
     return this.projectTaskModel.findOne({where: { id } });
   }
 
-  // 🔎 Find tasks by project ID
+  // 🔎 Get Tasks By Project Id
   async findByProjectId(project_id: number): Promise<ProjectTask[]> {
     return this.projectTaskModel.findAll({ where: { project_id } });
   }
 
-  // 🧠 Update a task
+  // 🧠 Update Task
   async update(
     id: number,
     data: Partial<ProjectTask>,
@@ -40,7 +40,7 @@ export class ProjectTaskRepository {
     });
   }
 
-  // ❌ Delete a task
+  // ❌ Delete Task
   async delete(id: number): Promise<number> {
     return this.projectTaskModel.destroy({ where: { id } });
   }

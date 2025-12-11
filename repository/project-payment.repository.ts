@@ -10,22 +10,22 @@ export class ProjectPaymentRepository {
     private readonly projectPaymentModel: typeof ProjectPayment,
   ) {}
 
-  // 🆕 Create new payment record
+  // 🆕 Create Payment Record
   async create(data: Partial<ProjectPayment>): Promise<ProjectPayment> {
     return this.projectPaymentModel.create(data);
   }
 
-  // 📋 Get all payments (with optional filter)
+  // 📋 Get All Payments (With Optional Filter)
   async findAll(options?: any): Promise<ProjectPayment[]> {
     return this.projectPaymentModel.findAll(options);
   }
 
-  // 🔍 Find payment by ID
+  // 🔍 Get Payment By Id
   async findById(id: number): Promise<ProjectPayment | null> {
     return this.projectPaymentModel.findByPk(id);
   }
 
-  // 🔎 Find payments by project ID
+  // 🔎 Get Payments By Project Id
   async projectPaymentsByClientId(client_id: number): Promise<ProjectPayment[] | null> {
   return this.projectPaymentModel.findAll({
     include: [
@@ -40,7 +40,7 @@ export class ProjectPaymentRepository {
   });
 }
 
-  // 🧠 Update payment record
+  // 🧠 Update Payment Record
   async update(
     id: number,
     data: Partial<ProjectPayment>,
@@ -51,7 +51,7 @@ export class ProjectPaymentRepository {
     });
   }
 
-  // ❌ Delete payment record
+  // ❌ Delete Payment Record
   async delete(id: number): Promise<number> {
     return this.projectPaymentModel.destroy({ where: { id } });
   }

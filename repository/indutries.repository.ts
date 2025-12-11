@@ -9,27 +9,27 @@ export class IndustriesRepository {
     private readonly industryModel: typeof Industries,
   ) {}
 
-  // 🏭 Nayi industry create karne ke liye
+  // 🏭 Create Industry
   async create(data: Partial<Industries>): Promise<Industries> {
     return this.industryModel.create(data);
   }
 
-  // 📋 Sab industries get karne ke liye
+  // 📋 Get All Industries
   async findAll(): Promise<Industries[]> {
     return this.industryModel.findAll();
   }
 
-  // 🔍 Kisi industry ko ID se find karne ke liye
+  // 🔍 Get Industry By Id
   async findById(id: number): Promise<Industries | null> {
     return this.industryModel.findByPk(id);
   }
 
-  // 🔎 Industry ko name se find karne ke liye (agar field exist karti hai)
+  // 🔎 Get Industry By Name
   async findByName(name: string): Promise<Industries | null> {
     return this.industryModel.findOne({ where: { name } });
   }
 
-  // 🧠 Industry update karne ke liye
+  // 🧠 Update Industry
   async update(id: number, data: Partial<Industries>): Promise<[number, Industries[]]> {
     return this.industryModel.update(data, {
       where: { id },
@@ -37,7 +37,7 @@ export class IndustriesRepository {
     });
   }
 
-  // ❌ Industry delete karne ke liye
+  // ❌ Delete Industry
   async delete(id: number): Promise<number> {
     return this.industryModel.destroy({ where: { id } });
   }

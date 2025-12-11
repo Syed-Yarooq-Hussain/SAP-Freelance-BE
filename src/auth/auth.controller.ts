@@ -5,7 +5,6 @@ import { AuthService } from './auth.service';
 import { CustomResponse } from 'src/utils/CustomResponse';
 import { User } from 'models/user.model';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
-import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
@@ -32,7 +31,7 @@ export class AuthController {
     });
   }
   
-  // 🟣 User Signup (Normal User)
+  // 🟣 User Signup
   @Post('signup/user')
   async registerUser(@Body() registerDto: RegisterDto) {
     try {

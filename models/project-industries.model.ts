@@ -25,7 +25,6 @@ export class ProjectIndustry extends Model<ProjectIndustry> {
   })
   industry_id: number;
 
-  // Relations
   @BelongsTo(() => Project)
   project: Project;
 

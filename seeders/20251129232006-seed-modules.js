@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Core modules list
+    // 🧱 Core Modules List
     const coreModules = [
       "SAP ABAP",
       "SAP Analytics Cloud",
@@ -42,7 +42,7 @@ module.exports = {
       "SAP Treasury and Risk Management"
     ];
 
-    // Other modules list
+    // 🧩 Other Modules List
     const otherModules = [
       "Not in the list",
       "SAP ABAP",
@@ -128,7 +128,7 @@ module.exports = {
       "SAP Warehouse Management (WM)"
     ];
 
-    // Prepare seed data
+    // 🌱 Prepare Seed Data
     const modules = [...new Set([...coreModules, ...otherModules])].map(name => ({
       name,
       is_core: coreModules.includes(name),

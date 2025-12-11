@@ -3,7 +3,6 @@ import * as PDFDocument from 'pdfkit';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Request } from 'express';
-// import { getLocalIp } from 'src/utils/get-ip';
 import axios from 'axios';
 
 
@@ -11,7 +10,7 @@ import axios from 'axios';
 export class PdfService {
   async generatePdf( req: Request,data: { text?: string; imagePath?: string; title?: string }) {
 
-    // 📁 Ensure PDF folder exists
+    // 📁 Ensure PDF Folder Exists
     const pdfFolder = path.join(process.cwd(), 'pdf');
     if (!fs.existsSync(pdfFolder)) fs.mkdirSync(pdfFolder)
 
@@ -31,11 +30,9 @@ export class PdfService {
         let imageBuffer;
 
         if (data.imagePath.startsWith('http')) {
-          // Download image from URL
           const response = await axios.get(data.imagePath, { responseType: 'arraybuffer' });
           imageBuffer = Buffer.from(response.data);
         } else if (fs.existsSync(data.imagePath)) {
-          // Local image file
           imageBuffer = fs.readFileSync(data.imagePath);
         }
 
@@ -51,10 +48,7 @@ export class PdfService {
         console.log("Image Error:", error.message);
       }
     }
-
     doc.end();
-
-    // const ip = getLocalIp();
 
     const pdfUrl = `http://localhost:3000/pdf/${fileName}`;
     return { pdfUrl}

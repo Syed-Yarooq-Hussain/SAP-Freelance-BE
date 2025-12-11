@@ -24,5 +24,5 @@ export class CreateConsultantDto {
   password: string;
 
   @ApiProperty({ example: 1, description: 'User ID associated with this consultant (optional)' })
-  user?: any; // optional since it may not be passed manually
+  user?: any;
 }

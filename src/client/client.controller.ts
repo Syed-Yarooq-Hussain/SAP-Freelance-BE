@@ -10,27 +10,20 @@ import { AuthGuard } from '@nestjs/passport';
 export class ClientController {
   constructor(private readonly clientService: ClientService) { }
 
-  // ✅ Get all consultants
+  // ✅ Get All Consultants
   @Get('consultants')
   @ApiOperation({ summary: '+ all consultants' })
   getAllConsultants() {
     console.log('Fetching all consultants');
     return this.clientService.getAllConsultants();
   }
-  // ✅ Create new client
+  // ✅ Create Client
   @Post()
   @ApiOperation({ summary: 'Create a new client' })
   @ApiResponse({ status: 201, description: 'Client created successfully' })
   create(@Body() createClientDto: CreateClientDto) {
     return this.clientService.create(createClientDto);
   }
-
-  // ✅ Get all clients
-  /* @Get()
-  @ApiOperation({ summary: 'Get all clients' })
-  findAll() {
-    return this.clientService.findAll();
-  } */
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
@@ -39,35 +32,35 @@ export class ClientController {
     return this.clientService.findOne(req.user.id);
   }
 
-  // ✅ Update a client
+  // ✅ Update Client
   @Put(':id')
   @ApiOperation({ summary: 'Update a client' })
   update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
     return this.clientService.update(+id, updateClientDto);
   }
 
-  // ✅ Delete a client
+  // ✅ Delete Client
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a client' })
   remove(@Param('id') id: string) {
     return this.clientService.remove(+id);
   }
 
-  // ✅ Get consultant by ID
+  // ✅ Get Consultant By Id
   @Get('consultants/:id')
   @ApiOperation({ summary: 'Get consultant by ID' })
   getConsultantById(@Param('id') id: string) {
     return this.clientService.getConsultantById(+id);
   }
 
-
+ // ✅ Get Projects
   @Get('projects')
   @UseGuards(AuthGuard('jwt'))
   getAllProjects(@Req() req) {
     return this.clientService.getAllProjectByClientId(req.user.id);
   }
   
-  
+  // ✅ Get Payments
   @Get('payments')
   @UseGuards(AuthGuard('jwt'))
   getAllProjectsPayments(@Req() req) {
