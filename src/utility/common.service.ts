@@ -6,6 +6,9 @@ import { MeetingRepository } from 'repository/meeting.repository';
 import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 import { getAllMeetingResponse } from './transformer/meeting.transformer';
+import { sendEmail } from 'src/common/emails/email.util';
+import { generatePdf } from 'src/common/pdf/pdf.util';
+
 
 @Injectable()
 export class CommonService {
@@ -109,4 +112,16 @@ async getAllMeeting(userId: number) {
     return transformedData
   }
 
+async sendEmail(body) {
+  const { to, type } = body;
+  if (!to || !type) {return { status: false, message: "Missing required fields: to/type" };}
+  return await sendEmail(to, type);
+}
+
+
+async generatePdf(req, data: { text?: string; imagePath?: string; title?: string }) {
+
+  const pdfUrl = await generatePdf(data);
+  return pdfUrl;
+}
 }
