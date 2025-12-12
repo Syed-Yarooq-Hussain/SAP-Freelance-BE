@@ -5,6 +5,8 @@ import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
+import { Project } from 'models/project.model';
+import { ProjectDetail } from 'models/project-detail.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -51,7 +53,6 @@ export class ProjectConsultantRepository {
   });
 }
 
-  // 🔍 Get Consultant By Id
   async findById(id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findByPk(id);
   }
@@ -63,7 +64,41 @@ export class ProjectConsultantRepository {
 
   // 🔎 Get Consultant By ConsultantId
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
-    return this.projectConsultantModel.findAll({ where: { consultant_id } });
+    return this.projectConsultantModel.findAll({
+      where: { consultant_id },
+      attributes: ['requested_hours'],
+      include: [
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+          include: [
+            {
+              model: User,
+              as: 'client',
+              attributes: ['id', 'username'],
+            },
+            {
+              model: ProjectDetail,
+              as: 'projectDetails',
+              attributes: ['start_date'],
+            }
+          ]
+        }
+      ]
+    });
+  }
+  
+  async findBookingScheduleByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
+    return this.projectConsultantModel.findAll({
+      where: { consultant_id },
+      attributes: ['id', 'booking_schedule'],
+      include: [
+        {
+          model: Project,
+          attributes: ['name'],
+        }
+      ]
+    });
   }
 
   // 🧠 Update Consultant

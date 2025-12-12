@@ -4,6 +4,7 @@ import { Op, Sequelize } from 'sequelize';
 import { UserRole } from 'constant/enums';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
+import { Project } from 'models/project.model';
 
 class UserRepository {
   private readonly userModel: typeof User;
@@ -15,6 +16,22 @@ class UserRepository {
   // 🟢 Get All Users
   async findAll(email: string): Promise<User[]> {
     return this.userModel.findAll();
+  }
+  
+  // 🟢 Get all Clients for Admin Screen
+  async getAllClientsWithProjectstatus(): Promise<User[]> {
+    return this.userModel.findAll({
+      where: { role: UserRole.CLIENT },
+      attributes: ['id', 'username', 'status'],
+      include: [
+        {
+          model: Project,
+          required: true,
+          attributes: [ 'id', 'name', 'status'],
+        },
+      ],
+      raw: false,
+    });
   }
 
   // 🟢 Get User Including Password

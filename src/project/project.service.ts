@@ -215,6 +215,13 @@ export class ProjectService {
     }
     return this.milestoneRepo.update(id, data);
   }
+  
+  async getMilestonesByProject(id: number) {
+    let isMMilestoneExist = await this.milestoneRepo.findAll({
+      where: { project_id: id }
+    });
+    return isMMilestoneExist;
+  }
 
   async getProjectMilestones(projectId: number) {
     return this.milestoneRepo.findAll({
