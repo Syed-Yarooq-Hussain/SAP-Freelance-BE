@@ -13,6 +13,11 @@ class UserRepository {
     this.userModel = User;
   }
 
+  // 🟢 Get All Users
+  async findAll(email: string): Promise<User[]> {
+    return this.userModel.findAll();
+  }
+  
   // 🟢 Get all Clients for Admin Screen
   async getAllClientsWithProjectstatus(): Promise<User[]> {
     return this.userModel.findAll({
@@ -29,7 +34,7 @@ class UserRepository {
     });
   }
 
-  // 🟢 Get user including password
+  // 🟢 Get User Including Password
   async userLogin(email): Promise<User | null> {
     return this.userModel.findOne({
       where: { email },
@@ -38,17 +43,17 @@ class UserRepository {
     });
   }
 
-  // 🔍 Get user by ID
+  // 🔍 Get User By Id
   async findById(id: number): Promise<User | null> {
     return this.userModel.findByPk(id);
   }
 
-  // 📧 Find by email
+  // 📧 Find By Email
   async findByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ where: { email } });
   }
 
-  // ➕ Create new user
+  // ➕ Create User
   async createUser(userAttributes: Partial<User>): Promise<User> {
     try {
       const user = await this.userModel.create(userAttributes);
@@ -59,17 +64,17 @@ class UserRepository {
     }
   }
 
-  // 🔄 Update user
+  // 🔄 Update User
   async updateUser(id: number, userAttributes: Partial<User>): Promise<[number, User[]]> {
     return this.userModel.update(userAttributes, { where: { id }, returning: true });
   }
 
-  // ❌ Delete user
+  // ❌ Delete User
   async deleteUser(id: number): Promise<number> {
     return this.userModel.destroy({ where: { id } });
   }
 
-  // ⚙️ Filtered + Paginated list
+  // ⚙️ Filtered + Paginated List
   async findAllWithFilters(
     excludeUserId: number,
     page: number,
@@ -137,7 +142,7 @@ class UserRepository {
     // 💼 Country
     if (country) where.country = { [Op.iLike]: `%${country}%` };
 
-    // Consultant-based filters
+    // ➕ Consultant Based Filters
     const consultantWhere: any = {};
     if (experience) consultantWhere.experience = { [Op.gte]: experience };
     if (availability) consultantWhere.weekly_available_hours = { [Op.gte]: availability };
@@ -156,7 +161,6 @@ class UserRepository {
       nest: true,
     });
   }
-
 
   async fetchClientDashboardData(userId: number) {
     return await this.userModel.findByPk(userId, {

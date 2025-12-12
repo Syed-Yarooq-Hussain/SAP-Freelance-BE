@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Consultant } from '../models/consultant.model';
-import { CreateConsultantDetailDto } from 'src/user/dto/create-consultant-detail.dto';
 
 @Injectable()
 export class ConsultantRepository {
@@ -10,7 +9,7 @@ export class ConsultantRepository {
     private readonly consultantModel: typeof Consultant,
   ) {}
 
-  // 🟢 Create new consultant detail
+  // 🟢 Create Consultant Detail
 async createDetail(dto: any, userId: number) {
   return this.consultantModel.create({
     user_id: userId,
@@ -20,27 +19,27 @@ async createDetail(dto: any, userId: number) {
   });
 }
 
-  // 📋 Get all consultants
+  // 📋 Get All Consultants
   async findAll(): Promise<Consultant[]> {
     return this.consultantModel.findAll();
   }
 
-  // 🔍 Get consultant by ID
+  // 🔍 Get Consultant By Id
   async findById(id: number): Promise<Consultant | null> {
     return this.consultantModel.findByPk(id);
   }
 
-  // 🔎 Get consultant by user ID
+  // 🔎 Get Consultant By User Id
   async findByUserId(userId: number): Promise<Consultant | null> {
     return this.consultantModel.findOne({ where: { user_id: userId } });
   }
 
-  // 🧠 Update consultant
+  // 🧠 Update Consultant
   async update(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
     return this.consultantModel.update(data, { where: { id }, returning: true });
   }
 
-  // ❌ Delete consultant
+  // ❌ Delete Consultant
   async delete(id: number): Promise<number> {
     return this.consultantModel.destroy({ where: { id } });
   }

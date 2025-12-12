@@ -7,7 +7,6 @@ import {
   BelongsTo,
 } from 'sequelize-typescript';
 import { Project } from './project.model';
-import { User } from './user.model'; // ✅ Added import
 
 @Table({ tableName: 'project_detail', timestamps: false })
 export class ProjectDetail extends Model<ProjectDetail> {

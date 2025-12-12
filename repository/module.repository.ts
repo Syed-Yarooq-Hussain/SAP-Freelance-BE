@@ -9,27 +9,27 @@ export class ModuleRepository {
     private readonly moduleModel: typeof ModuleEntity,
   ) {}
 
-  // 🆕 Naya module create karne ke liye
+  // 🆕 Create Module
   async create(data: Partial<ModuleEntity>): Promise<ModuleEntity> {
     return this.moduleModel.create(data);
   }
 
-  // 📋 Sab modules get karne ke liye
+  // 📋 Get All modules
   async findAll(): Promise<ModuleEntity[]> {
     return this.moduleModel.findAll();
   }
 
-  // 🔍 Module ko ID se find karne ke liye
+  // 🔍 Get Module By Id
   async findById(id: number): Promise<ModuleEntity | null> {
     return this.moduleModel.findByPk(id);
   }
 
-  // 🔎 Module ko name se find karne ke liye (agar name field exist karta hai)
+  // 🔎 Get Module By Name
   async findByName(name: string): Promise<ModuleEntity | null> {
     return this.moduleModel.findOne({ where: { name } });
   }
 
-  // 🧠 Module update karne ke liye
+  // 🧠 Update Module
   async update(id: number, data: Partial<ModuleEntity>): Promise<[number, ModuleEntity[]]> {
     return this.moduleModel.update(data, {
       where: { id },
@@ -37,7 +37,7 @@ export class ModuleRepository {
     });
   }
 
-  // ❌ Module delete karne ke liye
+  // ❌ Delete Module
   async delete(id: number): Promise<number> {
     return this.moduleModel.destroy({ where: { id } });
   }

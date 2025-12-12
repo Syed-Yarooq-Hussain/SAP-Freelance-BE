@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // === MEETINGS TABLE ===
+    // 1️⃣ MEETINGS TABLE
     await queryInterface.createTable('meetings', {
       id: {
         type: Sequelize.INTEGER,
@@ -47,7 +47,7 @@ module.exports = {
       },
     });
 
-    // === MEETING INVITEES TABLE ===
+    // 2️⃣ MEETING INVITEES TABLE
     await queryInterface.createTable('meeting_invitees', {
       id: {
         type: Sequelize.INTEGER,

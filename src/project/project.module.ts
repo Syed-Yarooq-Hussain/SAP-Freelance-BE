@@ -3,7 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 
-// ✅ Models import
+// ✅ Models Import
 import { Project } from '../../models/project.model';
 import { ProjectConsultant } from '../../models/project-consultant.model';
 import { ProjectIndustry } from '../../models/project-industries.model';
@@ -12,7 +12,7 @@ import { ProjectPayment } from '../../models/project-payment.model';
 import { ProjectTask } from '../../models/project-task.model';
 
 
-// ✅ Repositories import
+// ✅ Repositories Import
 import { ProjectRepository } from '../../repository/project.repository';
 import { ProjectConsultantRepository } from '../../repository/project-consultant.repository';
 import { ProjectIndustriesRepository } from '../../repository/project-indestries.repository';

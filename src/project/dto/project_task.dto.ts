@@ -21,7 +21,7 @@ export class CreateProjectTaskDto {
   @IsInt()
   required_hours?: number;
 
-  // 🆕 Optional milestone and project for relocation
+  // 🆕 Optional Milestone & Project For Relocation
   @ApiPropertyOptional({ example: 5, description: 'Milestone ID (for relocation)' })
   @IsOptional()
   @IsNumber()

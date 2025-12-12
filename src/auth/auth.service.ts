@@ -20,11 +20,11 @@ export class AuthService {
 
  // 🟢 Consultant Signup
 async signupConsultant(consultantDto: CreateConsultantDetailDto) {
-  // ✅ Step 1: Password hashing
+  // ✅ Step 1: Password Hashing
   console.log('Hashed password:', consultantDto.user);
 
   const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
-  // ✅ Step 2: Create user record
+  // ✅ Step 2: Create User Record
   const user = await this.userRepo.createUser({
     username: consultantDto.user.username,
     email: consultantDto.user.email,
@@ -37,7 +37,7 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
     country: consultantDto.user.country || null,
   });
 
-  // ✅ Step 3: Create consultant details (link with user.id)
+  // ✅ Step 3: Create Consultant Details (Link With user.id)
   await this.consultantRepo.createDetail(
     {
       module: consultantDto.consultant.module,
@@ -51,7 +51,7 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
     user.id,
   );
 
-  // ✅ Step 4: Return created record (without password)
+  // ✅ Step 4: Return Created Record (Without Password)
   const userWithConsultant = await User.findOne({
     where: { id: user.id },
     include: [ProjectDetail],
@@ -61,14 +61,14 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   return userWithConsultant;
 }
 
-  // 🟣 Normal User Signup
+  // 🟣 User Signup
   async signupUser(userDto: RegisterDto) {
-    // ✅ Step 1: Hash password
+    // ✅ Step 1: Hash Password
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
 
-    // ✅ Step 2: Create user record
+    // ✅ Step 2: Create user Record
     const newUser = await this.userRepo.createUser({
-      username: userDto.username, // ✅ username instead of name
+      username: userDto.username, 
       email: userDto.email,
       password: hashedPassword,
       role: +UserRole.CLIENT, 

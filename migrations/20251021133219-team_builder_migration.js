@@ -3,14 +3,14 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
 
-    // 2️⃣ Modules
+    // 2️⃣ MODULES TABLE
     await queryInterface.createTable('modules', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
       parent_id: { type: Sequelize.INTEGER }
     });
 
-    // 3️⃣ Consultants
+    // 3️⃣ CONSULTANTS TABLE
     await queryInterface.createTable('consultants', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       module_id: { type: Sequelize.INTEGER, references: { model: 'modules', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
@@ -24,7 +24,7 @@ module.exports = {
       career_details: { type: Sequelize.JSON }
     });
 
-    // 4️⃣ Consultant_Module
+    // 4️⃣ CCONSULTANT MODULE TABLE
     await queryInterface.createTable('consultant_module', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       consultant_id: { type: Sequelize.BIGINT, references: { model: 'consultants', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
@@ -32,13 +32,13 @@ module.exports = {
       is_primary: { type: Sequelize.BOOLEAN }
     });
 
-    // 5️⃣ Industries
+    // 5️⃣ INDUSTRIES TABLE
     await queryInterface.createTable('industries', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING }
     });
-
-    // 6️⃣ Project
+ 
+    // 6️⃣ PROJECT TABLE
     await queryInterface.createTable('project', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
@@ -47,14 +47,14 @@ module.exports = {
       status: { type: Sequelize.STRING }
     });
 
-    // 7️⃣ Project_Industries
+    // 7️⃣ PROJECT INDUSTRIES TABLE
     await queryInterface.createTable('project_industries', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       industry_id: { type: Sequelize.BIGINT, references: { model: 'industries', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
     });
 
-    // 8️⃣ Project_Consultant
+    // 8️⃣ PROJECT CONSULTANT TABLE
     await queryInterface.createTable('project_consultant', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       consultant_id: { type: Sequelize.BIGINT, references: { model: 'consultants', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
@@ -66,7 +66,7 @@ module.exports = {
       requested_hours: { type: Sequelize.INTEGER }
     });
 
-    // 9️⃣ Project_Detail
+    // 9️⃣ PROJECT DETAIL TABLE
     await queryInterface.createTable('project_detail', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       start_date: { type: Sequelize.DATE },
@@ -77,7 +77,7 @@ module.exports = {
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
     });
 
-    // 🔟 Project_Milestone
+    // 🔟 PROJECT MILESTONE TABLE
     await queryInterface.createTable('project_milestone', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
@@ -88,7 +88,7 @@ module.exports = {
       required_hours: { type: Sequelize.INTEGER }
     });
 
-    // 1️⃣1️⃣ Project_Task
+    // 1️⃣1️⃣ PROJECT TASK TABLE
     await queryInterface.createTable('project_task', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
@@ -99,21 +99,21 @@ module.exports = {
       required_hours: { type: Sequelize.INTEGER }
     });
 
-    // 1️⃣2️⃣ Documents
+    // 1️⃣2️⃣ DOCUMENTS TABLE
     await queryInterface.createTable('documents', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       url: { type: Sequelize.STRING },
       type: { type: Sequelize.STRING }
     });
 
-    // 1️⃣3️⃣ Milestone_Docs
+    // 1️⃣3️⃣ MILESTONE DOCS TABLE
     await queryInterface.createTable('milestone_docs', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       doc_id: { type: Sequelize.BIGINT, references: { model: 'documents', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       project_milestone_id: { type: Sequelize.BIGINT, references: { model: 'project_milestone', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
     });
 
-    // 1️⃣4️⃣ Project_Payment
+    // 1️⃣4️⃣ PROJECT PAYMENT TABLE
     await queryInterface.createTable('project_payment', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },

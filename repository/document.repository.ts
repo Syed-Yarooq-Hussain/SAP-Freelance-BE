@@ -9,27 +9,27 @@ export class DocumentRepository {
     private readonly documentModel: typeof Document,
   ) {}
 
-  // 📄 Naya document create karne ke liye
+  // 📄 Create Document
   async create(data: Partial<Document>): Promise<Document> {
     return this.documentModel.create(data);
   }
 
-  // 📋 Sare documents get karne ke liye
+  // 📋 Get All Documents
   async findAll(): Promise<Document[]> {
     return this.documentModel.findAll();
   }
 
-  // 🔍 Kisi specific document ko ID se find karne ke liye
+  // 🔍 Get Specific Document By Id
   async findById(id: number): Promise<Document | null> {
     return this.documentModel.findByPk(id);
   }
 
-  // 🔎 User ke documents nikalne ke liye (agar user_id foreign key hai)
+  // 🔎 Get Users Documents By Id
   async findByUserId(userId: number): Promise<Document[]> {
     return this.documentModel.findAll({ where: { user_id: userId } });
   }
 
-  // 🧠 Document update karne ke liye
+  // 🧠 Update Document
   async update(id: number, data: Partial<Document>): Promise<[number, Document[]]> {
     return this.documentModel.update(data, {
       where: { id },
@@ -37,7 +37,7 @@ export class DocumentRepository {
     });
   }
 
-  // ❌ Document delete karne ke liye
+  // ❌ Delete Document
   async delete(id: number): Promise<number> {
     return this.documentModel.destroy({ where: { id } });
   }
