@@ -8,12 +8,15 @@ import { ProjectConsultantRepository } from 'repository/project-consultant.repos
 import { getAllMeetingResponse } from './transformer/meeting.transformer';
 import { sendEmail } from 'src/common/emails/email.util';
 import { generatePdf } from 'src/common/pdf/pdf.util';
+import { ModuleRepository } from 'repository/module.repository';
 
 @Injectable()
 export class CommonService {
   constructor(
     private readonly meetingRepo: MeetingRepository,
-    private readonly projectConsultantRepo: ProjectConsultantRepository) { }
+    private readonly projectConsultantRepo: ProjectConsultantRepository,
+    private readonly moduleRepo: ModuleRepository
+  ) { }
   private industry = [
     { id: 1, name: "Information tecnology" },
     { id: 2, name: "Healthcare" }
@@ -65,9 +68,10 @@ export class CommonService {
       sender_id,
       url: `https://meet.com/${Date.now()}`,
       date_time: new Date(dto.date_time),
-      duration: dto.duration,
+      duration: dto.duration ?? 20,
       status: 'Pending',
       event_type: dto.event_type,
+      project_id: +dto.project_id
     });
 
     const invitees = await Promise.all(
@@ -116,9 +120,17 @@ export class CommonService {
   }
 
 
-  async generatePdf(req, data: { text?: string; imagePath?: string; title?: string }) {
-
+  async generatePdf( data: { text?: string; imagePath?: string; title?: string }) {
     const pdfUrl = await generatePdf(data);
     return pdfUrl;
+  }
+
+  async getSAPmodules() {
+    const allModules = await this.moduleRepo.findAll();
+    
+    const core = allModules.filter(m => m.is_core === true);
+    const others = allModules.filter(m => m.is_core === false);
+
+    return { core, others };
   }
 }

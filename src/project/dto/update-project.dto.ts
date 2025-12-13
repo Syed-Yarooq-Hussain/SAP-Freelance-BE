@@ -47,6 +47,9 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @IsDate()
   end_date?: Date;
   
+  @IsOptional()
+  industry?: any;
+  
   @ApiPropertyOptional({
     description: 'Duration of the project in hours',
     example: '650',

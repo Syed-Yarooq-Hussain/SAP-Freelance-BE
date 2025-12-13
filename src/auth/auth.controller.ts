@@ -22,13 +22,8 @@ export class AuthController {
   @ApiBody({ type: CreateConsultantDetailDto })
   async signupConsultant(
     @Body() consultantDto: CreateConsultantDetailDto,
-    @Res() res: Response,
   ) {
-    const result = await this.authService.signupConsultant(consultantDto);
-    return CustomResponse.success<User>(res, {
-      data: result,
-      message: 'Consultant signed up successfully',
-    });
+    return await this.authService.signupConsultant(consultantDto);
   }
   
   // 🟣 User Signup

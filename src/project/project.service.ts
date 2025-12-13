@@ -62,12 +62,13 @@ export class ProjectService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
+    let payload = {
+      name: updateData.name ?? project.name,
+      company_name: updateData.industry ?? project.company_name,
+      status: updateData.status ?? project.status,
+    };
 
-    project.name = updateData.name ?? project.name;
-    project.company_name = updateData.company_name ?? project.company_name;
-    project.status = updateData.status ?? project.status;
-
-    await this.projectRepo.update(id, project);
+    await this.projectRepo.update(id, payload);
 
     const existingProjectDetail =
       await this.projectDetailrepository.findByProjectId(id);

@@ -2,13 +2,17 @@ import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateConsultantModuleDto {
   @IsString()
-  module_name: string;
+  id: number;
 
   @IsOptional()
   @IsString()
-  description?: string;
+  module_id?: number;
 
   @IsOptional()
   @IsNumber()
   user_id: number;
+  
+  @IsOptional()
+  @IsNumber()
+  is_primary: boolean;
 }

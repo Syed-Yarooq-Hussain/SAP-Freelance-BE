@@ -11,7 +11,7 @@ export class ConsultantModuleRepository {
   ) {}
 
   // 🟢 Create New Record
-  async createModule(dto: CreateConsultantModuleDto): Promise<ConsultantModule> {
+  async createModule(dto: any): Promise<ConsultantModule> {
     return this.consultantModuleModel.create(dto);
   }
 

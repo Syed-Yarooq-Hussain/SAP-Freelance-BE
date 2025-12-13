@@ -10,13 +10,8 @@ export class ConsultantRepository {
   ) {}
 
   // 🟢 Create Consultant Detail
-async createDetail(dto: any, userId: number) {
-  return this.consultantModel.create({
-    user_id: userId,
-    experience: dto.experience,
-    rate: dto.rate,
-    weekly_available_hours: dto.weekly_available_hours,
-  });
+async createDetail(dto: any) {
+  return this.consultantModel.create(dto);
 }
 
   // 📋 Get All Consultants
