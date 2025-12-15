@@ -30,4 +30,6 @@ export class CreateConsultantDetailDto extends CreateUserDto {
   username: any;
   city: string;
   country: string;
+  core_module: any;
+  other_module: any;
 }

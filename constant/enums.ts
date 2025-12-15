@@ -51,3 +51,12 @@ export enum MeetingType {
 
 export const MEETING_TYPE_ARRAY = Object.values(MeetingType);
 
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING = 'pending',
+  BLOCKED = 'blocked',
+}
+
+export const USER_STATUS_ARRAY = Object.values(UserStatus);
+

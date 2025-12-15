@@ -15,8 +15,14 @@ export class ModuleRepository {
   }
 
   // 📋 Get All modules
-  async findAll(): Promise<ModuleEntity[]> {
-    return this.moduleModel.findAll();
+  async findAll(isCore?: boolean): Promise<ModuleEntity[]> {
+    const where: any = {};
+
+    if (typeof isCore === 'boolean') {
+      where.is_core = isCore;
+    }
+
+    return this.moduleModel.findAll({ where });
   }
 
   // 🔍 Get Module By Id

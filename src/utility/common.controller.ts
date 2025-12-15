@@ -82,6 +82,13 @@ export class CommonController {
 
   @Post('pdf-create')
   async generate(@Req() req: Request,@Body() body: any) {
-    return this.commonService.generatePdf(req, body);
+    return this.commonService.generatePdf(body);
+  }
+
+  @Get("sap-modules")
+  @ApiOperation({ summary: 'Get all SAP Modules' })
+  @ApiResponse({ status: 200, description: 'List of all SAP MODULES' })
+  getAllSAPModules() {
+    return this.commonService.getSAPmodules();
   }
 }
