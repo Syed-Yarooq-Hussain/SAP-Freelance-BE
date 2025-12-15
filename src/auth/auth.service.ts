@@ -9,6 +9,7 @@ import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.
 import { RegisterDto } from './dto/register.dto';
 import { ConsultantLevel, USER_STATUS_ARRAY, UserRole, UserStatus } from 'constant/enums';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
+import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 
 @Injectable()
 export class AuthService {
@@ -155,5 +156,12 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
       }
     });
   }
+
+  async parse(file: Express.Multer.File) {
+    return {error:'to be fixed'};
+   /*  const text = await extractText(file);
+    return parseWithOpenAI(text); */
+  }
+
 
 }

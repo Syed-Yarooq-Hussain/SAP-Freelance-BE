@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -8,6 +8,7 @@ import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -58,6 +59,12 @@ export class AuthController {
       data: result,
       message: 'Login successful',
     });
+  }
+
+  @Post('parse-cv')
+  @UseInterceptors(FileInterceptor('cv'))
+  async parseCV(@UploadedFile() file: Express.Multer.File) {
+    return this.authService.parse(file);
   }
 
   // 🧪 Test Endpoint
