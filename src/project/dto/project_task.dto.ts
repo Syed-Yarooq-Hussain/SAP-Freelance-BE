@@ -31,6 +31,10 @@ export class CreateProjectTaskDto {
   @IsOptional()
   @IsNumber()
   project_id?: number;
+
+  @ApiPropertyOptional({ example: 2, description: 'Project ID (auto-updated if milestone changes)' })
+  @IsOptional()
+  due_date?: Date;
 }
 
 export class UpdateProjectTaskDto extends PartialType(CreateProjectTaskDto) {}

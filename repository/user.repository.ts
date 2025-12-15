@@ -125,6 +125,11 @@ class UserRepository {
             },
           ],
         },
+        {
+          model: Project,
+          required: true,
+          attributes: ['id', 'name', 'status'],
+        },
       ],
       raw: false,
     });

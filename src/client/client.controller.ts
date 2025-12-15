@@ -46,13 +46,6 @@ export class ClientController {
     return this.clientService.remove(+id);
   }
 
-  // ✅ Get Consultant By Id
-  @Get('consultants/:id')
-  @ApiOperation({ summary: 'Get consultant by ID' })
-  getConsultantById(@Param('id') id: string) {
-    return this.clientService.getConsultantById(+id);
-  }
-
  // ✅ Get Projects
   @Get('projects')
   @UseGuards(AuthGuard('jwt'))
