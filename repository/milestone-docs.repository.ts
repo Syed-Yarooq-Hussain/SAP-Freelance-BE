@@ -9,27 +9,27 @@ export class MilestoneDocsRepository {
     private readonly milestoneDocModel: typeof MilestoneDocs,
   ) {}
 
-  // 🆕 Naya milestone document create karne ke liye
+  // 🆕 Create Milestone Document
   async create(data: Partial<MilestoneDocs>): Promise<MilestoneDocs> {
     return this.milestoneDocModel.create(data);
   }
 
-  // 📋 Sab milestone documents get karne ke liye
+  // 📋 Get All Milestone Documents
   async findAll(): Promise<MilestoneDocs[]> {
     return this.milestoneDocModel.findAll();
   }
 
-  // 🔍 Kisi document ko ID se find karne ke liye
+  // 🔍 Get Document By Id
   async findById(id: number): Promise<MilestoneDocs | null> {
     return this.milestoneDocModel.findByPk(id);
   }
 
-  // 🔎 Milestone ke documents get karne ke liye (agar milestone_id foreign key hai)
+  // 🔎 Get Milestone Documents By Id 
   async findByMilestoneId(milestoneId: number): Promise<MilestoneDocs[]> {
     return this.milestoneDocModel.findAll({ where: { milestone_id: milestoneId } });
   }
 
-  // 🧠 Milestone document update karne ke liye
+  // 🧠 Uptade Milestone Document 
   async update(id: number, data: Partial<MilestoneDocs>): Promise<[number, MilestoneDocs[]]> {
     return this.milestoneDocModel.update(data, {
       where: { id },
@@ -37,7 +37,7 @@ export class MilestoneDocsRepository {
     });
   }
 
-  // ❌ Milestone document delete karne ke liye
+  // ❌ Delete Milestone Document 
   async delete(id: number): Promise<number> {
     return this.milestoneDocModel.destroy({ where: { id } });
   }

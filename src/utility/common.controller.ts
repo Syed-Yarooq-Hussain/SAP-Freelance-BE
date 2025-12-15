@@ -10,7 +10,7 @@ import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
 @ApiTags('Common')
 @Controller('common')
 export class CommonController {
-  constructor(private readonly commonService: CommonService) {}
+  constructor(private readonly commonService: CommonService) {}  
 
   @Post("industry")
   @ApiOperation({ summary: 'Create a new industry entry' })
@@ -65,5 +65,30 @@ export class CommonController {
     @Body() dto: UpdateMeetingStatusDto,
   ) {
     return this.commonService.updateMeetingStatus(Number(id), dto.status);
+  }
+
+  @Get("meetings")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all Meetings' })
+  @ApiResponse({ status: 200, description: 'List of all meetings' })
+  getAllMeetingByUsers(@Req() req: any) {
+    return this.commonService.getAllMeeting(req.user.id);
+  }
+
+  @Post('send-email')
+  async sendEmail(@Body() body: any) {
+    return this.commonService.sendEmail(body);
+  }
+
+  @Post('pdf-create')
+  async generate(@Req() req: Request,@Body() body: any) {
+    return this.commonService.generatePdf(body);
+  }
+
+  @Get("sap-modules")
+  @ApiOperation({ summary: 'Get all SAP Modules' })
+  @ApiResponse({ status: 200, description: 'List of all SAP MODULES' })
+  getAllSAPModules() {
+    return this.commonService.getSAPmodules();
   }
 }

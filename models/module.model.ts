@@ -15,19 +15,11 @@ export class ModuleEntity extends Model<ModuleEntity> {
   })
   name: string;
 
-  @ForeignKey(() => ModuleEntity)
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.BOOLEAN,
     allowNull: true,
   })
-  parent_id: number;
-
-  // Self relationship
-  @BelongsTo(() => ModuleEntity, 'parent_id')
-  parent: ModuleEntity;
-
-  @HasMany(() => ModuleEntity, 'parent_id')
-  subModules: ModuleEntity[];
+  is_core: boolean;
 
   @Column({
     type: DataType.DATE,

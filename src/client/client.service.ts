@@ -4,12 +4,15 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { User } from '../../models/user.model';
 import { UserRepository } from 'repository/user.repository';
-import { url } from 'inspector';
+import { ProjectRepository } from 'repository/project.repository';
+import { ProjectPaymentRepository} from 'repository/project-payment.repository';
 
 @Injectable()
 export class ClientService {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly projectRepository: ProjectRepository,
+    private readonly projectPaymentRepository: ProjectPaymentRepository,
     @InjectModel(User)
     private userModel: typeof User
   ) { }
@@ -19,7 +22,7 @@ export class ClientService {
     { id: 2, name: 'Client B', email: 'b@example.com' },
   ];
 
-  // 🧩 Dummy Consultants (linked with clients)
+  // 🧩 Dummy Consultants (Linked With Clients)
   private consultants = [
     { id: 1, name: 'Consultant Alpha', expertise: 'SAP HANA', clientId: 1, experience: 5, rate: 100 },
     { id: 2, name: 'Consultant Beta', expertise: 'SAP FICO', clientId: 1, experience: 3, rate: 80 },
@@ -27,14 +30,14 @@ export class ClientService {
     { id: 4, name: 'Consultant Delta', expertise: 'SAP ABAP', clientId: 2, experience: 4, rate: 90 },
   ];
 
-  // ✅ Create new client
+  // ✅ Create Client
   create(dto: CreateClientDto) {
     const newClient = { id: Date.now(), ...dto };
     this.clients.push(newClient);
     return newClient;
   }
 
-  // ✅ Get all clients
+  // ✅ Get All Clients
   findAll() {
     return this.clients;
   }
@@ -46,9 +49,7 @@ export class ClientService {
 
   const plain = user.toJSON();
 
-  // -------------------------
-  // Extract payments
-  // -------------------------
+  // 💸 Extract Payments
   const allPayments = [];
   for (const project of plain.projects) {
     if (project.payments?.length) {
@@ -64,9 +65,7 @@ export class ClientService {
     }
   }
 
-  // -------------------------
-  // Calendar
-  // -------------------------
+  // 📅 Calendar
   const sentMeetings = (plain.sentMeetings || []).map(m => ({
     id: m.id,
     date_time: m.date_time,
@@ -90,9 +89,7 @@ export class ClientService {
     (a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime()
   );
 
-  // -------------------------
-  // Project formatting
-  // -------------------------
+  // 📋 Project Formatting
   const projects = plain.projects.map(project => ({
     id: project.id,
     name: project.name,
@@ -107,7 +104,7 @@ export class ClientService {
       role: c.role,
       decided_rate: c.decided_rate,
       requested_hours: c.requested_hours,
-      is_joic_signed: c.is_joic_signed,
+      is_doc_signed: c.is_doc_signed,
     })),
     payments: project.payments.map(p => ({
       id: p.id,
@@ -134,11 +131,7 @@ export class ClientService {
 }
 
 
-
-
-
-
-  // ✅ Update client
+  // ✅ Update Client
   update(id: number, dto: UpdateClientDto) {
     const index = this.clients.findIndex((c) => c.id === id);
     if (index === -1) return null;
@@ -146,19 +139,38 @@ export class ClientService {
     return this.clients[index];
   }
 
-  // ✅ Remove client
+  // ✅ Remove Client
   remove(id: number) {
     this.clients = this.clients.filter((c) => c.id !== id);
     return { deleted: true };
   }
 
-  // ✅ Get all consultants
+  // ✅ Get All Consultants
   async getAllConsultants() {
     const consultants = await this.userRepository.findAllUsersWithConsultants();
-    return consultants;
+    let consultantList = [];
+    for(const consultant of consultants){
+      let modules = {core:'',others:''};
+      for(const mod of consultant.modules){
+        if(mod.module.is_core) 
+          modules.core += mod.module.name + ', ';
+        else 
+          modules.others += mod.module.name + ' ';
+      }
+      consultantList.push({
+        id: consultant.id,
+        name: consultant.username,
+        experience: consultant.consultants.experience,
+        rate: consultant.consultants.rate,
+        weekly_available_hours: consultant.consultants.weekly_available_hours,
+        working_schedule: consultant.consultants.working_schedule,
+        modules
+      });
+    }
+    return consultantList;
   }
 
-  // ✅ Get consultant by ID
+  // ✅ Get Consultant By Id
   getConsultantById(id: number) {
     const consultant = this.consultants.find((c) => c.id === id);
     if (!consultant) {
@@ -166,4 +178,26 @@ export class ClientService {
     }
     return consultant;
   }
+
+  async getAllProjectByClientId(user_id: number) {
+    let projects = await this.projectRepository.findAllByClient(user_id);
+     const projectsWithMembers = projects.map(project => ({
+      ...project,
+      members: 3,
+    }));
+
+    return projectsWithMembers;
+  }
+
+
+  async getAllProjectsPaymentsByClientId(client_id: number) {
+    let payments= await this.projectPaymentRepository.projectPaymentsByClientId(client_id);
+    const paymentsWithDueDate = payments.map(payments => ({
+      ...payments,
+      due_date: '2026-02-28T14:30:00.000Z',
+    }));
+    return paymentsWithDueDate;
+
+  }
+
 }

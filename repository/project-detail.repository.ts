@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectDetail } from '../models/project-detail.model';
-import { raw } from 'express';
 
 @Injectable()
 export class ProjectDetailRepository {
@@ -10,27 +9,27 @@ export class ProjectDetailRepository {
     private readonly projectDetailModel: typeof ProjectDetail,
   ) {}
 
-  // 🆕 Naya project detail create karne ke liye
+  // 🆕 Create Project Detail
   async create(data: Partial<ProjectDetail>): Promise<ProjectDetail> {
     return this.projectDetailModel.create(data, { raw: true });
   }
 
-  // 📋 Sab project details get karne ke liye
+  // 📋 Get All Project Details 
   async findAll(): Promise<ProjectDetail[]> {
     return this.projectDetailModel.findAll();
   }
 
-  // 🔍 Specific project detail ko ID se find karne ke liye
+  // 🔍 Get Project Detail By Id
   async findById(id: number): Promise<ProjectDetail | null> {
     return this.projectDetailModel.findByPk(id);
   }
 
-  // 🔎 Specific projectId ke zariye project detail dhoondhne ke liye
+  // 🔎 Get Project Detail By ProjectId
   async findByProjectId(project_id: number): Promise<ProjectDetail | null> {
     return this.projectDetailModel.findOne({ where: { project_id } });
   }
 
-  // 🧠 Project detail update karne ke liye
+  // 🧠 Update Project Detail
   async update(
     id: number,
     data: Partial<ProjectDetail>,
@@ -41,7 +40,7 @@ export class ProjectDetailRepository {
     });
   }
 
-  // ❌ Project detail delete karne ke liye
+  // ❌ Delete Project Detail
   async delete(id: number): Promise<number> {
     return this.projectDetailModel.destroy({ where: { id } });
   }

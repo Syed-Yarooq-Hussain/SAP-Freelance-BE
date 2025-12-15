@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateProjectDto } from './create-project.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   
@@ -46,6 +46,9 @@ export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @IsOptional()
   @IsDate()
   end_date?: Date;
+  
+  @IsOptional()
+  industry?: any;
   
   @ApiPropertyOptional({
     description: 'Duration of the project in hours',

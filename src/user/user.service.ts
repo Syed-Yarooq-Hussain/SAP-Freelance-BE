@@ -95,36 +95,36 @@ export class UserService {
     budget?: number,
     country?: string,
   ): Promise<User[]> {
-    const where: any = {}; // For User model
-    const consultantWhere: any = {}; // For Consultant model
+    const where: any = {};
+    const consultantWhere: any = {}; 
 
-    // 🌍 Country filter
+    // 🌍 Country Filter
     if (country) {
       where.country = { [Op.iLike]: `%${country}%` };
     }
 
-    // 💼 Experience filter
+    // 💼 Experience Filter
     if (experience) {
-      consultantWhere.experience = { [Op.gte]: experience }; // greater or equal
+      consultantWhere.experience = { [Op.gte]: experience }; 
     }
 
-    // ⏱ Availability filter
+    // ⏱ Availability Filter
     if (availability) {
       consultantWhere.weekly_available_hours = { [Op.gte]: availability };
     }
 
-    // 💰 Budget filter
+    // 💰 Budget Filter
     if (budget) {
-      consultantWhere.rate = { [Op.lte]: budget }; // less or equal
+      consultantWhere.rate = { [Op.lte]: budget };
     }
 
-    // 🧠 Run Sequelize query with include
+    // 🧠 Run Sequelize Query With Include
     return await this.userModel.findAll({
       where,
       include: [
         {
           model: Consultant,
-          required: true, // Only return users with consultant data that matches filters
+          required: true,
           where: consultantWhere,
         },
       ],

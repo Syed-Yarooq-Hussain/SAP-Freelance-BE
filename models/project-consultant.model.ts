@@ -73,9 +73,9 @@ export class ProjectConsultant extends Model<ProjectConsultant> {
   @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
-    field: 'is_joic_signed',
+    field: 'is_doc_signed',
   })
-  is_joic_signed?: boolean;
+  is_doc_signed?: boolean;
   
   @Column({
     type: DataType.INTEGER,

@@ -8,24 +8,27 @@ import { JwtStrategy } from './jwt.stretegy';
 import { User } from '../../models/user.model';
 import { ProjectDetail } from '../../models/project-detail.model';
 import { UserRepository } from '../../repository/user.repository';
-import { ConsultantModule } from '../consultant/consultant.module'; 
+import { ConsultantModule } from '../../models/consultant-module.model';
+import { ConsultantModule as ConsultantModuleImport } from '../consultant/consultant.module'; 
+import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, ProjectDetail]),
+    SequelizeModule.forFeature([User, ProjectDetail, ConsultantModule]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
-    }),
-    ConsultantModule, 
+    }), 
+    ConsultantModuleImport
   ],
 
   controllers: [AuthController],
   providers: [
     AuthService,               
     JwtStrategy,                
-    UserRepository,              
+    UserRepository, 
+    ConsultantModuleRepository             
   ],
   exports: [
     AuthService, 

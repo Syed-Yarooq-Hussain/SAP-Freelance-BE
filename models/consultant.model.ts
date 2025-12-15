@@ -11,19 +11,6 @@ export class Consultant extends Model<Consultant> {
   })
   id: number;
 
-  @ForeignKey(() => ModuleEntity)
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  module_id: number;
-
-  @Column({
-    type: DataType.INTEGER,
-    allowNull: true,
-  })
-  level_id: number;
-
   @Column({
     type: DataType.STRING,
     allowNull: true,
@@ -41,6 +28,12 @@ export class Consultant extends Model<Consultant> {
     allowNull: true,
   })
   weekly_available_hours: number;
+  
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  level: string;
 
   @ForeignKey(() => User)
   @Column({
@@ -50,10 +43,10 @@ export class Consultant extends Model<Consultant> {
   user_id: number;
 
   @Column({
-    type: DataType.STRING,
+    type: DataType.JSONB,  // ya DataType.JSON
     allowNull: true,
   })
-  working_schedule: string;
+  working_schedule: object;
 
   @Column({
     type: DataType.TEXT,
@@ -66,10 +59,6 @@ export class Consultant extends Model<Consultant> {
     allowNull: true,
   })
   career_details: string;
-
-  // Relations
-  @BelongsTo(() => ModuleEntity)
-  module: string;
 
   @BelongsTo(() => User)
   user: User;
