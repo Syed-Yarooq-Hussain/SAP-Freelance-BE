@@ -3,11 +3,11 @@ export function transformProjectConsultant(project_consultants_list: any) {
 
   for (const pc of project_consultants_list) {
     let modules = { core: '', others: '' };
-    if (!pc.user) continue;
     for (const mod of pc.user.modules) {
-      if (!mod) continue;
-      if (mod.module.is_core) modules.core += mod.module.name + ', ';
-      else modules.others += mod.module.name + ' ';
+      if(mod.module) {
+        if (mod.module.is_core) modules.core += mod.module.name + ', ';
+        else modules.others += mod.module.name + ' ';
+      }
     }
     proj_consultants.push({
       project_consultants_id: pc.id,
