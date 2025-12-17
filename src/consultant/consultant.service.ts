@@ -96,4 +96,9 @@ export class ConsultantService {
         }
     ];
   }
+
+  async getConsultantDetail(id: number) {
+    return await this.consultantRepository.findByUserId(id);
+  }
 }
+

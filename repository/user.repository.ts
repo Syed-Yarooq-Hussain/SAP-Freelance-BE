@@ -120,14 +120,14 @@ class UserRepository {
           include: [
             {
               model: ModuleEntity,
-              required: false,
+              required: true,
               attributes: ['id', 'name', 'is_core'],
             },
           ],
         },
         {
           model: Project,
-          required: true,
+          required: false,
           attributes: ['id', 'name', 'status'],
         },
       ],

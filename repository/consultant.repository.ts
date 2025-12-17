@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Consultant } from '../models/consultant.model';
+import { User } from 'models/user.model';
 
 @Injectable()
 export class ConsultantRepository {
@@ -26,7 +27,13 @@ async createDetail(dto: any) {
 
   // 🔎 Get Consultant By User Id
   async findByUserId(userId: number): Promise<Consultant | null> {
-    return this.consultantModel.findOne({ where: { user_id: userId } });
+    return this.consultantModel.findOne({ where: { user_id: userId },
+      attributes: ['rate', 'experience', 'weekly_available_hours', 'level'],
+      include: [{
+        model: User,
+        attributes: ['id', 'username', 'email', 'city', 'country'],
+      }]
+    });
   }
 
   // 🧠 Update Consultant

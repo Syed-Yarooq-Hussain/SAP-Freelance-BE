@@ -59,5 +59,13 @@ export class ConsultantController {
   getConsultantPayments(@Req() req: any) {
     return this.consultantService.getConsultantPayments(+req.user.id);
   }
+  
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Details' })
+  @ApiResponse({ status: 201, description: 'Get consultant Details' })
+  getConsultantDetails(@Req() req: any) {
+    return this.consultantService.getConsultantDetail(+req.user.id);
+  }
 
 }
