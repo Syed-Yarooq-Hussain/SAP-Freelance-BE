@@ -1,4 +1,5 @@
 import { stat } from "fs";
+import { end } from "pdfkit";
 
 export function getAdminsClientResponse(list: any[]) {
   let clients = [];
@@ -59,4 +60,21 @@ export function getAdminsConsultantResponse(list: any[]) {
     });
   }
   return consultants;
+}
+
+export function getAdminsProjectResponse(list: any[]) {
+  let projects = [];
+  const modules = {core: '', others: ''};
+  for (const project of list) {
+    projects.push({
+      id: project.id,
+      name: project.name,
+      status: project.status,
+      client_name: project.client?.username ?? null,
+      start_date: project.projectDetails?.start_date ?? null,
+      duration: project.projectDetails?.duration ?? null,
+      modules
+    });
+  }
+  return projects;
 }

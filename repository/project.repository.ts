@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Project } from '../models/project.model';
 import { ProjectPayment } from 'models/project-payment.model';
+import { User } from 'models/user.model';
 
 @Injectable()
 export class ProjectRepository {
@@ -78,6 +79,10 @@ export class ProjectRepository {
     return this.projectModel.findAll({
       include: [
         'projectDetails',
+        {
+          model: User,
+          attributes: ['username'],
+        }
       ],
       raw: true,
       nest: true,

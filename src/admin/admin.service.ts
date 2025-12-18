@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserRepository } from 'repository/user.repository';
-import { getAdminsClientResponse, getAdminsConsultantResponse } from './transformer/response.transformer';
+import { getAdminsClientResponse, getAdminsConsultantResponse, getAdminsProjectResponse } from './transformer/response.transformer';
 import { ProjectRepository } from 'repository/project.repository';
 import { transformProjectConsultant } from 'src/project/transformers/project-consultant-transformer';
 
@@ -49,7 +49,8 @@ export class AdminService {
   }
   
   async getAllProjects() {
-    return await this.projectRepo.findAllforAdmin();
+    let projects = await this.projectRepo.findAllforAdmin();
+    return getAdminsProjectResponse(projects);
   }
 
 
