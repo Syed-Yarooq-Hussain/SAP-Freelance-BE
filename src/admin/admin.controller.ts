@@ -25,6 +25,11 @@ export class AdminController {
   getAllClients() {
     return this.adminService.getAllClients();
   }
+
+  @Post('clients/:id')
+  accpetRejectClient(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.accpetRejectConsultantById(+id, body);
+  }
   
   @Get('projects')
   getAllProjects() {
