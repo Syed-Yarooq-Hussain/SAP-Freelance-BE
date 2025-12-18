@@ -52,8 +52,4 @@ export class AdminService {
     let projects = await this.projectRepo.findAllforAdmin();
     return getAdminsProjectResponse(projects);
   }
-
-
-
-
 }
