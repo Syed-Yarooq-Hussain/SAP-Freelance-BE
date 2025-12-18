@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserRepository } from 'repository/user.repository';
-import { getAdminsClientResponse } from './transformer/response.transformer';
+import { getAdminsClientResponse, getAdminsConsultantResponse } from './transformer/response.transformer';
 import { ProjectRepository } from 'repository/project.repository';
 import { transformProjectConsultant } from 'src/project/transformers/project-consultant-transformer';
 
@@ -26,8 +26,21 @@ export class AdminService {
   }
 
 
-  async getAllConsultant() {
-    return await this.userRepo.findAllUsersWithConsultants();
+  async getAllConsultant(status: string) {
+    const consultantList =  await this.userRepo.findAllUsersWithConsultants(status);
+    let consultants = getAdminsConsultantResponse(consultantList);
+    return consultants;
+  }
+
+  async accpetRejectConsultantById(id: number, body: any) {
+    const consultant = await this.userRepo.findById(id);
+
+    if (!consultant) {
+      throw new Error('Consultant not found');
+    }
+    consultant.status = body.status;
+    await consultant.save();
+    return consultant;
   }
   
   async getAllClients() {

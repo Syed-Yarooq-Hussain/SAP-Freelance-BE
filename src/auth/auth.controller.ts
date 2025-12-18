@@ -30,19 +30,8 @@ export class AuthController {
   // 🟣 User Signup
   @Post('signup/user')
   async registerUser(@Body() registerDto: RegisterDto) {
-    try {
-      const user = await this.authService.signupUser(registerDto);
-      return {
-        code: 200,
-        status: 'success',
-        data: user,
-      message: 'User registered successfully',
-    };
-  } catch (error) {
-    console.error('Signup error:', error);
-    throw new CustomError(500, 'Validation error');
+      return await this.authService.signupUser(registerDto)
   }
-}
 
 // 🔵 Login Endpoint
 @Post('login')

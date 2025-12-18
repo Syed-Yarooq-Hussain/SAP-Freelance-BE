@@ -56,6 +56,8 @@ export enum UserStatus {
   INACTIVE = 'inactive',
   PENDING = 'pending',
   BLOCKED = 'blocked',
+  REJECTED = 'rejected',
+  Locked = 'locked',
 }
 
 export const USER_STATUS_ARRAY = Object.values(UserStatus);

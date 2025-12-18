@@ -103,10 +103,10 @@ class UserRepository {
     return { data: rows, total: count, page, limit };
   }
 
-  async findAllUsersWithConsultants(): Promise<User[]> {
+  async findAllUsersWithConsultants(status?: string): Promise<User[]> {
     return await this.userModel.findAll({
-      where: { role: UserRole.CONSULTANT },
-      attributes: ['id', 'username'],
+      where: { role: UserRole.CONSULTANT, ...(status ? { status } : {}), },
+      attributes: ['id', 'username', 'status'],
       include: [
         {
           model: Consultant,

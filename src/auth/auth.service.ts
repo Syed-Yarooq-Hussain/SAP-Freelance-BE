@@ -23,6 +23,14 @@ export class AuthService {
  // 🟢 Consultant Signup
 async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   // ✅ Step 1: Password Hashing
+
+  const isUserExist = await User.findOne({
+    where: { email: consultantDto.user.email },
+  });
+
+  if (isUserExist) {
+    throw new CustomError(400, 'User with this email already exists');
+  }
   
   const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
   // ✅ Step 2: Create User Record
@@ -78,6 +86,14 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   // 🟣 User Signup
   async signupUser(userDto: RegisterDto) {
     // ✅ Step 1: Hash Password
+    const isUserExist = await User.findOne({
+      where: { email: userDto.email },
+    });
+
+    if (isUserExist) {
+      throw new CustomError(400, 'User with this email already exists');
+    }
+    
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
 
     // ✅ Step 2: Create user Record

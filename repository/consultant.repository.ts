@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Consultant } from '../models/consultant.model';
 import { User } from 'models/user.model';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
 
 @Injectable()
 export class ConsultantRepository {
@@ -32,7 +34,16 @@ async createDetail(dto: any) {
       include: [{
         model: User,
         attributes: ['id', 'username', 'email', 'city', 'country'],
-      }]
+        include: [{
+          model: ConsultantModule,
+          attributes: ['id'],
+          include: [{
+            model: ModuleEntity,
+            attributes: ['id', 'name'],
+          }]
+        }]
+      },
+    ]
     });
   }
 
