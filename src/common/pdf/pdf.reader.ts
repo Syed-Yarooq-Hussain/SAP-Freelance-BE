@@ -1,37 +1,89 @@
-import extract from 'pdf-text-extract';
+const pdfParse = require('pdf-parse'); // Node-only, no DOM, no system tools
+import * as fs from 'fs';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI;
 
-export function extractText(filePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    extract(filePath, (err, pages) => {
-      if (err) return reject(err);
-      resolve(pages.join('\n'));
+export function getOpenAI() {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
     });
-  });
+  }
+  return openai;
 }
+
+export async function extractText(filePath: string): Promise<string> {
+  const buffer = fs.readFileSync(filePath);
+  const data = await pdfParse(buffer);
+  return data.text;
+}
+
 export async function parseWithOpenAI(text: string) {
   const prompt = `
-Extract structured data from this CV.
-Return only valid JSON.
+You are a JSON generator.
 
-Fields:
-- full_name
-- email
-- city
-- country
-- total_experience_years
-- clients_summary
+Return ONLY valid JSON.
+No markdown.
+No backticks.
+No explanation text.
+
+Required structure:
+{
+  "full_name": string | null,
+  "email": string | null,
+  "city": string | null,
+  "country": string | null,
+  "total_experience_years": number | null,
+  "clients_summary": string | null,
+  "skills": string[],
+  "work_experiences": [
+    {
+      "company_name": string | null,
+      "position": string | null,
+      "start_date": string | null,
+      "end_date": string | null,
+      "responsibilities": string[]
+    }
+  ],
+  "education": [
+    {
+      "institution_name": string | null,
+      "degree": string | null,
+      "start_date": string | null,
+      "end_date": string | null,
+      "details": string[]
+    }
+  ],
+  "certifications": [
+    {
+      "certification_name": string | null,
+      "issuing_organization": string | null,
+      "issue_date": string | null,
+      "expiration_date": string | null
+    }
+  ],
+  "languages": string[]
+}
 
 CV:
 """${text}"""
 `;
 
+  const openai = getOpenAI();
   const response = await openai.responses.create({
-    model: "gpt-4.1",
+    model: "gpt-4o-mini",
     input: prompt,
   });
 
-  return JSON.parse(response.output_text);
+  const raw = response.output_text;
+
+  // 👇 SAFE JSON CLEAN
+  const cleaned = raw
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .trim();
+
+  return JSON.parse(cleaned);
 }
+

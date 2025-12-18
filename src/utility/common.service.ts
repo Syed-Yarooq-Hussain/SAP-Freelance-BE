@@ -9,6 +9,7 @@ import { getAllMeetingResponse } from './transformer/meeting.transformer';
 import { sendEmail } from 'src/common/emails/email.util';
 import { generatePdf } from 'src/common/pdf/pdf.util';
 import { ModuleRepository } from 'repository/module.repository';
+import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 
 @Injectable()
 export class CommonService {
@@ -132,5 +133,14 @@ export class CommonService {
     const others = allModules.filter(m => m.is_core === false);
 
     return { core, others };
+  }
+
+  async readerPdf(filePath: string) {
+    const text = await extractText(filePath);
+    const userInfo = await parseWithOpenAI(text);
+    return {
+      success: true,
+      userInfo
+    };
   }
 }
