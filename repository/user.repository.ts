@@ -19,9 +19,9 @@ class UserRepository {
   }
   
   // 🟢 Get all Clients for Admin Screen
-  async getAllClientsWithProjectstatus(): Promise<User[]> {
+  async getAllClientsWithProjectstatus(status?: string): Promise<User[]> {
     return this.userModel.findAll({
-      where: { role: UserRole.CLIENT },
+      where: { role: UserRole.CLIENT , ...(status ? { status } : {}), },
       attributes: ['id', 'username', 'status'],
       include: [
         {

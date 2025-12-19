@@ -43,8 +43,8 @@ export class AdminService {
     return consultant;
   }
   
-  async getAllClients() {
-    let clientsResponse = await this.userRepo.getAllClientsWithProjectstatus();
+  async getAllClients(status: string) {
+    let clientsResponse = await this.userRepo.getAllClientsWithProjectstatus(status);
     return getAdminsClientResponse(clientsResponse);
   }
   
