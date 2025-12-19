@@ -21,9 +21,9 @@ export class AdminController {
     return this.adminService.accpetRejectConsultantById(+id, body);
   }
   
-  @Get('clients')
-  getAllClients() {
-    return this.adminService.getAllClients();
+  @Get('clients/all')
+  getAllClients(@Query('status') status: string) {
+    return this.adminService.getAllClients(status);
   }
 
   @Post('clients/:id')
