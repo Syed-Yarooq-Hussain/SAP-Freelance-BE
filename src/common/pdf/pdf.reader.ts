@@ -1,4 +1,4 @@
-const pdfParse = require('pdf-parse'); // Node-only, no DOM, no system tools
+const pdfParse = require('pdf-parse'); 
 import * as fs from 'fs';
 import OpenAI from 'openai';
 
@@ -30,14 +30,15 @@ No explanation text.
 
 Required structure:
 {
-  "full_name": string | null,
-  "email": string | null,
-  "city": string | null,
-  "country": string | null,
-  "total_experience_years": number | null,
-  "clients_summary": string | null,
-  "skills": string[],
-  "work_experiences": [
+  "user.username": string | null,
+  "user.phone": string | null,
+  "user.email": string | null,
+  "user.city": string | null,
+  "user.country": string | null,
+  "consultant.total_experience_years": number | null,
+  "consultant.clients_summary": string | null,
+  "consultant.skills": string[],
+  "consultant.work_experiences": [
     {
       "company_name": string | null,
       "position": string | null,
@@ -46,7 +47,7 @@ Required structure:
       "responsibilities": string[]
     }
   ],
-  "education": [
+  "consultant.education": [
     {
       "institution_name": string | null,
       "degree": string | null,
@@ -55,7 +56,7 @@ Required structure:
       "details": string[]
     }
   ],
-  "certifications": [
+  "consultant.certifications": [
     {
       "certification_name": string | null,
       "issuing_organization": string | null,
@@ -63,7 +64,7 @@ Required structure:
       "expiration_date": string | null
     }
   ],
-  "languages": string[]
+  "consultant.languages": string[]
 }
 
 CV:

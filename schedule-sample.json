@@ -1,0 +1,109 @@
+{
+    "code": 200,
+    "status": "success",
+    "message": "Request successful",
+    "data": {
+        "weekly": [
+            {
+                "day": "Monday",
+                "slot": [
+                    {
+                        "start": "09:00",
+                        "end": "17:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "day": "Tuesday",
+                "slot": [
+                    {
+                        "start": "09:00",
+                        "end": "17:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "day": "Wednesday",
+                "slot": [
+                    {
+                        "start": "09:00",
+                        "end": "17:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "day": "Thursday",
+                "slot": [
+                    {
+                        "start": "09:00",
+                        "end": "17:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "day": "Friday",
+                "slot": [
+                    {
+                        "start": "09:00",
+                        "end": "17:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "day": "Saturday",
+                "active": false
+            },
+            {
+                "day": "Sunday",
+                "active": false
+            }
+        ],
+        "custom": [
+            {
+                "date": "2026-01-17",
+                "slot": [
+                    {
+                        "start": "07:00",
+                        "end": "13:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "date": "2026-01-25",
+                "slot": [
+                    {
+                        "start": "07:00",
+                        "end": "13:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "date": "2026-01-26",
+                "slot": [
+                    {
+                        "start": "07:00",
+                        "end": "13:00"
+                    }
+                ],
+                "active": true
+            },
+            {
+                "date": "2026-01-27",
+                "slot": [
+                    {
+                        "start": "07:00",
+                        "end": "13:00"
+                    }
+                ],
+                "active": true
+            }
+        ]
+    }
+}

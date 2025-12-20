@@ -47,9 +47,17 @@ async createDetail(dto: any) {
     });
   }
 
+  async getSchedulesByUserId(id: number): Promise<Consultant | null> 
+  {
+    return this.consultantModel.findOne({ where: { user_id: id },
+      attributes: ['working_schedule'],
+    });
+  }
+
+
   // 🧠 Update Consultant
-  async update(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
-    return this.consultantModel.update(data, { where: { id }, returning: true });
+  async updateByUserId(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
+    return this.consultantModel.update(data, { where: { user_id: id }, returning: true });
   }
 
   // ❌ Delete Consultant
