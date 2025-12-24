@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -11,13 +11,24 @@ export class AdminController {
   }
   
   @Get('consultants/all')
-  getAllConsultants() {
-    return this.adminService.getAllConsultant();
+  getAllConsultants(@Query('status') status: string) {
+    console.log("Status Filter:", status);  
+    return this.adminService.getAllConsultant(status);
   }
   
-  @Get('clients')
-  getAllClients() {
-    return this.adminService.getAllClients();
+  @Post('consultants/:id')
+  accpetRejectConsultant(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.accpetRejectConsultantById(+id, body);
+  }
+  
+  @Get('clients/all')
+  getAllClients(@Query('status') status: string) {
+    return this.adminService.getAllClients(status);
+  }
+
+  @Post('clients/:id')
+  accpetRejectClient(@Param('id') id: string, @Body() body: any) {
+    return this.adminService.accpetRejectConsultantById(+id, body);
   }
   
   @Get('projects')

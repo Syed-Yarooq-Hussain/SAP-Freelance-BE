@@ -6,12 +6,16 @@ import * as bcrypt from 'bcrypt';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 import { getConsultantProjectsResponse } from './transformer/consultant.transformer';
 import { ConsultantRepository } from 'repository/consultant.repository';
+import { buildMonthlySchedule } from '../common/calender/monthly.util';
+import { MeetingRepository } from 'repository/meeting.repository';
+import { groupEventsByDate, mergeEventsIntoSchedule } from 'src/common/calender/events.util';
 
 @Injectable()
 export class ConsultantService {
   constructor(
       private readonly projectConsultantRepo: ProjectConsultantRepository,
       private readonly consultantRepository: ConsultantRepository,
+      private readonly meetingRepo: MeetingRepository,
     ) {}
   private consultants: GetConsultantDto[] = [
     {id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'FrontendDeveloper',password:"" },
@@ -96,4 +100,28 @@ export class ConsultantService {
         }
     ];
   }
+
+  async getConsultantDetail(id: number) {
+    return await this.consultantRepository.findByUserId(id);
+  }
+  
+  async setConsultantSchedule(id: number, body: any) {
+    await this.consultantRepository.updateByUserId(id, {working_schedule: body});
+    return body;
+  }
+
+  async getConsultantSchedule(id: number, month: number, year: number) {
+  const consultant = await this.consultantRepository.getSchedulesByUserId(id);
+
+  const meetings =
+    await this.meetingRepo.getMeetingWithDetails(id);
+
+  const monthlySchedule = await buildMonthlySchedule(year, month, consultant.working_schedule);
+
+  const eventsByDate = groupEventsByDate(meetings);
+
+  return mergeEventsIntoSchedule(monthlySchedule, eventsByDate);
 }
+
+}
+

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Project } from '../models/project.model';
 import { ProjectPayment } from 'models/project-payment.model';
+import { User } from 'models/user.model';
 
 @Injectable()
 export class ProjectRepository {
@@ -10,12 +11,12 @@ export class ProjectRepository {
     private readonly projectModel: typeof Project,
   ) {}
 
-  // Add new project
+  // 🆕 Create Project
   async create(data: Partial<Project>): Promise<Project> {
     return this.projectModel.create(data);
   }
 
-  // Get all projects
+  // 📋 Get All Projects
   async findAllByClient(user_id: number): Promise<Project[]> {
     return this.projectModel.findAll({
       where: { client_id: user_id },
@@ -27,7 +28,7 @@ export class ProjectRepository {
     });
   }
 
-  // 🔎 Project by ID
+  // 🔍 Get Project By Id
   async findById(id: number): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
       include: [
@@ -41,12 +42,12 @@ export class ProjectRepository {
     });
   }
 
-  // 🔎 Client ID  projects
+  // 🔎 Get Project By Client Id
   async findByClientId(client_id: number): Promise<Project[]> {
     return this.projectModel.findAll({ where: { client_id } });
   }
 
-  // 🧠 Project update 
+  // 🧠 Update Project 
   async update(
     id: number,
     data: Partial<Project>,
@@ -57,7 +58,7 @@ export class ProjectRepository {
     });
   }
 
-  // ❌ Project delete karne ke liye
+  // ❌ Delete Project
   async delete(id: number): Promise<number> {
     return this.projectModel.destroy({ where: { id } });
   }
@@ -78,6 +79,10 @@ export class ProjectRepository {
     return this.projectModel.findAll({
       include: [
         'projectDetails',
+        {
+          model: User,
+          attributes: ['username'],
+        }
       ],
       raw: true,
       nest: true,

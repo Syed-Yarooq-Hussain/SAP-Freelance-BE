@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
@@ -58,6 +58,30 @@ export class ConsultantController {
   @ApiResponse({ status: 201, description: 'Get consultant payments' })
   getConsultantPayments(@Req() req: any) {
     return this.consultantService.getConsultantPayments(+req.user.id);
+  }
+  
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Details' })
+  @ApiResponse({ status: 201, description: 'Get consultant Details' })
+  getConsultantDetails(@Req() req: any) {
+    return this.consultantService.getConsultantDetail(+req.user.id);
+  }
+  
+  @Post('schedule')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Add Consulatant Schedule ' })
+  @ApiResponse({ status: 201, description: 'Add Consulatant Schedule' })
+  setConsultantSchedule(@Req() req: any, @Body() body: any) {
+    return this.consultantService.setConsultantSchedule(+req.user.id, body);
+  }
+  
+  @Get('schedule')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get Consulatant Schedule ' })
+  @ApiResponse({ status: 201, description: 'Get Consulatant Schedule' })
+  getConsultantSchedule(@Req() req: any, @Query() query: any) {
+    return this.consultantService.getConsultantSchedule(+req.user.id, +query.month, +query.year);
   }
 
 }

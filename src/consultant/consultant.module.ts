@@ -8,10 +8,13 @@ import { ProjectConsultantRepository } from 'repository/project-consultant.repos
 import { ProjectConsultant } from 'models/project-consultant.model';
 import { User } from 'models/user.model';
 import { UserRepository } from 'repository/user.repository';
+import { MeetingRepository } from 'repository/meeting.repository';
+import { Meeting } from 'models/meeting.model';
+import { MeetingInvitee } from 'models/meeting-invitee.model';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Consultant, ProjectConsultant, User])],
-  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository],
+  imports: [SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee])],
+  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository],
   controllers: [ConsultantController],
   exports: [ConsultantRepository, ProjectConsultantRepository, UserRepository],
 })

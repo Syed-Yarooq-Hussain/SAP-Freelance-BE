@@ -9,27 +9,27 @@ export class ProjectIndustriesRepository {
     private readonly projectIndustryModel: typeof ProjectIndustry,
   ) {}
 
-  // 🆕 Create new industry
+  // 🆕 Create Industry
   async create(data: Partial<ProjectIndustry>): Promise<ProjectIndustry> {
     return this.projectIndustryModel.create(data);
   }
 
-  // 📋 Get all industries (optional filter)
+  // 📋 Get All Industries (Optional Filter)
   async findAll(options?: any): Promise<ProjectIndustry[]> {
     return this.projectIndustryModel.findAll(options);
   }
 
-  // 🔍 Find by ID
+  // 🔍 Get Project Industry By Id
   async findById(id: number): Promise<ProjectIndustry | null> {
     return this.projectIndustryModel.findByPk(id);
   }
 
-  // 🔎 Find by project ID
+  // 🔎 Get Industry By Project Id
   async findByProjectId(project_id: number): Promise<ProjectIndustry[]> {
     return this.projectIndustryModel.findAll({ where: { project_id } });
   }
 
-  // 🧠 Update industry
+  // 🧠 Update Industry
   async update(
     id: number,
     data: Partial<ProjectIndustry>,
@@ -40,7 +40,7 @@ export class ProjectIndustriesRepository {
     });
   }
 
-  // ❌ Delete industry
+  // ❌ Delete Industry
   async delete(id: number): Promise<number> {
     return this.projectIndustryModel.destroy({ where: { id } });
   }

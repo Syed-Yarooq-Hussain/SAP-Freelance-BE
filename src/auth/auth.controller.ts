@@ -1,14 +1,14 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CustomResponse } from 'src/utils/CustomResponse';
 import { User } from 'models/user.model';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
-import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -23,31 +23,15 @@ export class AuthController {
   @ApiBody({ type: CreateConsultantDetailDto })
   async signupConsultant(
     @Body() consultantDto: CreateConsultantDetailDto,
-    @Res() res: Response,
   ) {
-    const result = await this.authService.signupConsultant(consultantDto);
-    return CustomResponse.success<User>(res, {
-      data: result,
-      message: 'Consultant signed up successfully',
-    });
+    return await this.authService.signupConsultant(consultantDto);
   }
   
-  // 🟣 User Signup (Normal User)
+  // 🟣 User Signup
   @Post('signup/user')
   async registerUser(@Body() registerDto: RegisterDto) {
-    try {
-      const user = await this.authService.signupUser(registerDto);
-      return {
-        code: 200,
-        status: 'success',
-        data: user,
-      message: 'User registered successfully',
-    };
-  } catch (error) {
-    console.error('Signup error:', error);
-    throw new CustomError(500, 'Validation error');
+      return await this.authService.signupUser(registerDto)
   }
-}
 
 // 🔵 Login Endpoint
 @Post('login')
@@ -64,6 +48,12 @@ export class AuthController {
       data: result,
       message: 'Login successful',
     });
+  }
+
+  @Post('parse-cv')
+  @UseInterceptors(FileInterceptor('cv'))
+  async parseCV(@UploadedFile() file: Express.Multer.File) {
+    return this.authService.parse(file);
   }
 
   // 🧪 Test Endpoint

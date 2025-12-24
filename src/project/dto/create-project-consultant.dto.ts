@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 import { ConsultantLevel, ConsultantStatus } from 'constant/enums';
 
@@ -21,7 +20,6 @@ export class CreateProjectConsultantDto {
   @IsString()
   requested_hours: number;
 }
-
 
 export class UpdateProjectConsultantStatusDto {
   @ApiProperty({ description: 'Consultant ID' })
@@ -55,10 +53,8 @@ export class UpdateProjectConsultantStatusDto {
     type: Object,
   })
   @IsOptional()
-  booking_schedule?: any; // ya object type rakh sakte ho
+  booking_schedule?: any;
 }
-
-
 
 export class UpdateProjectConsultantRoleDto {
   

@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Consultant } from '../models/consultant.model';
-import { CreateConsultantDetailDto } from 'src/user/dto/create-consultant-detail.dto';
+import { User } from 'models/user.model';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
 
 @Injectable()
 export class ConsultantRepository {
@@ -10,37 +12,55 @@ export class ConsultantRepository {
     private readonly consultantModel: typeof Consultant,
   ) {}
 
-  // 🟢 Create new consultant detail
-async createDetail(dto: any, userId: number) {
-  return this.consultantModel.create({
-    user_id: userId,
-    experience: dto.experience,
-    rate: dto.rate,
-    weekly_available_hours: dto.weekly_available_hours,
-  });
+  // 🟢 Create Consultant Detail
+async createDetail(dto: any) {
+  return this.consultantModel.create(dto);
 }
 
-  // 📋 Get all consultants
+  // 📋 Get All Consultants
   async findAll(): Promise<Consultant[]> {
     return this.consultantModel.findAll();
   }
 
-  // 🔍 Get consultant by ID
+  // 🔍 Get Consultant By Id
   async findById(id: number): Promise<Consultant | null> {
     return this.consultantModel.findByPk(id);
   }
 
-  // 🔎 Get consultant by user ID
+  // 🔎 Get Consultant By User Id
   async findByUserId(userId: number): Promise<Consultant | null> {
-    return this.consultantModel.findOne({ where: { user_id: userId } });
+    return this.consultantModel.findOne({ where: { user_id: userId },
+      attributes: ['rate', 'experience', 'weekly_available_hours', 'level'],
+      include: [{
+        model: User,
+        attributes: ['id', 'username', 'email', 'city', 'country'],
+        include: [{
+          model: ConsultantModule,
+          attributes: ['id'],
+          include: [{
+            model: ModuleEntity,
+            attributes: ['id', 'name'],
+          }]
+        }]
+      },
+    ]
+    });
   }
 
-  // 🧠 Update consultant
-  async update(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
-    return this.consultantModel.update(data, { where: { id }, returning: true });
+  async getSchedulesByUserId(id: number): Promise<Consultant | null> 
+  {
+    return this.consultantModel.findOne({ where: { user_id: id },
+      attributes: ['working_schedule'],
+    });
   }
 
-  // ❌ Delete consultant
+
+  // 🧠 Update Consultant
+  async updateByUserId(id: number, data: Partial<Consultant>): Promise<[number, Consultant[]]> {
+    return this.consultantModel.update(data, { where: { user_id: id }, returning: true });
+  }
+
+  // ❌ Delete Consultant
   async delete(id: number): Promise<number> {
     return this.consultantModel.destroy({ where: { id } });
   }

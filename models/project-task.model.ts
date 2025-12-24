@@ -47,5 +47,12 @@ export class ProjectTask extends Model<ProjectTask> {
     allowNull: true,
     defaultValue: null,
   })
+  due_date: Date | null;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
   deleted_at: Date | null;
 }

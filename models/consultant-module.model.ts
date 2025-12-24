@@ -1,5 +1,4 @@
 import {Table,Column,Model,DataType,ForeignKey,BelongsTo,} from 'sequelize-typescript';
-import { Consultant } from './consultant.model';
 import { ModuleEntity } from './module.model';
 import { User } from './user.model';
 
@@ -32,7 +31,6 @@ export class ConsultantModule extends Model<ConsultantModule> {
   })
   is_primary: boolean;
 
-  // Relations
   @BelongsTo(() => User)
   user: User;
 

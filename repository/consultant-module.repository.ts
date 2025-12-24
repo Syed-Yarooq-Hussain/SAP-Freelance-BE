@@ -10,19 +10,19 @@ export class ConsultantModuleRepository {
     private readonly consultantModuleModel: typeof ConsultantModule,
   ) {}
 
-  // New record create karega
-  async createModule(dto: CreateConsultantModuleDto): Promise<ConsultantModule> {
+  // 🟢 Create New Record
+  async createModule(dto: any): Promise<ConsultantModule> {
     return this.consultantModuleModel.create(dto);
   }
 
-  // Sare records fetch karega
+  // 📋 Get All Records
   async findAll(): Promise<ConsultantModule[]> {
     return this.consultantModuleModel.findAll({
       include: { all: true },
     });
   }
 
-  // Consultant ke hisab se record nikalega
+  // 🔍 Records Will Be Fetched By Consultant
   async findByConsultantId(consultantId: number): Promise<ConsultantModule[]> {
     return this.consultantModuleModel.findAll({
       where: { user_id: consultantId },
@@ -30,21 +30,21 @@ export class ConsultantModuleRepository {
     });
   }
 
-  // Ek specific record find karega
+  // 🔎 Get Specific Record
   async findById(id: number): Promise<ConsultantModule | null> {
     return this.consultantModuleModel.findByPk(id, {
       include: { all: true },
     });
   }
 
-  // Update record
+  // 🧠 Update Record
   async update(id: number, data: Partial<ConsultantModule>): Promise<ConsultantModule | null> {
     const record = await this.consultantModuleModel.findByPk(id);
     if (!record) return null;
     return record.update(data);
   }
 
-  // Delete record
+  // ❌ Delete Record
   async delete(id: number): Promise<number> {
     return this.consultantModuleModel.destroy({ where: { id } });
   }

@@ -15,11 +15,12 @@ export class ProjectConsultantRepository {
     private readonly projectConsultantModel: typeof ProjectConsultant,
   ) {}
 
-  // 🆕 Add project consultant
+  // 🆕 Create Project Consultant
   async create(data: Partial<ProjectConsultant>): Promise<ProjectConsultant> {
     return this.projectConsultantModel.create(data);
   }
 
+  // 📋 Get All Project Consultant
   async findAll(options?: any): Promise<ProjectConsultant[]> {
   return this.projectConsultantModel.findAll({
     ...options,
@@ -56,10 +57,12 @@ export class ProjectConsultantRepository {
     return this.projectConsultantModel.findByPk(id);
   }
 
+  // 🔎 Get Consultant By ProjectId
   async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
     return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } , raw: true });
   }
 
+  // 🔎 Get Consultant By ConsultantId
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
     return this.projectConsultantModel.findAll({
       where: { consultant_id },
@@ -98,6 +101,7 @@ export class ProjectConsultantRepository {
     });
   }
 
+  // 🧠 Update Consultant
   async update(
     option: any,
     data: Partial<ProjectConsultant>,
@@ -108,6 +112,7 @@ export class ProjectConsultantRepository {
     });
   }
 
+  // ❌ Delete Consultant
   async delete(id: number): Promise<number> {
     return this.projectConsultantModel.destroy({ where: { id } });
   }

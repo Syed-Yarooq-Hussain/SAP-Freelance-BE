@@ -3,12 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CustomError } from '../config/custom-error.exception';
 import { User } from '../../models/user.model';
-import { ProjectDetail } from '../../models/project-detail.model';
 import { ConsultantRepository } from '../../repository/consultant.repository';
 import { UserRepository } from '../../repository/user.repository';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
 import { RegisterDto } from './dto/register.dto';
-import { UserRole } from 'constant/enums';
+import { ConsultantLevel, USER_STATUS_ARRAY, UserRole, UserStatus } from 'constant/enums';
+import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
+import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 
 @Injectable()
 export class AuthService {
@@ -16,59 +17,88 @@ export class AuthService {
     private readonly userRepo: UserRepository,
     private readonly consultantRepo: ConsultantRepository,
     private readonly jwtService: JwtService,
+    private readonly consultantModuleRepo: ConsultantModuleRepository
   ) {}
 
  // 🟢 Consultant Signup
 async signupConsultant(consultantDto: CreateConsultantDetailDto) {
-  // ✅ Step 1: Password hashing
-  console.log('Hashed password:', consultantDto.user);
+  // ✅ Step 1: Password Hashing
 
+  const isUserExist = await User.findOne({
+    where: { email: consultantDto.user.email },
+  });
+
+  if (isUserExist) {
+    throw new CustomError(400, 'User with this email already exists');
+  }
+  
   const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
-  // ✅ Step 2: Create user record
+  // ✅ Step 2: Create User Record
   const user = await this.userRepo.createUser({
     username: consultantDto.user.username,
     email: consultantDto.user.email,
     password: hashedPassword,
     role: +UserRole.CONSULTANT,
-    status: consultantDto.user.status === 'active' ? 1 : 0,
+    status: UserStatus.PENDING,
     phone: consultantDto.user.phone || null,
-    currency: consultantDto.user.currency || 'USD',
+    currency: consultantDto.user.currency || 'PKR',
     city: consultantDto.user.city || null,
     country: consultantDto.user.country || null,
   });
 
-  // ✅ Step 3: Create consultant details (link with user.id)
+
+  // ✅ Step 3: Create Consultant Details (Link With user.id)
+  const level= this.getLevelByExperience(consultantDto.consultant.experience);
+  const schedule = this.generateWeekSchedule(consultantDto.consultant.weekly_available_hours);
+  
   await this.consultantRepo.createDetail(
     {
       module: consultantDto.consultant.module,
-      level: consultantDto.consultant.level,
+      level,
       experience: consultantDto.consultant.experience,
       rate: consultantDto.consultant.rate,
       weekly_available_hours: consultantDto.consultant.weekly_available_hours,
-      schedule: consultantDto.consultant.schedule,
-      cv_url: consultantDto.consultant.cv_url
-    },
-    user.id,
+      working_schedule: schedule,
+      cv_url: consultantDto.consultant.cv_url,
+      user_id: user.id,
+    }
   );
 
-  // ✅ Step 4: Return created record (without password)
+  await this.consultantModuleRepo.createModule({
+    user_id: user.id,
+    module_id: +consultantDto.consultant.core_module[0],
+    is_primary: true,
+  });
+  
+  await this.consultantModuleRepo.createModule({
+    user_id: user.id,
+    module_id: +consultantDto.consultant.other_module[0],
+  });
+  // ✅ Step 4: Return Created Record (Without Password)
   const userWithConsultant = await User.findOne({
     where: { id: user.id },
-    include: [ProjectDetail],
   });
 
   if (userWithConsultant) (userWithConsultant as any).password = undefined;
   return userWithConsultant;
 }
 
-  // 🟣 Normal User Signup
+  // 🟣 User Signup
   async signupUser(userDto: RegisterDto) {
-    // ✅ Step 1: Hash password
+    // ✅ Step 1: Hash Password
+    const isUserExist = await User.findOne({
+      where: { email: userDto.email },
+    });
+
+    if (isUserExist) {
+      throw new CustomError(400, 'User with this email already exists');
+    }
+    
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
 
-    // ✅ Step 2: Create user record
+    // ✅ Step 2: Create user Record
     const newUser = await this.userRepo.createUser({
-      username: userDto.username, // ✅ username instead of name
+      username: userDto.username, 
       email: userDto.email,
       password: hashedPassword,
       role: +UserRole.CLIENT, 
@@ -101,8 +131,53 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
 
     user['token'] = token;
     (user as any).password = undefined;
-    console.log('Attempting login for email:', user);
 
     return user;
   }
+
+  getLevelByExperience(experience: number): string {
+    if (experience < 2) return ConsultantLevel.JUNIOR;
+    if (experience >= 2 && experience < 5) return ConsultantLevel.MID;
+    if (experience >= 5 && experience < 10) return ConsultantLevel.SENIOR;
+    return ConsultantLevel.LEAD;
+  }
+
+  generateWeekSchedule(totalHours: number) {
+    const weekdays = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+
+    const dailyHours = totalHours / 5; 
+    const startHour = 9; 
+    const endHour = startHour + dailyHours;
+
+    const formatTime = (h) => h.toString().padStart(2, "0") + ":00";
+
+    return weekdays.map((day) => {
+      if (day === "Saturday" || day === "Sunday") {
+        return { day, active: false };
+      } else {
+        return {
+          day,
+          start: formatTime(startHour),
+          end: formatTime(endHour),
+          active: true,
+        };
+      }
+    });
+  }
+
+  async parse(file: Express.Multer.File) {
+    return {error:'to be fixed'};
+   /*  const text = await extractText(file);
+    return parseWithOpenAI(text); */
+  }
+
+
 }

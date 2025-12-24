@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // 1️⃣ Projects
+    // 1️⃣ PROJECTS TABLE
     await queryInterface.createTable('projects', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING, allowNull: false },
@@ -14,7 +14,7 @@ module.exports = {
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('NOW()') }
     });
 
-    // 2️⃣ Project Consultants
+    // 2️⃣ PROJECT CONSULTANTS TABLE
     await queryInterface.createTable('project_consultants', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },
@@ -27,7 +27,7 @@ module.exports = {
       client_sign: { type: Sequelize.BOOLEAN, defaultValue: false }
     });
 
-    // 3️⃣ Consultant Interviews
+    // 3️⃣ CONSULTANT INTERVIEWS TABLE
     await queryInterface.createTable('consultant_interviews', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },
@@ -38,7 +38,7 @@ module.exports = {
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('NOW()') }
     });
 
-    // 4️⃣ Project Summary
+    // 4️⃣ PROJECT SUMMARY TABLE
     await queryInterface.createTable('project_summary', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },
@@ -47,7 +47,7 @@ module.exports = {
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('NOW()') }
     });
 
-    // 5️⃣ Project Scope of Work
+    // 5️⃣ PROJECT SCOPE OF WORK TABLE
     await queryInterface.createTable('project_scope_of_work', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },
@@ -57,7 +57,7 @@ module.exports = {
       status: { type: Sequelize.STRING, defaultValue: 'pending' }
     });
 
-    // 6️⃣ Project Milestones
+    // 6️⃣ PROJECT MILESTONES TABLE
     await queryInterface.createTable('project_milestones', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },
@@ -71,7 +71,7 @@ module.exports = {
       status: { type: Sequelize.STRING, defaultValue: 'pending' }
     });
 
-    // 7️⃣ Project Responsibilities Matrix
+    // 7️⃣ PROJECT RESPONSIBILITIES MATRIX TABLE
     await queryInterface.createTable('project_responsibilities_matrix', {
       id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
       project_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE' },

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
@@ -6,6 +6,9 @@ import { UpdateCommonDto } from './dto/update-common.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateMeetingDto, UpdateMeetingStatusDto } from './dto/meeting-invite.dto';
 import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @ApiTags('Common')
 @Controller('common')
@@ -81,7 +84,37 @@ export class CommonController {
   }
 
   @Post('pdf-create')
-  async generate(@Req() req: Request,@Body() body: any) {
-    return this.commonService.generatePdf(req, body);
+  async generatePdf(@Req() req: Request,@Body() body: any) {
+    return this.commonService.generatePdf(body);
+  }
+
+  @Get("sap-modules")
+  @ApiOperation({ summary: 'Get all SAP Modules' })
+  @ApiResponse({ status: 200, description: 'List of all SAP MODULES' })
+  getAllSAPModules() {
+    return this.commonService.getSAPmodules();
+  }
+
+  @Post('pdf-reader')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/pdf',
+        filename: (req, file, cb) => {
+          const uniqueName =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, uniqueName + extname(file.originalname));
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          return cb(new Error('Only PDF files allowed'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async readerPdf(@UploadedFile() file: Express.Multer.File) {
+    return this.commonService.readerPdf(file.path);
   }
 }
