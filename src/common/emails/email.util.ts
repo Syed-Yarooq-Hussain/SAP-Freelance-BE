@@ -1,57 +1,7 @@
 import * as nodemailer from 'nodemailer';
-import { generalTemplate } from './email.template';
-import { EmailType } from 'constant/enums';
 
-export async function sendEmail(
-  to: string,
-  type: EmailType,
-  receiverName: string,
-  senderName: string
-) {
+export async function sendEmail(to: string, type: string) {
   try {
-    let message = "";
-
-    switch (type) {
-      case EmailType.SHORTLIST:
-        message = "Your candidate has been shortlisted.";
-        break;
-
-      case EmailType.INVITE:
-        message = "You have received the portal invite.";
-        break;
-
-      case EmailType.NDA:
-        message = "Your NDA has been generated.";
-        break;
-
-      case EmailType.INVOICE:
-        message = "Your invoice has been generated.";
-        break;
-
-      case EmailType.BILL:
-        message = "Your bill has been generated.";
-        break;
-      case EmailType.WELCOME:
-        message = "Welcome to our portal!";
-        break;
-      case EmailType.SIGNUP:
-        message = "Your signup has been confirmed.";
-        break;
-      case EmailType.CUSTOMER_SIGNED:
-        message = "Customer has signed the contract and NDA.";
-        break;
-      case EmailType.CONSULTANT_REJECTED:
-        message = "Consultant has been rejected by the client.";
-        break;
-      case EmailType.CLIENT_REJECTED:
-        message = "Client has rejected the NDA.";
-        break;
-
-      default:
-        message = "This is a system notification.";
-    }
-
-    // 🔹 Transporter
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT),
@@ -62,19 +12,18 @@ export async function sendEmail(
       },
     });
 
-    // 🔹 Email Send
     const info = await transporter.sendMail({
       from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
       to,
       subject: `Notification: ${type}`,
-      html: generalTemplate(receiverName, message, senderName),
+      text: `This is a notification of type: ${type}`,
     });
 
     return {
       status: true,
       messageId: info.messageId,
     };
-  } catch (error: any) {
+  } catch (error) {
     return {
       status: false,
       error: error.message,
