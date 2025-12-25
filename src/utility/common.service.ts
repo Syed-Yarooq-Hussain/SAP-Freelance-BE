@@ -115,10 +115,13 @@ export class CommonService {
     return transformedData
   }
 
-  async sendEmail(body) {
-    const { to, type } = body;
-    if (!to || !type) { return { status: false, message: "Missing required fields: to/type" }; }
-    return await sendEmail(to, type);
+  async sendEmail(body: any) {
+    const { to, type, receiverName, senderName } = body;
+
+    if (!to || !type || !receiverName || !senderName)
+      return { status: false, message: "Missing required fields" };
+
+    return await sendEmail(to, type, receiverName, senderName);
   }
 
 

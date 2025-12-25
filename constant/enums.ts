@@ -59,6 +59,17 @@ export enum UserStatus {
   REJECTED = 'rejected',
   Locked = 'locked',
 }
-
 export const USER_STATUS_ARRAY = Object.values(UserStatus);
 
+export enum EmailType {
+  SHORTLIST = "SHORTLIST",
+  INVITE = "INVITE",
+  NDA = "NDA",
+  INVOICE = "INVOICE",
+  BILL = "BILL",
+  WELCOME = "WELCOME",
+  SIGNUP = "SIGNUP",
+  CUSTOMER_SIGNED = "CUSTOMER_SIGNED",
+  CONSULTANT_REJECTED = "CONSULTANT_REJECTED",
+  CLIENT_REJECTED = "CLIENT_REJECTED"
+}
