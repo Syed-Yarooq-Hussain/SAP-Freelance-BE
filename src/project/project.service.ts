@@ -159,32 +159,64 @@ export class ProjectService {
     return this.projectRepo.delete(id);
   }
 
-  async addConsultant(data: CreateProjectConsultantDto[], project_id: number) {
-    try {
-      for (const item of data) {
-        let projectConsultant = {
-          ...item,
-          project_id,
-          status: 'shortlisted',
-          decided_rate: 0,
-          booking_schedules: null,
-          is_doc_signed: false,
-        };
+  async addConsultant(
+  data: CreateProjectConsultantDto[],
+  project_id: number,
+) {
+  const consultantIds = data.map(d => d.consultant_id);
 
-        await this.projectConsultantRepo.create(projectConsultant);
-        // 📧 Todo: send email to consultant about being added to project
+  // 1️⃣ Upsert one by one
+  for (const item of data) {
+    const existing =
+      await this.projectConsultantRepo.findOneByProjectAndConsultant(
+        project_id,
+        item.consultant_id,
+      );
+
+    if (existing) {
+      // restore if deleted
+      if (existing.deleted_at) {
+        existing.deleted_at = null;
       }
-      return { message: 'Consultants added successfully', data };
-    } catch (error) {
-      throw error;
+
+      existing.requested_hours = item.requested_hours;
+      existing.status = 'shortlisted';
+
+      await existing.save(); // ✅ SAFE (instance)
+      continue;
     }
+
+    // create new
+    await this.projectConsultantRepo.create({
+      project_id,
+      consultant_id: item.consultant_id,
+      requested_hours: item.requested_hours,
+      status: 'shortlisted',
+      decided_rate: 0,
+      booking_schedule: null,
+      is_doc_signed: false,
+    });
   }
+
+  // 2️⃣ Soft delete missing ones (ONE QUERY)
+  await this.projectConsultantRepo.softDeleteNotIn(
+    project_id,
+    consultantIds,
+  );
+
+  return { message: 'Consultants synced successfully' };
+}
+
+
+
+
+
 
   async getProjectConsultants(
     projectId: number,
     query: GetConsultantsQueryDto,
   ) {
-    const where: any = { project_id: projectId };
+    const where: any = { project_id: projectId, deleted_at: null };
 
     if (query.status && query.status.length > 0) {
       let statuses = query.status.split(',').map((s) => s.trim());

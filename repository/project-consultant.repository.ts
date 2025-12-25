@@ -9,6 +9,7 @@ import { Project } from 'models/project.model';
 import { ProjectDetail } from 'models/project-detail.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { Meeting } from 'models/meeting.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -75,7 +76,7 @@ export class ProjectConsultantRepository {
 
   // 🔎 Get Consultant By ProjectId
   async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
-    return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } , raw: true });
+    return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } ,paranoid: false, raw: true });
   }
 
   // 🔎 Get Consultant By ConsultantId
@@ -132,4 +133,41 @@ export class ProjectConsultantRepository {
   async delete(id: number): Promise<number> {
     return this.projectConsultantModel.destroy({ where: { id } });
   }
+
+  // 🔎 Get ALL consultants of project (including soft deleted)
+    async findAllByProjectIdWithDeleted(project_id: number,): Promise<ProjectConsultant[]> {
+      return this.projectConsultantModel.findAll({
+        where: { project_id },
+        paranoid: false, 
+        attributes: ['id', 'consultant_id', 'deleted_at'],
+      });
+    }
+
+    async findOneByProjectAndConsultant(
+  project_id: number,
+  consultant_id: number,
+) {
+  return this.projectConsultantModel.findOne({
+    where: { project_id, consultant_id },
+    paranoid: false, // IMPORTANT
+  });
+}
+
+async softDeleteNotIn(
+  project_id: number,
+  consultantIds: number[],
+) {
+  return this.projectConsultantModel.update(
+    { deleted_at: new Date() },
+    {
+      where: {
+        project_id,
+        consultant_id: { [Op.notIn]: consultantIds },
+        deleted_at: null,
+      },
+    },
+  );
+}
+
+
 }
