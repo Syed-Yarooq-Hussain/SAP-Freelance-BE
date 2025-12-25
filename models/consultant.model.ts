@@ -49,7 +49,7 @@ export class Consultant extends Model<Consultant> {
   working_schedule: object;
 
   @Column({
-    type: DataType.TEXT,
+    type: DataType.JSONB,
     allowNull: true,
   })
   skills: string;
@@ -69,4 +69,47 @@ export class Consultant extends Model<Consultant> {
     defaultValue: null,
   })
   deleted_at: Date | null;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    defaultValue: null,
+  })
+  cv_url: string | null;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    defaultValue: null,
+  })
+  clients_summary: string | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: null,
+  })
+  work_experiences: any | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: null,
+  })
+  education: any | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: null,
+  })
+  certification: any | null;
+
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: null,
+  })
+  languages: any | null;
+
 }

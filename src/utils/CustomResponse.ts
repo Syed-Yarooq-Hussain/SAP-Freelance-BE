@@ -46,7 +46,7 @@ export class CustomResponse<T = unknown> {
       data,
       message,
     };
-
+    console.error('Error Response:', errorObj);
     return res.status(code).json(errorObj);
   }
 }

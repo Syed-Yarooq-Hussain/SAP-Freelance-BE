@@ -46,6 +46,25 @@ async createDetail(dto: any) {
     ]
     });
   }
+  
+  // 🔎 Get Consultant By User Id
+  async findConsultantProfileByUserId(userId: number): Promise<Consultant | null> {
+    return this.consultantModel.findOne({ where: { user_id: userId },
+      include: [{
+        model: User,
+        attributes: ['id', 'username', 'email', 'city', 'country'],
+        include: [{
+          model: ConsultantModule,
+          attributes: ['id'],
+          include: [{
+            model: ModuleEntity,
+            attributes: ['id', 'name'],
+          }]
+        }]
+      },
+    ]
+    });
+  }
 
   async getSchedulesByUserId(id: number): Promise<Consultant | null> 
   {

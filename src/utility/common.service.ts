@@ -10,6 +10,7 @@ import { sendEmail } from 'src/common/emails/email.util';
 import { generatePdf } from 'src/common/pdf/pdf.util';
 import { ModuleRepository } from 'repository/module.repository';
 import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
+import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
 
 @Injectable()
 export class CommonService {
@@ -138,9 +139,7 @@ export class CommonService {
   async readerPdf(filePath: string) {
     const text = await extractText(filePath);
     const userInfo = await parseWithOpenAI(text);
-    return {
-      success: true,
-      userInfo
-    };
+    const transormedUser = await consultantRegistertObjectTransformer(userInfo);
+    return transormedUser;
   }
 }

@@ -33,3 +33,54 @@ export class RegisterConsultantDto {
   @IsNotEmpty({ message: 'Expertise cannot be empty' })
   expertise: string;
 }
+
+
+export interface UpdateConsultantDetailDto {
+  user?: {
+    username?: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    city?: string;
+    country?: string;
+    currency?: string;
+  };
+  consultant?: {
+    experience?: number;
+    rate?: number;
+    weekly_available_hours?: number;
+    level?: string;
+    working_schedule?: {
+      weekly: {
+        day: string;
+        slot?: { start: string; end: string }[];
+        active: boolean;
+      }[];
+      custom?: any[];
+    };
+    module?: any; // agar FE se module id ya array mile
+    core_module?: number[];
+    other_module?: number[];
+    cv_url?: string;
+    clients_summary?: string;
+    skills?: string[];
+    work_experiences?: {
+      company_name: string;
+      position: string;
+      start_date: string;
+      end_date: string;
+      responsibilities?: string[];
+    }[];
+    education?: {
+      degree: string;
+      institution_name: string;
+      start_date: string;
+      end_date: string;
+      details?: any[];
+    }[];
+    certification?: any[];
+    languages?: string[];
+    career_details?: any;
+  };
+}
+

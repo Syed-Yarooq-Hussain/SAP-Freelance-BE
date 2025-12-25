@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query, Patch } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto';
 
 @ApiTags('Consultants') 
 @Controller('consultants')
@@ -82,6 +83,18 @@ export class ConsultantController {
   @ApiResponse({ status: 201, description: 'Get Consulatant Schedule' })
   getConsultantSchedule(@Req() req: any, @Query() query: any) {
     return this.consultantService.getConsultantSchedule(+req.user.id, +query.month, +query.year);
+  }
+
+  @Patch(':user_id')
+  async updateConsultant(
+    @Param('user_id') user_id: string,
+    @Body() updateDto: UpdateConsultantDetailDto,
+  ) {
+    const updatedUser = await this.consultantService.updateConsultant(
+      +user_id,
+      updateDto,
+    );
+    return updatedUser;
   }
 
 }

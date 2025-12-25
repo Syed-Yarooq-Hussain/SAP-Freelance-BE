@@ -194,7 +194,6 @@ export class ProjectService {
     let proj_consultants = await this.projectConsultantRepo.findAll({
       where,
     });
-    console.log('proj_consultants', proj_consultants);
 
     return transformProjectConsultant(proj_consultants);
   }

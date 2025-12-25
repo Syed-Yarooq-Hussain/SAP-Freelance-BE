@@ -30,15 +30,15 @@ No explanation text.
 
 Required structure:
 {
-  "user.username": string | null,
-  "user.phone": string | null,
-  "user.email": string | null,
-  "user.city": string | null,
-  "user.country": string | null,
-  "consultant.total_experience_years": number | null,
-  "consultant.clients_summary": string | null,
-  "consultant.skills": string[],
-  "consultant.work_experiences": [
+  "username": string | null,
+  "phone": string | null,
+  "email": string | null,
+  "city": string | null,
+  "country": string | null,
+  "total_experience_years": number | null,
+  "clients_summary": string | null,
+  "skills": string[],
+  "work_experiences": [
     {
       "company_name": string | null,
       "position": string | null,
@@ -47,7 +47,7 @@ Required structure:
       "responsibilities": string[]
     }
   ],
-  "consultant.education": [
+  "education": [
     {
       "institution_name": string | null,
       "degree": string | null,
@@ -56,7 +56,7 @@ Required structure:
       "details": string[]
     }
   ],
-  "consultant.certifications": [
+  "certifications": [
     {
       "certification_name": string | null,
       "issuing_organization": string | null,
@@ -64,7 +64,7 @@ Required structure:
       "expiration_date": string | null
     }
   ],
-  "consultant.languages": string[]
+  "languages": string[]
 }
 
 CV:

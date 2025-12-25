@@ -48,4 +48,37 @@ export class ConsultantModuleRepository {
   async delete(id: number): Promise<number> {
     return this.consultantModuleModel.destroy({ where: { id } });
   }
+
+  // update consultant module 
+  async updateModule(params: {
+    user_id: number;
+    module_id: number;
+    is_primary?: boolean;
+  }) {
+    const { user_id, module_id, is_primary = false } = params;
+
+    // ✅ Step 1: Check if module already exists for user
+    const existing = await ConsultantModule.findOne({
+      where: { user_id, module_id },
+    });
+
+    if (existing) {
+      // ✅ Module exists → update is_primary if needed
+      if (existing.is_primary !== is_primary) {
+        existing.is_primary = is_primary;
+        await existing.save();
+      }
+      return existing;
+    }
+
+    // ✅ Step 2: Module does not exist → create new
+    const newModule = await ConsultantModule.create({
+      user_id,
+      module_id,
+      is_primary,
+    });
+
+    return newModule;
+  }
+
 }

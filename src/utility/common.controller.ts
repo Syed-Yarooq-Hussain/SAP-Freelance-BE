@@ -61,8 +61,8 @@ export class CommonController {
   }
 
   @Patch('meetings/:id/status')
-  @ApiOperation({ summary: 'Get all Meeting Status' })
-  @ApiResponse({ status: 200, description: 'List of all industry fetched successfully' })
+  @ApiOperation({ summary: 'Update Meeting Status' })
+  @ApiResponse({ status: 200, description: 'update meeting status by Id ' })
   async changeStatus(
     @Param('id') id: string,
     @Body() dto: UpdateMeetingStatusDto,

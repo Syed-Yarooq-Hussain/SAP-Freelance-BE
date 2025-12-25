@@ -7,6 +7,8 @@ import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
 import { ProjectDetail } from 'models/project-detail.model';
+import { MeetingInvitee } from 'models/meeting-invitee.model';
+import { Meeting } from 'models/meeting.model';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -22,6 +24,7 @@ export class ProjectConsultantRepository {
 
   // 📋 Get All Project Consultant
   async findAll(options?: any): Promise<ProjectConsultant[]> {
+  console.log('options', options);
   return this.projectConsultantModel.findAll({
     ...options,
     attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'id'],
@@ -47,6 +50,19 @@ export class ProjectConsultantRepository {
                 },
               ],
             },
+            {
+              model: MeetingInvitee,
+              required: false,
+              attributes: ['id'],
+              include: [
+                {
+                  model: Meeting,
+                  required: true,
+                  where: { project_id: options.where.project_id },
+                  attributes: ['id', 'date_time'],
+                }
+              ],
+            }
           ],
       },
     ],

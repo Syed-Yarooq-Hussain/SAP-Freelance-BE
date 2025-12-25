@@ -10,6 +10,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ConsultantLevel, USER_STATUS_ARRAY, UserRole, UserStatus } from 'constant/enums';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
+import { UpdateConsultantDetailDto } from './dto/register-consultant.dto';
 
 @Injectable()
 export class AuthService {
@@ -21,67 +22,78 @@ export class AuthService {
   ) {}
 
  // 🟢 Consultant Signup
-async signupConsultant(consultantDto: CreateConsultantDetailDto) {
-  // ✅ Step 1: Password Hashing
+  async signupConsultant(consultantDto: CreateConsultantDetailDto) {
 
-  const isUserExist = await User.findOne({
-    where: { email: consultantDto.user.email },
-  });
+    const isUserExist = await User.findOne({
+      where: { email: consultantDto.user.email },
+    });
 
-  if (isUserExist) {
-    throw new CustomError(400, 'User with this email already exists');
-  }
-  
-  const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
-  // ✅ Step 2: Create User Record
-  const user = await this.userRepo.createUser({
-    username: consultantDto.user.username,
-    email: consultantDto.user.email,
-    password: hashedPassword,
-    role: +UserRole.CONSULTANT,
-    status: UserStatus.PENDING,
-    phone: consultantDto.user.phone || null,
-    currency: consultantDto.user.currency || 'PKR',
-    city: consultantDto.user.city || null,
-    country: consultantDto.user.country || null,
-  });
-
-
-  // ✅ Step 3: Create Consultant Details (Link With user.id)
-  const level= this.getLevelByExperience(consultantDto.consultant.experience);
-  const schedule = this.generateWeekSchedule(consultantDto.consultant.weekly_available_hours);
-  
-  await this.consultantRepo.createDetail(
-    {
-      module: consultantDto.consultant.module,
-      level,
-      experience: consultantDto.consultant.experience,
-      rate: consultantDto.consultant.rate,
-      weekly_available_hours: consultantDto.consultant.weekly_available_hours,
-      working_schedule: schedule,
-      cv_url: consultantDto.consultant.cv_url,
-      user_id: user.id,
+    if (isUserExist) {
+      throw new CustomError(400, 'User with this email already exists');
     }
-  );
+    
+    const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
+    // ✅ Step 2: Create User Record
+    const user = await this.userRepo.createUser({
+      username: consultantDto.user.username,
+      email: consultantDto.user.email,
+      password: hashedPassword,
+      role: +UserRole.CONSULTANT,
+      status: UserStatus.PENDING,
+      phone: consultantDto.user.phone || null,
+      currency: consultantDto.user.currency || 'PKR',
+      city: consultantDto.user.city || null,
+      country: consultantDto.user.country || null,
+    });
 
-  await this.consultantModuleRepo.createModule({
-    user_id: user.id,
-    module_id: +consultantDto.consultant.core_module[0],
-    is_primary: true,
-  });
-  
-  await this.consultantModuleRepo.createModule({
-    user_id: user.id,
-    module_id: +consultantDto.consultant.other_module[0],
-  });
-  // ✅ Step 4: Return Created Record (Without Password)
-  const userWithConsultant = await User.findOne({
-    where: { id: user.id },
-  });
 
-  if (userWithConsultant) (userWithConsultant as any).password = undefined;
-  return userWithConsultant;
-}
+    // ✅ Step 3: Create Consultant Details (Link With user.id)
+    const level= this.getLevelByExperience(consultantDto.consultant.experience);
+    const schedule = this.generateWeekSchedule(consultantDto.consultant.weekly_available_hours);
+    
+    await this.consultantRepo.createDetail(
+      {
+        module: consultantDto.consultant.module,
+        level,
+        experience: consultantDto.consultant.experience,
+        rate: consultantDto.consultant.rate,
+        weekly_available_hours: consultantDto.consultant.weekly_available_hours,
+        working_schedule: schedule,
+        cv_url: consultantDto.consultant.cv_url,
+        user_id: user.id,
+        clients_summary: consultantDto.consultant.clients_summary,
+        skills: consultantDto.consultant.skills,
+        education: consultantDto.consultant.education,
+        certification: consultantDto.consultant.certifications,
+        work_experiences: consultantDto.consultant.work_experiences,
+        languages: consultantDto.consultant.languages,
+      }
+    );
+
+    if(consultantDto.consultant.core_module[0] ){
+      await this.consultantModuleRepo.createModule({
+        user_id: user.id,
+        module_id: +consultantDto.consultant.core_module[0],
+        is_primary: true,
+      });
+    }
+    
+    if(consultantDto.consultant.other_module[0] ){
+      await this.consultantModuleRepo.createModule({
+        user_id: user.id,
+        module_id: +consultantDto.consultant.other_module[0],
+      });
+    }
+    
+    // ✅ Step 4: Return Created Record (Without Password)
+    const userWithConsultant = await User.findOne({
+      where: { id: user.id },
+    });
+
+    if (userWithConsultant) (userWithConsultant as any).password = undefined;
+    return userWithConsultant;
+  }
+
 
   // 🟣 User Signup
   async signupUser(userDto: RegisterDto) {
@@ -143,35 +155,49 @@ async signupConsultant(consultantDto: CreateConsultantDetailDto) {
   }
 
   generateWeekSchedule(totalHours: number) {
-    const weekdays = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ];
+  const weekdays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
-    const dailyHours = totalHours / 5; 
-    const startHour = 9; 
-    const endHour = startHour + dailyHours;
+  const workingDays = 5;
+  const dailyHours = totalHours / workingDays;
 
-    const formatTime = (h) => h.toString().padStart(2, "0") + ":00";
+  const startHour = 9;
+  const endHour = startHour + dailyHours;
 
-    return weekdays.map((day) => {
+  const formatTime = (h: number) =>
+    `${Math.floor(h).toString().padStart(2, "0")}:00`;
+
+  return {
+    weekly: weekdays.map((day) => {
       if (day === "Saturday" || day === "Sunday") {
-        return { day, active: false };
-      } else {
         return {
           day,
-          start: formatTime(startHour),
-          end: formatTime(endHour),
-          active: true,
+          active: false,
         };
       }
-    });
+
+      return {
+        day,
+        slot: [
+          {
+            start: formatTime(startHour),
+            end: formatTime(endHour),
+          },
+        ],
+        active: true,
+      };
+    }),
+    custom: [],
+  };
   }
+
 
   async parse(file: Express.Multer.File) {
     return {error:'to be fixed'};

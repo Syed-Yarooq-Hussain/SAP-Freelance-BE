@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import { UserRepository } from 'repository/user.repository';
 import { getAdminsClientResponse, getAdminsConsultantResponse, getAdminsProjectResponse } from './transformer/response.transformer';
 import { ProjectRepository } from 'repository/project.repository';
-import { transformProjectConsultant } from 'src/project/transformers/project-consultant-transformer';
 
 @Injectable()
 export class AdminService {

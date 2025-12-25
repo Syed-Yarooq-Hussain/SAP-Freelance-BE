@@ -32,7 +32,6 @@ export function mergeEventsIntoSchedule(
   monthlySchedule: any,
   eventsByDate: Record<string, any[]>
 ) {
- console.log('Events by Date:', monthlySchedule);
   monthlySchedule.days = monthlySchedule.days.map(day => ({
     ...day,
     events: eventsByDate[day.date] || []
