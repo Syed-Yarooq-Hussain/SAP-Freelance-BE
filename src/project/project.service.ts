@@ -10,12 +10,13 @@ import { ProjectMilestoneRepository } from '../../repository/project-milestone.r
 import { ProjectPaymentRepository } from '../../repository/project-payment.repository';
 import { ProjectTaskRepository } from '../../repository/project-task.repository';
 import { UpdateProjectDto } from './dto/update-project.dto';
+
 import {
   CreateProjectConsultantDto,
   UpdateProjectConsultantStatusDto,
 } from './dto/create-project-consultant.dto';
 import { ConsultantStatus } from 'constant/enums';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { ProjectDetailRepository } from 'repository/project-detail.repository';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import {
@@ -35,19 +36,43 @@ export class ProjectService {
     private readonly industryRepo: ProjectIndustriesRepository,
     private readonly milestoneRepo: ProjectMilestoneRepository,
     private readonly paymentRepo: ProjectPaymentRepository,
-    private readonly taskRepo: ProjectTaskRepository,
     private readonly projectDetailrepository: ProjectDetailRepository,
     private readonly projectTaskRepo: ProjectTaskRepository,
   ) {}
 
   async createProject(user: any) {
-    return await this.projectRepo.create({
-      client_id: user.id,
-      name: `New Project for ${user?.name || 'Client'}`,
-      company_name: 'Unknown Company',
-      status: 'Initiated',
-    });
-  }
+  // 1. Project create
+  const project = await this.projectRepo.create({
+    client_id: user.id,
+    name: `New Project for ${user?.name || 'Client'}`,
+    company_name: 'Unknown Company',
+    status: 'Initiated',
+  });
+
+  // 2. Default milestones
+  const milestones = [
+    'Planning',
+    'Design',
+    'Development',
+    'Testing',
+    'Delivery',
+  ].map((name) => ({
+    name,
+    project_id: project.id,
+    status: 'Pending',
+    start_date: null,
+    due_date: null,
+    required_hours: null,
+  }));
+
+  // 3. Milestones create
+  await this.milestoneRepo.bulkCreateMilestones(milestones);
+
+  return project;
+}
+
+
+
 
   async getProjectById(id: number) {
     const project = await this.projectRepo.findById(id);
@@ -208,10 +233,6 @@ export class ProjectService {
 }
 
 
-
-
-
-
   async getProjectConsultants(
     projectId: number,
     query: GetConsultantsQueryDto,
@@ -241,12 +262,82 @@ export class ProjectService {
   }
 
   async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
-    let isMMilestoneExist = await this.milestoneRepo.findById(id);
-    if (!isMMilestoneExist) {
-      throw new NotFoundException(`Milestone with ID ${id} not found`);
-    }
-    return this.milestoneRepo.update(id, data);
+  const milestone = await this.milestoneRepo.findById(id);
+
+  if (!milestone) {
+    throw new NotFoundException(`Milestone with ID ${id} not found`);
   }
+
+  // 1️⃣ required_hours auto calculate
+  if (data.start_date && data.due_date) {
+    data.required_hours = this.calculateWorkingHours(
+      new Date(data.start_date),
+      new Date(data.due_date),
+    );
+  }
+
+  // 2️⃣ milestone update
+  const updatedMilestone = await this.milestoneRepo.update(id, data);
+
+  // 3️⃣ required_hours missing → skip
+  if (!updatedMilestone?.required_hours) {
+    return updatedMilestone;
+  }
+
+  // 🔒 4️⃣ PAYMENT GUARD (MOST IMPORTANT PART)
+  const paymentAlreadyExists =
+    await this.paymentRepo.existsByMilestoneId(updatedMilestone.id);
+
+  if (paymentAlreadyExists) {
+    // ⛔ already calculated — DO NOTHING
+    return updatedMilestone;
+  }
+
+  // 5️⃣ Project consultants lao
+  const consultants =
+    await this.projectConsultantRepo.findByProjectId(
+      milestone.project_id,
+    );
+
+  if (!consultants.length) {
+    return updatedMilestone;
+  }
+
+  // 6️⃣ Total requested hours
+  const totalRequestedHours = consultants.reduce(
+    (sum, c) => sum + (c.requested_hours || 0),
+    0,
+  );
+
+  if (!totalRequestedHours) {
+    return updatedMilestone;
+  }
+
+  // 7️⃣ Payment entries create
+  for (const consultant of consultants) {
+    const ratio =
+      (consultant.requested_hours || 0) / totalRequestedHours;
+
+    const consultantHours =
+      updatedMilestone.required_hours * ratio;
+
+    const rate = consultant.decided_rate || 0;
+
+    const amount = consultantHours * rate;
+
+    await this.paymentRepo.create({
+      project_id: milestone.project_id,
+      project_milestone_id: milestone.id,
+      amount,
+      payment_module: 'CONSULTANT',
+      is_paid: false,
+    });
+  }
+
+  return updatedMilestone;
+}
+
+
   
   async getMilestonesByProject(id: number) {
     let isMMilestoneExist = await this.milestoneRepo.findAll({
@@ -358,4 +449,20 @@ export class ProjectService {
       deleted_id: id,
     };
   }
+
+  calculateWorkingHours(start: Date, end: Date): number {
+  let hours = 0;
+  const current = new Date(start);
+
+  while (current <= end) {
+    const day = current.getDay(); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) {
+      hours += 8;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return hours;
+}
+
 }

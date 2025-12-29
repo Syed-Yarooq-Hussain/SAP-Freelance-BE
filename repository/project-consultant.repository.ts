@@ -169,5 +169,15 @@ async softDeleteNotIn(
   );
 }
 
+async findByProjectId(projectId: number) {
+  return this.projectConsultantModel.findAll({
+    where: {
+      project_id: projectId,
+      deleted_at: null,
+    },
+  });
+}
+
+
 
 }

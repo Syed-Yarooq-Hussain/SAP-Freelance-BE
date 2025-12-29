@@ -18,6 +18,14 @@ export class CreateProjectMilestoneDto {
   @IsOptional()
   @IsDate()
   due_date?: Date;
+  
+  @ApiProperty({
+    description: 'Milestone Due date',
+    example: '2025-10-16',
+  })
+  @IsOptional()
+  @IsDate()
+  start_date?: Date;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -38,6 +38,13 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
     type: DataType.DATE,
     allowNull: true,
   })
+  start_date?: Date;
+
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
   due_date?: Date;
 
   @Column({

@@ -43,17 +43,27 @@ export class ProjectMilestoneRepository {
 
   // 🧠 Update Milestone
   async update(
-    id: number,
-    data: Partial<ProjectMilestone>,
-  ): Promise<[number, ProjectMilestone[]]> {
-    return this.projectMilestoneModel.update(data, {
-      where: { id },
-      returning: true,
-    });
-  }
+  id: number,
+  data: Partial<ProjectMilestone>,
+): Promise<ProjectMilestone> {
+  const [, [updated]] = await this.projectMilestoneModel.update(data, {
+    where: { id },
+    returning: true,
+  });
+
+  return updated;
+}
+
 
   // ❌ Delete Milestone
   async delete(id: number): Promise<number> {
     return this.projectMilestoneModel.destroy({ where: { id } });
+  }
+
+  async bulkCreateMilestones(
+    data: Partial<ProjectMilestone>[],
+    transaction?: any,
+  ) {
+    return this.projectMilestoneModel.bulkCreate(data, { transaction });
   }
 }

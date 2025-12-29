@@ -55,4 +55,16 @@ export class ProjectPaymentRepository {
   async delete(id: number): Promise<number> {
     return this.projectPaymentModel.destroy({ where: { id } });
   }
+
+  async existsByMilestoneId(milestoneId: number): Promise<boolean> {
+  const count = await this.projectPaymentModel.count({
+    where: {
+      project_milestone_id: milestoneId,
+      deleted_at: null,
+    },
+  });
+
+  return count > 0;
+}
+
 }

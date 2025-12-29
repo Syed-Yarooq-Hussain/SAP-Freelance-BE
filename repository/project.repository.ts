@@ -12,8 +12,8 @@ export class ProjectRepository {
   ) {}
 
   // 🆕 Create Project
-  async create(data: Partial<Project>): Promise<Project> {
-    return this.projectModel.create(data);
+  async create(data: Partial<Project>, transaction: any = null): Promise<Project> {
+    return this.projectModel.create(data, {transaction});
   }
 
   // 📋 Get All Projects
