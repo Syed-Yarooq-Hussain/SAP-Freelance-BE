@@ -26,7 +26,8 @@ app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
     .build();
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api', app, document);
-
-  await app.listen(process.env.PORT || 3000);
+  const port = process.env.PORT || 3000
+  await app.listen(port);
+  console.log(`App running on port ${port}`);
 }
 bootstrap();
