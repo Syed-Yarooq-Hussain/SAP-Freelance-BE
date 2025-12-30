@@ -82,7 +82,7 @@ export class ProjectConsultantRepository {
   // 🔎 Get Consultant By ConsultantId
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
     return this.projectConsultantModel.findAll({
-      where: { consultant_id },
+      where: { consultant_id, deleted_at: null },
       attributes: ['requested_hours'],
       include: [
         {

@@ -70,19 +70,25 @@ export class AuthService {
       }
     );
 
-    if(consultantDto.consultant.core_module[0] ){
-      await this.consultantModuleRepo.createModule({
-        user_id: user.id,
-        module_id: +consultantDto.consultant.core_module[0],
-        is_primary: true,
-      });
+    // Core modules
+    if (consultantDto.consultant.core_module?.length) {
+      for (const moduleId of consultantDto.consultant.core_module) {
+        await this.consultantModuleRepo.createModule({
+          user_id: user.id,
+          module_id: +moduleId,
+          is_primary: true, // agar sirf first ko primary chahiye, isko condition ke saath adjust karo
+        });
+      }
     }
-    
-    if(consultantDto.consultant.other_module[0] ){
-      await this.consultantModuleRepo.createModule({
-        user_id: user.id,
-        module_id: +consultantDto.consultant.other_module[0],
-      });
+
+    // Other modules
+    if (consultantDto.consultant.other_module?.length) {
+      for (const moduleId of consultantDto.consultant.other_module) {
+        await this.consultantModuleRepo.createModule({
+          user_id: user.id,
+          module_id: +moduleId,
+        });
+      }
     }
     
     // ✅ Step 4: Return Created Record (Without Password)
