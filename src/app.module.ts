@@ -35,11 +35,7 @@ import { ChatModule } from './chat/chat.module';
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: process.env.DB_HOST,
-      port: +process.env.DB_PORT,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      uri: process.env.DATABASE_URL,
       autoLoadModels: true,
       synchronize: false,
       models: [
