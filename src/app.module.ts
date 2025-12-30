@@ -26,18 +26,31 @@ import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
+import * as pgConnectionString from 'pg-connection-string';
+
+const config = pgConnectionString.parse(process.env.DATABASE_URL);
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env', // 🔥 explicit
+      envFilePath: '.env',
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      uri: process.env.DATABASE_URL,
+      host: config.host,
+      port: Number(config.port),
+      username: config.user,
+      password: config.password,
+      database: config.database,
       autoLoadModels: true,
       synchronize: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
       models: [
         User,
         ModuleEntity,
