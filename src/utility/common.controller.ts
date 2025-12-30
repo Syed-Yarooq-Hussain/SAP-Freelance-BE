@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
@@ -116,5 +116,17 @@ export class CommonController {
   )
   async readerPdf(@UploadedFile() file: Express.Multer.File) {
     return this.commonService.readerPdf(file.path);
+  }
+
+  @Post('upload-doc')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProjectDoc(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    return this.commonService.uploadDoc(file);
   }
 }

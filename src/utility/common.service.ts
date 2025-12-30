@@ -11,6 +11,7 @@ import { generatePdf } from 'src/common/pdf/pdf.util';
 import { ModuleRepository } from 'repository/module.repository';
 import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
+import { uploadToS3 } from 'src/common/s3/s3-upload.util';
 
 @Injectable()
 export class CommonService {
@@ -145,4 +146,17 @@ export class CommonService {
     const transormedUser = await consultantRegistertObjectTransformer(userInfo);
     return transormedUser;
   }
+
+  async uploadDoc(file: Express.Multer.File) {
+    const key = await uploadToS3({
+      file: file.buffer,
+      folder: 'projects/12/documents',
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      isPublic: false,
+    });
+
+    return key;
+  }
+  
 }
