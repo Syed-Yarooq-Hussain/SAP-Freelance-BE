@@ -56,7 +56,21 @@ export interface UpdateConsultantDetailDto {
         slot?: { start: string; end: string }[];
         active: boolean;
       }[];
-      custom?: any[];
+      custom?: {
+        date: string;
+        slot?: { start: string; end: string }[];
+        active: boolean;
+      }[];
+      events?: {
+  id: string;
+  title: string;
+  type: 'INTERVIEW' | 'PROJECT' | 'MEETING';
+  start_time: string;   // ISO or YYYY-MM-DD
+  end_time?: string;
+  all_day: boolean;
+  meeting_link?: string;
+  status?: string;
+}[];
     };
     module?: any; // agar FE se module id ya array mile
     core_module?: number[];
