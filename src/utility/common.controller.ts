@@ -67,7 +67,7 @@ export class CommonController {
     @Param('id') id: string,
     @Body() dto: UpdateMeetingStatusDto,
   ) {
-    return this.commonService.updateMeetingStatus(Number(id), dto.status);
+    return this.commonService.updateMeetingStatus(Number(id), dto);
   }
 
   @Get("meetings")
