@@ -3,6 +3,7 @@ export enum MeetingStatus {
   ACCEPTED = 'Accepted',
   REJECTED = 'Rejected',
   CANCELLED = 'Cancelled',
+  RESCHEDULED = 'Rescheduled',
 }
 
 export const MEETING_STATUS_ARRAY = Object.values(MeetingStatus)
