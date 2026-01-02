@@ -123,9 +123,23 @@ export class ConsultantService {
   const meetings =
     await this.meetingRepo.getMeetingWithDetails(id);
 
-  const monthlySchedule = await buildMonthlySchedule(year, month, consultant.working_schedule);
+  const monthlySchedule = await buildMonthlySchedule(
+    year,
+    month,
+    consultant.working_schedule
+  );
 
-  const eventsByDate = groupEventsByDate(meetings);
+  const workingSchedule = consultant.working_schedule as {
+    events?: any[];
+  };
+
+  const storedEvents = Array.isArray(workingSchedule?.events)
+    ? workingSchedule.events
+    : [];
+
+  const allEvents = [...meetings, ...storedEvents];
+
+  const eventsByDate = groupEventsByDate(allEvents);
 
   return mergeEventsIntoSchedule(monthlySchedule, eventsByDate);
   }

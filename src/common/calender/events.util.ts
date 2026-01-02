@@ -1,27 +1,55 @@
-function mapMeetingToEvent(meeting: any) {
-  const start = new Date(meeting.date_time);
-  const end = new Date(start.getTime() + meeting.duration * 60000);
+function mapAnyToEvent(item: any) {
+  // MEETING (from meetings table)
+  if (item.date_time && item.duration) {
+    const start = new Date(item.date_time);
+    const end = new Date(start.getTime() + item.duration * 60000);
 
-  return {
-    id: meeting.id,
-    title: meeting.project?.name || 'Meeting',
-    type: meeting.event_type?.toUpperCase(),
-    start_time: start.toISOString().slice(11, 16), // HH:mm
-    end_time: end.toISOString().slice(11, 16),
-    all_day: false,
-    status: meeting.status
-  };
+    return {
+      id: item.id,
+      title: item.project?.name || 'Meeting',
+      type: item.event_type?.toUpperCase() || 'MEETING',
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      all_day: false,
+      meeting_link: item.meeting_link || item.meeting_url || null, // 👈 ADD
+      status: item.status
+    };
+  }
+
+  // STORED EVENT (manual / project)
+  if (item.start_time) {
+    return {
+      id: item.id,
+      title: item.title,
+      type: item.type,
+      start_time: item.start_time,
+      end_time: item.end_time,
+      all_day: item.all_day ?? false,
+      meeting_link: item.meeting_link ?? null, // 👈 ADD
+      status: item.status
+    };
+  }
+
+  return null;
 }
 
-export function groupEventsByDate(meetings: any[]) {
+export function groupEventsByDate(items: any[]) {
   const map: Record<string, any[]> = {};
 
-  meetings.forEach(meeting => {
-    const date = getDateKey(meeting.date_time);
+  items.forEach(item => {
+    const dateSource =
+      item.date_time ||
+      item.start_time ||
+      item.start_date;
+
+    if (!dateSource) return;
+
+    const date = getDateKey(dateSource);
 
     if (!map[date]) map[date] = [];
 
-    map[date].push(mapMeetingToEvent(meeting));
+    const event = mapAnyToEvent(item);
+    if (event) map[date].push(event);
   });
 
   return map;
