@@ -98,6 +98,13 @@ export class ProjectController {
     return this.projectService.getMilestonesByProject(+projectId);
   }
   
+  @Get(':id/payments')
+  @ApiOperation({ summary: 'Add project milestone' })
+  @ApiBody({ type: CreateProjectMilestoneDto })
+  getProjectPayments(@Param('id') projectId: string) {
+    return this.projectService.getPaymentsByProject(+projectId);
+  }
+  
   @Put('milestones/:id')
   @ApiOperation({ summary: 'Update project milestone' })
   @ApiBody({ type: CreateProjectMilestoneDto })

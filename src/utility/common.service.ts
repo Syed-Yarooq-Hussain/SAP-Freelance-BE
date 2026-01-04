@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
-import { CreateMeetingDto } from './dto/meeting-invite.dto';
+import { CreateMeetingDto, UpdateMeetingStatusDto } from './dto/meeting-invite.dto';
 import { MeetingRepository } from 'repository/meeting.repository';
 import { ConsultantStatus, MEETING_STATUS_ARRAY, MeetingType } from 'constant/enums';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
@@ -94,19 +94,17 @@ export class CommonService {
   }
 
   // 🔹 Update Meeting Status
-  async updateMeetingStatus(meetingId: number, status: string) {
+  async updateMeetingStatus(meetingId: number, dto: UpdateMeetingStatusDto) {
     const meeting = await this.meetingRepo.findMeetingById(meetingId);
     if (!meeting) {
       throw new Error('Meeting not found');
     }
 
-    meeting.status = status;
+    meeting.status = dto.status;
+    meeting.date_time = dto.date_time || meeting.date_time;
     await meeting.save();
 
-    return {
-      message: 'Meeting status updated successfully',
-      meeting,
-    };
+    return meeting;
   }
 
   // 🔹 Get All Meeting

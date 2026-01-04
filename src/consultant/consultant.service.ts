@@ -109,8 +109,33 @@ export class ConsultantService {
   }
 
   async getConsultantDetail(id: number) {
-    return await this.consultantRepository.findConsultantProfileByUserId(id);
+    const user = await this.consultantRepository.findConsultantProfileByUserId(id);
+    let consultant = user.toJSON();
+    let module = {core: '', others: ''};
+
+    for (const mod of consultant?.user?.modules || []) {
+      if (!mod?.module) continue;
+
+        if (mod.is_primary) {
+          module.core += mod.module.name + ', ';
+        } else {
+          module.others += mod.module.name + ', ';
+        }
+      }
+
+      // last comma remove
+      module.core = module.core.replace(/, $/, '');
+      module.others = module.others.replace(/, $/, '');
+
+      return {
+        ...consultant,
+        user: {
+          ...consultant.user,
+          module
+        },
+      };
   }
+
   
   async setConsultantSchedule(id: number, body: any) {
     await this.consultantRepository.updateByUserId(id, {working_schedule: body});

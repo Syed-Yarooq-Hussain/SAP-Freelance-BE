@@ -28,4 +28,7 @@ export class CreateMeetingDto {
 export class UpdateMeetingStatusDto {
   @IsIn(MEETING_STATUS_ARRAY)
   status: string;
+
+  @IsOptional()
+  date_time: Date;
 }
