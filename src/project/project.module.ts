@@ -23,6 +23,8 @@ import { User } from 'models/user.model';
 import { UserRepository } from 'repository/user.repository';
 import { ProjectDetail } from 'models/project-detail.model';
 import { ProjectDetailRepository } from 'repository/project-detail.repository';
+import { Consultant } from 'models/consultant.model';
+import { ConsultantRepository } from 'repository/consultant.repository';
 
 @Module({
   imports: [
@@ -34,7 +36,8 @@ import { ProjectDetailRepository } from 'repository/project-detail.repository';
       ProjectPayment,
       ProjectTask,
       ProjectDetail,
-      User
+      User,
+      Consultant
     ]),
   ],
   controllers: [ProjectController],
@@ -47,7 +50,8 @@ import { ProjectDetailRepository } from 'repository/project-detail.repository';
     ProjectPaymentRepository,
     ProjectTaskRepository,
     ProjectDetailRepository,
-    UserRepository
+    UserRepository,
+    ConsultantRepository
   ],
   exports: [
     ProjectRepository,
@@ -57,7 +61,8 @@ import { ProjectDetailRepository } from 'repository/project-detail.repository';
     ProjectPaymentRepository,
     ProjectTaskRepository,
     ProjectDetailRepository,
-    UserRepository
+    UserRepository,
+    ConsultantRepository
   ],
 })
 export class ProjectModule {}

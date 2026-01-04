@@ -29,7 +29,7 @@ export class AuthService {
     });
 
     if (isUserExist) {
-      throw new CustomError(400, 'User with this email already exists');
+      throw new CustomError(500, 'User with this email already exists');
     }
     
     const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
@@ -76,7 +76,7 @@ export class AuthService {
         await this.consultantModuleRepo.createModule({
           user_id: user.id,
           module_id: +moduleId,
-          is_primary: true, // agar sirf first ko primary chahiye, isko condition ke saath adjust karo
+          is_primary: true, 
         });
       }
     }

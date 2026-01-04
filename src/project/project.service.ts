@@ -27,6 +27,7 @@ import { ProjectTask } from 'models/project-task.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
 import { transformProjectConsultant } from './transformers/project-consultant-transformer';
 import { GetConsultantsQueryDto } from './dto/get-query.dto';
+import { ConsultantRepository } from 'repository/consultant.repository';
 
 @Injectable()
 export class ProjectService {
@@ -38,6 +39,7 @@ export class ProjectService {
     private readonly paymentRepo: ProjectPaymentRepository,
     private readonly projectDetailrepository: ProjectDetailRepository,
     private readonly projectTaskRepo: ProjectTaskRepository,
+    private readonly consultantRepo: ConsultantRepository,
   ) {}
 
   async createProject(user: any) {
@@ -210,14 +212,14 @@ export class ProjectService {
       await existing.save(); // ✅ SAFE (instance)
       continue;
     }
-
+    let existingConsultant = await this.consultantRepo.findByUserId(item.consultant_id);
     // create new
     await this.projectConsultantRepo.create({
       project_id,
       consultant_id: item.consultant_id,
       requested_hours: item.requested_hours,
       status: 'shortlisted',
-      decided_rate: 0,
+      decided_rate: existingConsultant?.rate || 0,
       booking_schedule: null,
       is_doc_signed: false,
     });
@@ -276,6 +278,7 @@ export class ProjectService {
     );
   }
 
+
   // 2️⃣ milestone update
   const updatedMilestone = await this.milestoneRepo.update(id, data);
 
@@ -298,6 +301,8 @@ export class ProjectService {
     await this.projectConsultantRepo.findByProjectId(
       milestone.project_id,
     );
+
+  console.log('Consultants for payment calculation:', consultants);
 
   if (!consultants.length) {
     return updatedMilestone;
@@ -464,5 +469,11 @@ export class ProjectService {
 
   return hours;
 }
+
+  getPaymentsByProject(projectId: number) {
+    return this.paymentRepo.findAll({
+      where: { project_id: projectId },
+    });
+  }
 
 }

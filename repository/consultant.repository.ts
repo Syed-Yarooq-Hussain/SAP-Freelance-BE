@@ -55,7 +55,7 @@ async createDetail(dto: any) {
         attributes: ['id', 'username', 'email', 'city', 'country'],
         include: [{
           model: ConsultantModule,
-          attributes: ['id'],
+          attributes: ['id', 'is_primary'],
           include: [{
             model: ModuleEntity,
             attributes: ['id', 'name'],
