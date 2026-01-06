@@ -11,21 +11,6 @@ import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto'
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
 
-  @Post()
-  create(@Body() dto: CreateConsultantDto) {
-    return this.consultantService.create(dto);
-  }
-
-  @Get()
-  findAll() {
-    return this.consultantService.findAll();
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.consultantService.remove(+id);
-  }
-
   @Get('projects')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get Consulatant Projects' })
@@ -35,14 +20,22 @@ export class ConsultantController {
   }
   
   //To be make
-  @Get('dashboard')
+  @Get('stats')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get dashboard stats ' })
   @ApiResponse({ status: 201, description: 'Get dashboard stats ' })
   getConsultantStats(@Req() req: any) {
-    return { appeared_in_search: 10, interview_schedule: 5, monthly_revenue: 3000, total_earnings: 5000 };
+    return this.consultantService.getConsultantStats(+req.user.id);
   }
   
+  @Get('left-sidebar')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get dashboard stats ' })
+  @ApiResponse({ status: 201, description: 'Get dashboard stats ' })
+  getConsultantleftSideBar(@Req() req: any) {
+    return this.consultantService.getSideBarStats(+req.user.id);
+  }
+
   // To be make 
   @Get('schedules')
   @UseGuards(JwtAuthGuard)
