@@ -41,26 +41,10 @@ export class ClientService {
   async getAllClientStats(id: number) {
     return {
       "dashboard": {
-            "appeared_in_search": 3,
+            "number_of_project": 3,
             "interview_schedule": 0,
-            "projected_monthly_revenue": 300,
-            "total_earnings": 300
-        },
-        "projects_stats": {
-            "current": {
-                "project": "Test Proj 1 ",
-                "employeer": "client 12",
-                "project_info": "Tue Nov 10 2026 \n to Fri Dec 11 2026,\n Role: senior"
-            },
-            "upcoming": {
-                "project": "N/A",
-                "employeer": "N/A",
-                "project_info": "N/A"
-            },
-            "task": {
-                "total": 10,
-                "pending": 0
-            }
+            "total_spend_on_project": 300,
+            "pending_invoices": 300
         },
         "meetings_stats": {
             "interview_requests": 1,
@@ -70,9 +54,6 @@ export class ClientService {
         }
     }
   }
-
-  
-
 
   // ✅ Update Client
   update(id: number, dto: UpdateClientDto) {

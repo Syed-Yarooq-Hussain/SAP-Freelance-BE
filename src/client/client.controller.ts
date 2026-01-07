@@ -32,10 +32,11 @@ export class ClientController {
   }
 
   // ✅ Update Client
-  @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @Put()
   @ApiOperation({ summary: 'Update a client' })
-  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
-    return this.clientService.update(+id, updateClientDto);
+  update(@Body() updateClientDto: UpdateClientDto, @Req() req) {
+    return this.clientService.update(+req.user.id, updateClientDto);
   }
 
   // ✅ Delete Client
