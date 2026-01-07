@@ -35,93 +35,43 @@ export class ClientService {
     return this.clients;
   }
 
-  async findOne(id: number) {
-  const user = await this.userRepository.fetchClientDashboardData(id);
-
-  if (!user) throw new NotFoundException("User not found");
-
-  const plain = user.toJSON();
-
-  // 💸 Extract Payments
-  const allPayments = [];
-  for (const project of plain.projects) {
-    if (project.payments?.length) {
-      project.payments.forEach(p => {
-        allPayments.push({
-          id: p.id,
-          amount: p.amount,
-          is_paid: p.is_paid,
-          project_id: project.id,
-          project_name: project.name,
-        });
-      });
+  async getClient(id: number) {
+    return await this.userRepository.findById(id);
+  }
+  async getAllClientStats(id: number) {
+    return {
+      "dashboard": {
+            "appeared_in_search": 3,
+            "interview_schedule": 0,
+            "projected_monthly_revenue": 300,
+            "total_earnings": 300
+        },
+        "projects_stats": {
+            "current": {
+                "project": "Test Proj 1 ",
+                "employeer": "client 12",
+                "project_info": "Tue Nov 10 2026 \n to Fri Dec 11 2026,\n Role: senior"
+            },
+            "upcoming": {
+                "project": "N/A",
+                "employeer": "N/A",
+                "project_info": "N/A"
+            },
+            "task": {
+                "total": 10,
+                "pending": 0
+            }
+        },
+        "meetings_stats": {
+            "interview_requests": 1,
+            "upcoming_interviews": 0,
+            "rescheduled_interviews": 1,
+            "cancelled_interviews": 0
+        }
     }
   }
 
-  // 📅 Calendar
-  const sentMeetings = (plain.sentMeetings || []).map(m => ({
-    id: m.id,
-    date_time: m.date_time,
-    duration: m.duration,
-    event_type: m.event_type,
-    status: m.status,
-    url: m.url,
-    participants: m.invitees.map(i => i.user_id)
-  }));
-
-  const receivedMeetings = (plain.receivedInvites || []).map(inv => ({
-    id: inv.meeting.id,
-    date_time: inv.meeting.date_time,
-    duration: inv.meeting.duration,
-    event_type: inv.meeting.event_type,
-    status: inv.meeting.status,
-    participants: inv.meeting.invitees.map(i => i.user_id),
-  }));
-
-  const calendar = [...sentMeetings, ...receivedMeetings].sort(
-    (a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime()
-  );
-
-  // 📋 Project Formatting
-  const projects = plain.projects.map(project => ({
-    id: project.id,
-    name: project.name,
-    company_name: project.company_name,
-    status: project.status,
-    projectDetails: project.projectDetails,
-    projectIndustries: project.projectIndustries,
-    projectConsultants: project.projectConsultants.map(c => ({
-      id: c.id,
-      consultant_id: c.consultant_id,
-      status: c.status,
-      role: c.role,
-      decided_rate: c.decided_rate,
-      requested_hours: c.requested_hours,
-      is_doc_signed: c.is_doc_signed,
-    })),
-    payments: project.payments.map(p => ({
-      id: p.id,
-      amount: p.amount,
-      is_paid: p.is_paid,
-      project_name: project.name
-    }))
-  }));
-
-  let statistic = {
-    numberOfProjects: projects.length,
-    meetingScheduled: calendar.length,
-    totalSpendingOnProject: 36,
-    totalPendingInvoices: 3600
-
-  }
-  return {
-    ...plain,
-    projects,
-    allPayments,
-    calendar,
-    statistic
-  };
-}
+  
 
 
   // ✅ Update Client

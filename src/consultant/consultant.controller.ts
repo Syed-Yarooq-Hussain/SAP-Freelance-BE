@@ -78,13 +78,13 @@ export class ConsultantController {
     return this.consultantService.getConsultantSchedule(+req.user.id, +query.month, +query.year);
   }
 
-  @Patch(':user_id')
+  @Put('')
+  @UseGuards(JwtAuthGuard)
   async updateConsultant(
-    @Param('user_id') user_id: string,
-    @Body() updateDto: UpdateConsultantDetailDto,
+    @Body() updateDto: UpdateConsultantDetailDto, @Req() req: any,
   ) {
     const updatedUser = await this.consultantService.updateConsultant(
-      +user_id,
+      +req.user.id,
       updateDto,
     );
     return updatedUser;

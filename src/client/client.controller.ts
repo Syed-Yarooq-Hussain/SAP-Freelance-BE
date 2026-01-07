@@ -27,9 +27,8 @@ export class ClientController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  findMe(@Req() req) {
-    console.log("User Info:", req.user);
-    return this.clientService.findOne(req.user.id);
+  getClient(@Req() req, @Body() body: any) {
+    return this.clientService.getClient(req.user.id);
   }
 
   // ✅ Update Client
@@ -58,5 +57,11 @@ export class ClientController {
   @UseGuards(AuthGuard('jwt'))
   getAllProjectsPayments(@Req() req) {
     return this.clientService.getAllProjectsPaymentsByClientId(req.user.id);
+  }
+  
+  @Get('stats')
+  @UseGuards(AuthGuard('jwt'))
+  getAllStats(@Req() req) {
+    return this.clientService.getAllClientStats(req.user.id);
   }
 }
