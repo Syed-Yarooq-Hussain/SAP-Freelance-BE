@@ -45,8 +45,13 @@ class UserRepository {
 
   // 🔍 Get User By Id
   async findById(id: number): Promise<User | null> {
-    return this.userModel.findByPk(id);
+    return this.userModel.findByPk(id, {
+    attributes: {
+      exclude: ['password', 'deleted_at'],
+    },
+  });
   }
+
 
   // 📧 Find By Email
   async findByEmail(email: string): Promise<User | null> {

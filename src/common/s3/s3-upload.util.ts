@@ -29,7 +29,10 @@ export async function uploadToS3({
   isPublic = false,
 }: UploadToS3Params): Promise<string> {
   const key = `${folder}/${Date.now()}-${filename}`;
-  console.log()
+  console.log(file,
+  folder,
+  filename,
+  mimetype)
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,

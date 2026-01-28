@@ -27,16 +27,16 @@ export class ClientController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  findMe(@Req() req) {
-    console.log("User Info:", req.user);
-    return this.clientService.findOne(req.user.id);
+  getClient(@Req() req, @Body() body: any) {
+    return this.clientService.getClient(req.user.id);
   }
 
   // ✅ Update Client
-  @Put(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @Put()
   @ApiOperation({ summary: 'Update a client' })
-  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
-    return this.clientService.update(+id, updateClientDto);
+  update(@Body() updateClientDto: UpdateClientDto, @Req() req) {
+    return this.clientService.update(+req.user.id, updateClientDto);
   }
 
   // ✅ Delete Client
@@ -58,5 +58,11 @@ export class ClientController {
   @UseGuards(AuthGuard('jwt'))
   getAllProjectsPayments(@Req() req) {
     return this.clientService.getAllProjectsPaymentsByClientId(req.user.id);
+  }
+  
+  @Get('stats')
+  @UseGuards(AuthGuard('jwt'))
+  getAllStats(@Req() req) {
+    return this.clientService.getAllClientStats(req.user.id);
   }
 }

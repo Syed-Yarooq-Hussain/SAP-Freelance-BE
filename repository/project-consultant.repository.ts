@@ -83,7 +83,7 @@ export class ProjectConsultantRepository {
   async findByConsultantId(consultant_id: number): Promise<ProjectConsultant[]> {
     return this.projectConsultantModel.findAll({
       where: { consultant_id, deleted_at: null },
-      attributes: ['requested_hours'],
+      attributes: ['requested_hours', 'role'],
       include: [
         {
           model: Project,
@@ -97,10 +97,10 @@ export class ProjectConsultantRepository {
             {
               model: ProjectDetail,
               as: 'projectDetails',
-              attributes: ['start_date'],
+              attributes: ['start_date', 'end_date'],
             }
           ]
-        }
+        },
       ]
     });
   }
@@ -177,7 +177,5 @@ async findByProjectId(projectId: number) {
     },
   });
 }
-
-
 
 }

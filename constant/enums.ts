@@ -28,7 +28,7 @@ export const PROJECT_STATUS_ARRAY = Object.values(ProjectStatus);
 
 export enum ConsultantStatus {
   SHORTLISTED = 'shortlisted',
-  INTERVIEW_SCHEDULED = 'interview-schedule',
+  INTERVIEW_SCHEDULED = 'interview',
   INTERVIEW_DONE = 'interviewed',
   HIRED = 'hired',
   REJECTED = 'rejected',

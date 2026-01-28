@@ -8,6 +8,9 @@ import { Op } from 'sequelize';
 
 @Injectable()
 export class MeetingRepository {
+  getConsultantMeetings(consultantId: number) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectModel(Meeting)
     private readonly meetingModel: typeof Meeting,
@@ -47,39 +50,62 @@ export class MeetingRepository {
     return this.inviteeModel.findAll({ where: { meeting_id: meetingId } });
   }
 
-  async getMeetingWithDetails(user_id: number) {
-  return this.meetingModel.findAll({
-    where: {
+  async getMeetingWithDetails(
+    user_id: number,
+    type?: 'interview' | 'all',
+  ) {
+    const whereCondition: any = {
       deleted_at: null,
       [Op.or]: [
         { sender_id: user_id },
         { '$invitees.user_id$': user_id },
       ],
-    },
-    distinct: true, 
-    include: [
-      {
-        model: User,
-        as: 'sender',
-        attributes: ['id', 'username', 'email'],
-      },
-      {
-        model: Project,
-        attributes: ['id', 'name', 'status'],
-      },
-      {
-        model: MeetingInvitee,
-        as: 'invitees',    
-        required: false,
-        attributes: ['id', 'user_id'],
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'username', 'email'],
-          },
-        ],
-      },
-    ],
-  } as any);
-}
+    };
+
+    // 👉 sirf jab interview chahiye
+    if (type === 'interview') {
+      whereCondition.event_type = 'interview';
+    }
+
+    return this.meetingModel.findAll({
+      where: whereCondition,
+      distinct: true,
+      include: [
+        {
+          model: User,
+          as: 'sender',
+          attributes: ['id', 'username', 'email'],
+        },
+        {
+          model: Project,
+          attributes: ['id', 'name', 'status'],
+        },
+        {
+          model: MeetingInvitee,
+          as: 'invitees',
+          required: false,
+          attributes: ['id', 'user_id'],
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'username', 'email'],
+            },
+          ],
+        },
+      ],
+    } as any);
+  }
+
+
+  async getAllConsultantInterviews(consultant_id: number) {
+    return this.inviteeModel.findAll({
+      where: { user_id: consultant_id },
+      include: [
+        {
+          model: Meeting,
+          attributes: ['id', 'title', 'start_time', 'end_time'],
+        },
+      ],
+    });
+  }
 }

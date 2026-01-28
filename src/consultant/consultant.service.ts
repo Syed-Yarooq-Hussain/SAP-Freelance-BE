@@ -4,7 +4,7 @@ import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
 import * as bcrypt from 'bcrypt';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
-import { getConsultantProjectsResponse } from './transformer/consultant.transformer';
+import { getConsultantleftSideBar, getConsultantProjectsResponse } from './transformer/consultant.transformer';
 import { ConsultantRepository } from 'repository/consultant.repository';
 import { buildMonthlySchedule } from '../common/calender/monthly.util';
 import { MeetingRepository } from 'repository/meeting.repository';
@@ -24,49 +24,9 @@ export class ConsultantService {
       private readonly consultantModuleRepo: ConsultantModuleRepository,
       private readonly userRepo: UserRepository,
     ) {}
-  private consultants: GetConsultantDto[] = [
-    {id: 1, name: 'Alice Khan', email: 'alice@example.com', expertise: 'FrontendDeveloper',password:"" },
-    { id: 2, name: 'Bob Ahmed', email: 'bob@example.com', expertise: 'Backend Developer',password:"" },
-  ];
 
-  async create(dto: CreateConsultantDto) {
-    if (!dto.password) {
-      throw new Error('Password is required');
-    }
 
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    const newConsultant: GetConsultantDto = {
-      id: Date.now(),
-      ...dto,
-      password: hashedPassword,
-    };
-
-    this.consultants.push(newConsultant);
-    return newConsultant;
-  }
-
-  findAll(): GetConsultantDto[] {
-    return this.consultants;
-  }
-
-  findOne(id: number): GetConsultantDto | undefined {
-    return this.consultants.find((c) => c.id === id);
-  }
-
-  update(id: number, dto: UpdateConsultantDto): GetConsultantDto | null {
-    const index = this.consultants.findIndex((c) => c.id === id);
-    if (index === -1) return null;
-    this.consultants[index] = { ...this.consultants[index], ...dto };
-    return this.consultants[index];
-  }
-
-  remove(id: number) {
-    this.consultants = this.consultants.filter((c) => c.id !== id);
-    return { deleted: true };
-  }
-  
-  
+    
   async getProjectByConsultantId(id: number) {
     let consultantProjectsList = await this.projectConsultantRepo.findByConsultantId(id);
 
@@ -235,6 +195,111 @@ export class ConsultantService {
       if (updatedUser) (updatedUser as any).password = undefined;
   
       return updatedUser;
+    }
+
+    async getConsultantStats(consultantId: number) {
+      const meetings = await this.meetingRepo.getMeetingWithDetails(
+        consultantId,
+        'interview',
+      );
+
+      const projects =
+        await this.projectConsultantRepo.findByConsultantId(consultantId);
+
+      const consultant =
+        await this.consultantRepository.findByUserId(consultantId);
+
+      const now = new Date();
+
+      /* =========================
+        MEETING STATS (REAL)
+      ========================= */
+
+      const meetings_stats = {
+        interview_requests: meetings.length,
+
+        upcoming_interviews: meetings.filter(
+          m =>
+            m.status === 'Pending' &&
+            new Date(m.date_time) > now,
+        ).length,
+
+        rescheduled_interviews: meetings.filter(
+          m => m.status === 'Rescheduled',
+        ).length,
+
+        cancelled_interviews: meetings.filter(
+          m => m.status === 'Cancelled',
+        ).length,
+      };
+
+      /* =========================
+        DASHBOARD STATS
+      ========================= */
+
+      const stats = {
+        dashboard: {
+          appeared_in_search: meetings.length * 3, // placeholder logic
+          interview_schedule: meetings_stats.upcoming_interviews,
+
+          projected_monthly_revenue:
+            consultant?.weekly_available_hours && consultant?.rate
+              ? consultant.weekly_available_hours * consultant.rate
+              : 0,
+
+          total_earnings:
+            projects?.[0]?.requested_hours && consultant?.rate
+              ? projects[0].requested_hours * consultant.rate
+              : 0,
+        },
+
+        /* =========================
+          PROJECT STATS
+        ========================= */
+
+        projects_stats: {
+          current: {
+            project: projects?.[0]?.project?.name || 'N/A',
+            employeer:
+              projects?.[0]?.project?.client?.username || 'N/A',
+            project_info: projects?.[0]?.project?.projectDetails
+              ? `${projects[0].project.projectDetails.start_date.toDateString()} 
+                to ${projects[0].project.projectDetails.end_date.toDateString()},
+                Role: ${projects[0].role}`
+              : 'N/A',
+          },
+
+          upcoming: {
+            project: projects?.[1]?.project?.name || 'N/A',
+            employeer:
+              projects?.[1]?.project?.client?.username || 'N/A',
+            project_info: projects?.[1]?.project?.projectDetails
+              ? `${projects[1].project.projectDetails.start_date.toDateString()} 
+                to ${projects[1].project.projectDetails.end_date.toDateString()},
+                Role: ${projects[1].role}`
+              : 'N/A',
+          },
+
+          task: {
+            total: projects?.[0]?.project ? 10 : 0,
+            pending: projects?.[0]?.project ? 0 : 2,
+          },
+        },
+
+        meetings_stats,
+      };
+
+      return stats;
+    }
+
+
+    async getSideBarStats(consultantId: number) {
+      let consultants = await this.consultantRepository.findByUserId(consultantId);
+      let consultantProjects = await this.projectConsultantRepo.findByConsultantId(consultantId);
+
+      let resp = getConsultantleftSideBar({consultants, projects: consultantProjects});
+      
+      return resp
     }
 
 }

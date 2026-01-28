@@ -36,5 +36,15 @@ export class AdminController {
     return this.adminService.getAllProjects();
   }
 
+  @Post('consultant/payment')
+  createConsultantPayment(@Body() body: any) {
+    return null;
+  }
+  
+  @Get('consultant/payment/:userId')
+  getConsultantPayment() {
+    return null;
+  }
+
   
 }

@@ -58,7 +58,7 @@ export interface UpdateConsultantDetailDto {
       }[];
       custom?: any[];
     };
-    module?: any; // agar FE se module id ya array mile
+    module?: any; 
     core_module?: number[];
     other_module?: number[];
     cv_url?: string;
