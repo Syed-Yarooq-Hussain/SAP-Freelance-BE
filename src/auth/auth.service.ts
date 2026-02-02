@@ -205,6 +205,73 @@ export class AuthService {
   }
 
 
+  async loginWithLinkedIn(linkedinUser: any) {
+    try {
+      console.log('🔵 loginWithLinkedIn called with:', linkedinUser);
+      
+      // Validate LinkedIn user data
+      if (!linkedinUser) {
+        throw new CustomError(401, 'Invalid LinkedIn user data: null');
+      }
+
+      if (!linkedinUser.linkedin_id && !linkedinUser.sub) {
+        throw new CustomError(401, 'Invalid LinkedIn user data: missing identifier');
+      }
+
+      // Use email if available, otherwise generate unique identifier
+      const email = linkedinUser.email || `linkedin_${linkedinUser.linkedin_id}@temp.local`;
+      
+      console.log('📋 Using email:', email);
+      console.log('📋 User data:', linkedinUser);
+
+      // 🔍 Step 1: user email se find
+      let user = await User.findOne({
+        where: { email: email },
+      });
+
+      // 🆕 Step 2: agar user nahi mila → create consultant user
+      if (!user) {
+        console.log('📋 Creating new user with email:', email);
+        
+        user = await this.userRepo.createUser({
+          username: linkedinUser.name || `LinkedIn User ${linkedinUser.linkedin_id}`,
+          email: email,
+          password: '123456', // 👈 LinkedIn user, no password
+          role: +UserRole.CONSULTANT,
+          status: UserStatus.PENDING,
+          phone: `N/A`, // dummy phone
+          currency: 'USD',
+          city: 'Unknown',
+          country: 'Unknown',
+        });
+        
+        console.log('✅ New user created:', user.id);
+      } else {
+        console.log('✅ Existing user found:', user.id);
+      }
+
+      // 🔐 Step 3: SAME JWT as normal login
+      const payload = {
+        sub: user.id,
+        role: user.role,
+        email: user.email,
+      };
+
+      const token = await this.jwtService.signAsync(payload);
+
+      console.log('✅ JWT token generated');
+
+      return {
+        token,
+        user,
+      };
+    } catch (error) {
+      console.error('❌ LinkedIn login error:', error);
+      throw new CustomError(500, `LinkedIn login failed: ${error.message}`);
+    }
+  }
+
+
   async parse(file: Express.Multer.File) {
     return {error:'to be fixed'};
    /*  const text = await extractText(file);

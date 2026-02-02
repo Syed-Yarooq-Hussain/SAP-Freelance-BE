@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -11,11 +11,16 @@ import { UserRepository } from '../../repository/user.repository';
 import { ConsultantModule } from '../../models/consultant-module.model';
 import { ConsultantModule as ConsultantModuleImport } from '../consultant/consultant.module'; 
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
+import { LinkedInStrategy } from './linkedin.strategy';
+import { SessionSerializer } from './session.serializer';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([User, ProjectDetail, ConsultantModule]),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule.register({
+      defaultStrategy: 'jwt',
+      session: true,
+    }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
@@ -28,7 +33,9 @@ import { ConsultantModuleRepository } from 'repository/consultant-module.reposit
     AuthService,               
     JwtStrategy,                
     UserRepository, 
-    ConsultantModuleRepository             
+    ConsultantModuleRepository,
+    LinkedInStrategy,
+    SessionSerializer         
   ],
   exports: [
     AuthService, 
