@@ -72,6 +72,12 @@ export class User extends Model<User> {
   })
   status: string | number;
 
+  @Column({ allowNull: true })
+  tokenMail: string;
+
+  @Column({ allowNull: true })
+  tokenMailExpiresAt: Date;
+
   @HasOne(() => Consultant)
   consultants: Consultant;
 

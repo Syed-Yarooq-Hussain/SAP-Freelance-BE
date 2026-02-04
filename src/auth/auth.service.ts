@@ -7,10 +7,12 @@ import { ConsultantRepository } from '../../repository/consultant.repository';
 import { UserRepository } from '../../repository/user.repository';
 import { CreateConsultantDetailDto } from '../user/dto/create-consultant-detail.dto';
 import { RegisterDto } from './dto/register.dto';
-import { ConsultantLevel, USER_STATUS_ARRAY, UserRole, UserStatus } from 'constant/enums';
+import { ConsultantLevel, EmailType, USER_STATUS_ARRAY, UserRole, UserStatus } from 'constant/enums';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 import { UpdateConsultantDetailDto } from './dto/register-consultant.dto';
+import * as crypto from 'crypto';
+import { sendEmail } from 'src/common/emails/email.util';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +24,7 @@ export class AuthService {
   ) {}
 
  // 🟢 Consultant Signup
-  async signupConsultant(consultantDto: CreateConsultantDetailDto) {
+  async signupConsultantwithAI(consultantDto: CreateConsultantDetailDto) {
 
     const isUserExist = await User.findOne({
       where: { email: consultantDto.user.email },
@@ -100,6 +102,41 @@ export class AuthService {
     return userWithConsultant;
   }
 
+  async signupConsultant(body: any) {
+    const isUserExist = await User.findOne({
+      where: { email: body.email },
+    });
+
+    if (isUserExist) {
+      throw new CustomError(400, 'User with this email already exists');
+    }
+
+    // password validation
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(body.password)) {
+      throw new CustomError(
+        400,
+        'Password must contain at least 1 uppercase letter, 1 number and be 8 characters long'
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+
+    const user = await this.userRepo.createUser({
+      username: body.username,
+      email: body.email,
+      password: hashedPassword,
+      role: +UserRole.CONSULTANT,
+      status: UserStatus.PENDING,
+      phone: '123456789',
+      currency: 'PKR',
+      city: 'N/A',
+      country: 'N/A',
+    });
+
+    return user;
+  }
+
 
   // 🟣 User Signup
   async signupUser(userDto: RegisterDto) {
@@ -120,7 +157,7 @@ export class AuthService {
       email: userDto.email,
       password: hashedPassword,
       role: +UserRole.CLIENT, 
-      status: 1 || "active",
+      status: UserStatus.ACTIVE,
       phone: userDto.phone || null,
       currency: userDto.currency || 'USD',
       city: userDto.city || 'Karachi',
@@ -140,6 +177,10 @@ export class AuthService {
     });
 
     if (!user) throw new CustomError(404, 'User not found');
+
+    if (user.status == UserStatus.PENDING) {
+      throw new CustomError(403, 'Please verify your email first');
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new CustomError(401, 'Invalid credentials');
@@ -238,11 +279,11 @@ export class AuthService {
           email: email,
           password: '123456', // 👈 LinkedIn user, no password
           role: +UserRole.CONSULTANT,
-          status: UserStatus.PENDING,
-          phone: `N/A`, // dummy phone
-          currency: 'USD',
-          city: 'Unknown',
-          country: 'Unknown',
+          status: UserStatus.ACTIVE,
+          phone: null,
+          currency: 'PKR',
+          city: null,
+          country: null,
         });
         
         console.log('✅ New user created:', user.id);
@@ -278,5 +319,160 @@ export class AuthService {
     return parseWithOpenAI(text); */
   }
 
+
+  async sendVerificationEmail(userId: number) {
+    const user = await User.findByPk(userId);
+
+    if (!user) throw new CustomError(404, 'User not found');
+
+    if (user.status === UserStatus.ACTIVE) {
+      throw new CustomError(400, 'Email already verified, please login');
+    }
+
+    // ⛔ allow only once in 15 mins
+    if (user.tokenMailExpiresAt && user.tokenMailExpiresAt > new Date()) {
+      throw new CustomError(
+        400,
+        'Verification email already sent. Please wait 15 minutes.'
+      );
+    }
+
+    const tokenMail = crypto.randomBytes(32).toString('hex');
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    await user.update({
+      tokenMail,
+      tokenMailExpiresAt: expiresAt,
+    });
+
+    const verifyLink = `${process.env.FE_URL}/verify-email?token=${tokenMail}`;
+
+    await sendEmail(
+      user.email,
+      EmailType.SIGNUP_VERIFICATION,
+      user.username,
+      'SAP Freelance Portal',
+      verifyLink
+    );
+
+    return {
+      message: 'An Email has been sent to your email address.',
+    };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await User.findOne({ where: { tokenMail: token } });
+
+    if (!user) {
+      throw new CustomError(400, 'Invalid verification link');
+    }
+
+    if (user.tokenMailExpiresAt < new Date()) {
+      throw new CustomError(
+        400,
+        'Verification link expired. Please signup again.'
+      );
+    }
+
+    await user.update({
+      status: UserStatus.ACTIVE,
+      tokenMail: null,
+      tokenMailExpiresAt: null,
+    });
+
+    return {
+      message: 'Email verified successfully. Please login.',
+    };
+  }
+
+
+
+  async forgotPassword(email: string) {
+    const user = await User.findOne({ where: { email } });
+
+    // security: same response even if user not found
+    if (!user) {
+      return {
+        message:
+          'If an account exists with this email, a reset link has been sent.',
+      };
+    }
+
+    // ⛔ 15 min rule
+    if (user.tokenMailExpiresAt && user.tokenMailExpiresAt > new Date()) {
+      throw new CustomError(
+        400,
+        'Password reset email already sent. Please wait 15 minutes.'
+      );
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    await user.update({
+      tokenMail: token,
+      tokenMailExpiresAt: expiresAt,
+    });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    await sendEmail(
+      user.email,
+      EmailType.RESET_PASSWORD,
+      user.username || 'User',
+      'SAP Freelance Portal',
+      resetLink
+    );
+
+    return {
+      message:
+        'If an account exists with this email, a reset link has been sent.',
+    };
+  }
+
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    confirmPassword: string
+  ) {
+    if (newPassword !== confirmPassword) {
+      throw new CustomError(400, 'Passwords do not match');
+    }
+
+    // same password validation as signup
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      throw new CustomError(
+        400,
+        'Password must be at least 8 characters long, contain 1 uppercase letter and 1 number'
+      );
+    }
+
+    const user = await User.findOne({ where: { tokenMail: token } });
+
+    if (!user) {
+      throw new CustomError(400, 'Invalid or expired reset link');
+    }
+
+    if (user.tokenMailExpiresAt < new Date()) {
+      throw new CustomError(400, 'Reset link expired');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await user.update({
+      password: hashedPassword,
+      tokenMail: null,
+      tokenMailExpiresAt: null,
+    });
+
+    return {
+      message: 'Password has been reset successfully. Please login.',
+    };
+  }
 
 }

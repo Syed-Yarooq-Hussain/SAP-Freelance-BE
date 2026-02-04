@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors, Logger } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors, Logger, Query } from '@nestjs/common';
 import { Response, Request } from 'express';
 import * as passport from 'passport';
 
@@ -36,9 +36,9 @@ export class AuthController {
     }
 
     const result = await this.authService.loginWithLinkedIn(req.user);
-
+    console.log('🔵 LinkedIn login result:', result);
     return res.redirect(
-      `http://localhost:3001/login?token=${result.token}`,
+      `http://localhost:3001/auth/login?token=${result.token}`,
     );
   }
 
@@ -97,11 +97,8 @@ export class AuthController {
   // 🧪 Test Session
   @Get('test/session')
   async testSession(@Req() req: any, @Res() res: Response) {
-    this.logger.log('📋 Session test called');
-    this.logger.log('📋 Session ID:', req.sessionID);
-    this.logger.log('📋 Session data:', req.session);
-    
-    // Store something in session
+  
+      // Store something in session
     req.session.testData = {
       timestamp: new Date(),
       testValue: 'session-works',
@@ -115,29 +112,35 @@ export class AuthController {
   }
 
   // 🧪 Test LinkedIn Config
-  @Get('test/linkedin-config')
-  async testLinkedInConfig(@Res() res: Response) {
-    const config = {
-      clientIdSet: !!process.env.LINKEDIN_CLIENT_ID,
-      clientSecretSet: !!process.env.LINKEDIN_CLIENT_SECRET,
-      callbackUrlSet: !!process.env.LINKEDIN_CALLBACK_URL,
-      callbackUrl: process.env.LINKEDIN_CALLBACK_URL,
-      clientId: process.env.LINKEDIN_CLIENT_ID ? 'SET' : 'MISSING',
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET ? 'SET' : 'MISSING',
-    };
+  @Post('send-verification-email')
+  async sendVerificationEmail(@Body('userId') userId: number) {
+    return this.authService.sendVerificationEmail(userId);
+  }
 
-    this.logger.log('LinkedIn Config:', config);
-    
-    if (!config.clientIdSet || !config.clientSecretSet || !config.callbackUrlSet) {
-      return res.status(400).json({
-        error: 'LinkedIn configuration incomplete',
-        config,
-      });
-    }
+  /**
+   * CTA: Verify Email (From Email Link)
+   */
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
 
-    return res.json({
-      message: 'LinkedIn configuration is valid',
-      config,
-    });
+   @Post('forgot-password')
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  // Reset Password
+  @Post('reset-password')
+  async resetPassword(
+    @Body('token') token: string,
+    @Body('newPassword') newPassword: string,
+    @Body('confirmPassword') confirmPassword: string
+  ) {
+    return this.authService.resetPassword(
+      token,
+      newPassword,
+      confirmPassword
+    );
   }
 }

@@ -1,12 +1,13 @@
 import * as nodemailer from 'nodemailer';
-import { generalTemplate } from './email.template';
+import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
 import { EmailType } from 'constant/enums';
 
 export async function sendEmail(
   to: string,
   type: EmailType,
   receiverName: string,
-  senderName: string
+  senderName: string,
+  verifyLink?: string
 ) {
   try {
     let message = "";
@@ -47,6 +48,7 @@ export async function sendEmail(
         message = "Client has rejected the NDA.";
         break;
 
+
       default:
         message = "This is a system notification.";
     }
@@ -62,17 +64,36 @@ export async function sendEmail(
       },
     });
 
+    let info = null;
     // 🔹 Email Send
-    const info = await transporter.sendMail({
-      from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-      to,
-      subject: `Notification: ${type}`,
-      html: generalTemplate(receiverName, message, senderName),
-    });
+    if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+      info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `P9 System: Verify your Email`,
+          html: verifyEmailTemplate(receiverName, verifyLink),
+        });
+       
+    }else if(type === EmailType.RESET_PASSWORD && verifyLink) {
+       info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `P9 System: Password Reset Request`,
+          html: resetPasswordTemplate(verifyLink),
+        });
+    } else{
+       info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `Notification: ${type}`,
+          html: generalTemplate(receiverName, message, senderName),
+        });
+    }
+   
 
     return {
       status: true,
-      messageId: info.messageId,
+      messageId: info?.messageId,
     };
   } catch (error: any) {
     return {
