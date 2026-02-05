@@ -347,7 +347,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_URL}/verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_BASE_URL}/verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,
@@ -418,7 +418,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetLink = `${process.env.FE_BASE_URL}/reset-password?token=${token}`;
 
     await sendEmail(
       user.email,

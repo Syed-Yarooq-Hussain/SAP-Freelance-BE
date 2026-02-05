@@ -1,9 +1,10 @@
-import {Body,Controller,Delete,Get,Param,Post,Put,Query,Req,UseGuards,} from '@nestjs/common';
+import {Body,Controller,Delete,Get,Param,Post,Put,Query,Req,UnauthorizedException,UseGuards,} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { GetUsersDto } from './dto/get-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { User } from 'models/user.model';
 
 @ApiTags('User') 
 @ApiBearerAuth() 
@@ -66,5 +67,14 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
+  }
+
+  @UseGuards(JwtAuthGuard)  
+  @Get('me')
+  async getMe(@Req() req: Request): Promise<User> {
+    const jwtPayload: any = (req as any).user;
+    const userId = jwtPayload?.id ?? jwtPayload?.sub;
+    if (!userId) throw new UnauthorizedException('Invalid token payload');
+    return this.userService.findOne(Number(userId));
   }
 }
