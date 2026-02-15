@@ -34,11 +34,11 @@ export class AuthController {
     if (!req.user) {
       return res.status(401).json({ error: 'LinkedIn auth failed' });
     }
-
+    console.log('🔵 LinkedIn callback called', req.user);
     const result = await this.authService.loginWithLinkedIn(req.user);
     console.log('🔵 LinkedIn login result:', result);
     return res.redirect(
-      `http://localhost:3001/auth/login?token=${result.token}`,
+      `http://localhost:3001/auth/linkedin?token=${result.token}`,
     );
   }
 

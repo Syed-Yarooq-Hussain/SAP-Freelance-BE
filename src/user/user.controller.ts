@@ -45,6 +45,18 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)  
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile returned successfully' })
+  async getMe(@Req() req: Request): Promise<User> {
+    const jwtPayload: any = (req as any).user;
+    const userId = jwtPayload?.id ?? jwtPayload?.sub;
+    console.log('🔵 getMe called-------->>>>', jwtPayload);
+    if (!userId) throw new UnauthorizedException('Invalid token payload');
+    return this.userService.findOne(Number(userId));
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiResponse({ status: 200, description: 'User details returned successfully' })
@@ -67,14 +79,5 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
-  }
-
-  @UseGuards(JwtAuthGuard)  
-  @Get('me')
-  async getMe(@Req() req: Request): Promise<User> {
-    const jwtPayload: any = (req as any).user;
-    const userId = jwtPayload?.id ?? jwtPayload?.sub;
-    if (!userId) throw new UnauthorizedException('Invalid token payload');
-    return this.userService.findOne(Number(userId));
   }
 }
