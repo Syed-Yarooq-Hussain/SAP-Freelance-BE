@@ -37,6 +37,8 @@ export class ConsultantService {
   
   
   async getScheduleByConsultantId(id: number) {
+
+    console.log('🔵 getScheduleByConsultantId called with id:', id);
     const booking_schedule = await this.projectConsultantRepo.findBookingScheduleByConsultantId(id);
     const consultant_schedule = await this.consultantRepository.findByUserId(id);
 

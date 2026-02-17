@@ -133,6 +133,27 @@ export class AuthService {
       city: 'N/A',
       country: 'N/A',
     });
+    
+    const schedule = this.generateWeekSchedule(20);
+    
+    await this.consultantRepo.createDetail(
+      {
+        module: null,
+        level: null,
+        experience: null,
+        rate: null,
+        weekly_available_hours: 20,
+        working_schedule: schedule,
+        cv_url: null,
+        user_id: user.id,
+        clients_summary: null,
+        skills: null,
+        education: null,
+        certification: null,
+        work_experiences: null,
+        languages: null,
+      }
+    );
 
     return user;
   }
@@ -178,9 +199,9 @@ export class AuthService {
 
     if (!user) throw new CustomError(404, 'User not found');
 
-    if (user.status == UserStatus.PENDING) {
+    /* if (user.status == UserStatus.PENDING) {
       throw new CustomError(403, 'Please verify your email first');
-    }
+    } */
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new CustomError(401, 'Invalid credentials');
@@ -248,7 +269,6 @@ export class AuthService {
 
   async loginWithLinkedIn(linkedinUser: any) {
     try {
-      console.log('🔵 loginWithLinkedIn called with:', linkedinUser);
       
       // Validate LinkedIn user data
       if (!linkedinUser) {
@@ -262,22 +282,17 @@ export class AuthService {
       // Use email if available, otherwise generate unique identifier
       const email = linkedinUser.email || `linkedin_${linkedinUser.linkedin_id}@temp.local`;
       
-      console.log('📋 Using email:', email);
-      console.log('📋 User data:', linkedinUser);
 
-      // 🔍 Step 1: user email se find
       let user = await User.findOne({
         where: { email: email },
       });
 
-      // 🆕 Step 2: agar user nahi mila → create consultant user
       if (!user) {
-        console.log('📋 Creating new user with email:', email);
         
         user = await this.userRepo.createUser({
           username: linkedinUser.name || `LinkedIn User ${linkedinUser.linkedin_id}`,
           email: email,
-          password: '123456', // 👈 LinkedIn user, no password
+          password: '123456',
           role: +UserRole.CONSULTANT,
           status: UserStatus.ACTIVE,
           phone: null,
@@ -285,6 +300,29 @@ export class AuthService {
           city: null,
           country: null,
         });
+
+        const schedule = this.generateWeekSchedule(20);
+        
+        await this.consultantRepo.createDetail(
+          {
+            module: null,
+            level: null,
+            experience: null,
+            rate: null,
+            weekly_available_hours: 20,
+            working_schedule: schedule,
+            cv_url: null,
+            user_id: user.id,
+            clients_summary: null,
+            skills: null,
+            education: null,
+            certification: null,
+            work_experiences: null,
+            languages: null,
+          }
+        );
+
+        
         
         console.log('✅ New user created:', user.id);
       } else {
@@ -292,15 +330,9 @@ export class AuthService {
       }
 
       // 🔐 Step 3: SAME JWT as normal login
-      const payload = {
-        sub: user.id,
-        role: user.role,
-        email: user.email,
-      };
-
+     
+      const payload = { sub: user.id, role: user.role, email: user.email };
       const token = await this.jwtService.signAsync(payload);
-
-      console.log('✅ JWT token generated');
 
       return {
         token,
@@ -347,7 +379,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_BASE_URL}/verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_URL}/verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,
@@ -364,7 +396,8 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const user = await User.findOne({ where: { tokenMail: token } });
-
+    console.log('🔍 Verifying email with token:', token);
+    console.log('🔍 Verifying email with token:', user);
     if (!user) {
       throw new CustomError(400, 'Invalid verification link');
     }
@@ -418,7 +451,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const resetLink = `${process.env.FE_BASE_URL}/reset-password?token=${token}`;
+    const resetLink = `${process.env.FE_URL}/reset-password?token=${token}`;
 
     await sendEmail(
       user.email,
