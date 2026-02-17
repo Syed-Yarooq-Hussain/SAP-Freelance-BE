@@ -1,9 +1,10 @@
-import {Body,Controller,Delete,Get,Param,Post,Put,Query,Req,UseGuards,} from '@nestjs/common';
+import {Body,Controller,Delete,Get,Param,Post,Put,Query,Req,UnauthorizedException,UseGuards,} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { GetUsersDto } from './dto/get-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { User } from 'models/user.model';
 
 @ApiTags('User') 
 @ApiBearerAuth() 
@@ -42,6 +43,18 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'All users fetched successfully' })
   findAll() {
     return this.userService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)  
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile returned successfully' })
+  async getMe(@Req() req: Request): Promise<User> {
+    const jwtPayload: any = (req as any).user;
+    const userId = jwtPayload?.id ?? jwtPayload?.sub;
+    console.log('🔵 getMe called-------->>>>', jwtPayload);
+    if (!userId) throw new UnauthorizedException('Invalid token payload');
+    return this.userService.findOne(Number(userId));
   }
 
   @Get(':id')
