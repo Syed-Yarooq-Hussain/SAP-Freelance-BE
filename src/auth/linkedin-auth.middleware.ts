@@ -17,16 +17,17 @@ export class LinkedinAuthMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     // Only handle LinkedIn callback
-    if (req.path !== '/auth/linkedin/callback') {
-      return next();
-    }
-
     this.logger.log('🔵 LinkedIn callback middleware triggered');
     this.logger.log('📋 Request details:');
     this.logger.log('   Path:', req.path);
     this.logger.log('   Query:', req.query);
     this.logger.log('   Method:', req.method);
     this.logger.log('   URL:', req.originalUrl);
+    if (req.path !== '/auth/linkedin/callback') {
+      return next();
+    }
+
+    
 
     try {
       // Create a custom callback for passport
