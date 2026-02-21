@@ -63,6 +63,9 @@ export async function sendEmail(
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
+      tls: {
+        rejectUnauthorized: false, // ✅ production me sometimes needed
+      },
     });
 
     console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
