@@ -68,7 +68,8 @@ export async function sendEmail(
     console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
     let info = null;
     // 🔹 Email Send
-    if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+    try {
+      if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
       info = await transporter.sendMail({
           from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
           to,
@@ -91,6 +92,11 @@ export async function sendEmail(
           html: generalTemplate(receiverName, message, senderName),
         });
     }
+      console.log("EMAIL SENT SUCCESS");
+    } catch (error) {
+      console.error("EMAIL ERROR:", error);
+    }
+    
    
 
     console.log(`[EmailUtil][DEBUG] email sent result messageId=${info?.messageId}`);
