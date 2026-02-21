@@ -56,14 +56,16 @@ export async function sendEmail(
 
     // 🔹 Transporter
     const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT),
-      secure: false,
+      host: "smtp.gmail.com",
+      port: 465,              // ✅ 465 use karo
+      secure: true,            // ✅ true
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
-      
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
 
     console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
