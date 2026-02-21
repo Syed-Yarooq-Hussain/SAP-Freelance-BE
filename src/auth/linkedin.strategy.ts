@@ -5,6 +5,9 @@ import { Strategy } from 'passport-openidconnect';
 @Injectable()
 export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
   constructor() {
+    console.log("🚀 LinkedIn Strategy Init");
+    console.log("CLIENT ID:", process.env.LINKEDIN_CLIENT_ID);
+    console.log("CALLBACK:", process.env.LINKEDIN_CALLBACK_URL);
     super({
       issuer: 'https://www.linkedin.com/oauth',
       authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
@@ -13,7 +16,8 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
 
       clientID: process.env.LINKEDIN_CLIENT_ID,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-      callbackURL: process.env.LINKEDIN_CALLBACK_URL,
+      callbackURL: "https://sap-freelance-be-production.up.railway.app/auth/linkedin/callback",
+      //callbackURL: process.env.LINKEDIN_CALLBACK_URL,
 
       scope: ['openid', 'profile', 'email'],
     });

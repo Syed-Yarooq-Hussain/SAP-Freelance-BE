@@ -9,27 +9,36 @@ import * as path from 'path';
 import * as session from 'express-session';
 import * as passport from 'passport';
 
-
 async function bootstrap() {
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: '*' });
+
+  // 🔥 VERY IMPORTANT FOR RAILWAY / PROXY
+  const server = app.getHttpAdapter().getInstance();
+  server.set('trust proxy', 1);
+
+  app.enableCors({
+    origin: process.env.FE_URL,
+    credentials: true,
+  });
+
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
 
-app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
+  app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
 
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
-      resave: true,
-      saveUninitialized: true,
-      cookie: { 
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secret: process.env.SESSION_SECRET || 'super-secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // true in production (HTTPS)
-      }
+        secure: true,         // ALWAYS true in Railway (HTTPS)
+        sameSite: 'none',     // REQUIRED for OAuth redirects
+      },
     }),
   );
 
@@ -42,13 +51,15 @@ app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
     .setVersion('1.0')
     .addTag('Crystal')
     .build();
+
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api', app, document);
-  const port = process.env.PORT || 3000
+
+  const port = process.env.PORT || 3000;
   await app.listen(port);
+
   console.log(`App running on port ${port}`);
-  console.log(`Swagger docs available at http://localhost:${port}/api`);
-  console.log(`LinkedIn OAuth callback URL: ${process.env.LINKEDIN_CALLBACK_URL} secured with client ID: ${process.env.LINKEDIN_CLIENT_ID}`);
-  console.log('mail service user:', process.env.MAIL_USER, 'host:', process.env.MAIL_HOST, 'port:', process.env.MAIL_PORT, 'from:', process.env.MAIL_FROM);
+  console.log(`LinkedIn Callback: ${process.env.LINKEDIN_CALLBACK_URL}`);
 }
+
 bootstrap();
