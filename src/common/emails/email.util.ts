@@ -1,8 +1,6 @@
 import * as nodemailer from 'nodemailer';
 import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
 import { EmailType } from 'constant/enums';
-import { Resend } from "resend";
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmail(
   to: string,
@@ -58,67 +56,47 @@ export async function sendEmail(
 
     // 🔹 Transporter
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: process.env.MAIL_HOST,
+      port: Number(process.env.MAIL_PORT),
+      secure: false,
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
-      debug: true,
-      logger: true,
+      
     });
 
     console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
     let info = null;
     // 🔹 Email Send
     try {
-    console.log(`[EmailUtil] Sending email via Resend -> ${to}`);
-
-    let subject = `Notification: ${type}`;
-    let html = generalTemplate(
-      receiverName,
-      "This is a system notification.",
-      senderName
-    );
-
-    // ✅ Preserve Your Template Logic
-    if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
-      subject = "P9 System: Verify your Email";
-      html = verifyEmailTemplate(receiverName, verifyLink);
+      if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+      info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `P9 System: Verify your Email`,
+          html: verifyEmailTemplate(receiverName, verifyLink),
+        });
+       
+    }else if(type === EmailType.RESET_PASSWORD && verifyLink) {
+       info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `P9 System: Password Reset Request`,
+          html: resetPasswordTemplate(verifyLink),
+        });
+    } else{
+       info = await transporter.sendMail({
+          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+          to,
+          subject: `Notification: ${type}`,
+          html: generalTemplate(receiverName, message, senderName),
+        });
     }
-
-    if (type === EmailType.RESET_PASSWORD && verifyLink) {
-      subject = "P9 System: Password Reset Request";
-      html = resetPasswordTemplate(verifyLink);
+      console.log("EMAIL SENT SUCCESS");
+    } catch (error) {
+      console.error("EMAIL ERROR:", error);
     }
-
-    const { data, error } = await resend.emails.send({
-      from: `P9 System <onboarding@resend.dev>`,
-      to,
-      subject,
-      html,
-    });
-
-    if (error) {
-      console.error("[EmailUtil] Resend Error:", error);
-      return {
-        status: false,
-        error,
-      };
-    }
-
-    console.log("[EmailUtil] Email sent successfully:", data?.id);
-
-    return {
-      status: true,
-      messageId: data?.id,
-    };
-  } catch (error: any) {
-    console.error("[EmailUtil] Unexpected Error:", error);
-    return {
-      status: false,
-      error: error.message,
-    };
-  }
     
    
 
