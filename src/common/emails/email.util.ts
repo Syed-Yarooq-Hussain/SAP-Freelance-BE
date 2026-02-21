@@ -10,6 +10,7 @@ export async function sendEmail(
   verifyLink?: string
 ) {
   try {
+    console.log(`[EmailUtil][DEBUG] sendEmail called -> to=${to} type=${type} receiver=${receiverName}`);
     let message = "";
 
     switch (type) {
@@ -55,15 +56,16 @@ export async function sendEmail(
 
     // 🔹 Transporter
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
+      host: process.env.MAIL_HOST,
+      port: Number(process.env.MAIL_PORT),
       secure: false,
       auth: {
-        user: 'p9@vertex9systems.com',
-        pass: 'wqtdiicxqntygkwz',
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
       },
     });
 
+    console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
     let info = null;
     // 🔹 Email Send
     if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
@@ -91,11 +93,13 @@ export async function sendEmail(
     }
    
 
+    console.log(`[EmailUtil][DEBUG] email sent result messageId=${info?.messageId}`);
     return {
       status: true,
       messageId: info?.messageId,
     };
   } catch (error: any) {
+    console.log(`[EmailUtil][ERROR] Error sending email`, error?.stack || error?.message || String(error));
     return {
       status: false,
       error: error.message,
