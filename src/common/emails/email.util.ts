@@ -59,8 +59,10 @@ export async function sendEmail(
       service: "gmail",
       auth: {
         user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS, // 🔥 APP PASSWORD
+        pass: process.env.MAIL_PASS,
       },
+      debug: true,
+      logger: true,
     });
 
     console.log(`[EmailUtil][DEBUG] email transporter configured host=${process.env.MAIL_HOST} port=${process.env.MAIL_PORT}`);
