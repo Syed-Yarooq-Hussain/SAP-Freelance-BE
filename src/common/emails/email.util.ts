@@ -1,6 +1,8 @@
 import * as nodemailer from 'nodemailer';
 import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
 import { EmailType } from 'constant/enums';
+import { Resend } from "resend";
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmail(
   to: string,
@@ -69,33 +71,54 @@ export async function sendEmail(
     let info = null;
     // 🔹 Email Send
     try {
-      if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
-      info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-          to,
-          subject: `P9 System: Verify your Email`,
-          html: verifyEmailTemplate(receiverName, verifyLink),
-        });
-       
-    }else if(type === EmailType.RESET_PASSWORD && verifyLink) {
-       info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-          to,
-          subject: `P9 System: Password Reset Request`,
-          html: resetPasswordTemplate(verifyLink),
-        });
-    } else{
-       info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-          to,
-          subject: `Notification: ${type}`,
-          html: generalTemplate(receiverName, message, senderName),
-        });
+    console.log(`[EmailUtil] Sending email via Resend -> ${to}`);
+
+    let subject = `Notification: ${type}`;
+    let html = generalTemplate(
+      receiverName,
+      "This is a system notification.",
+      senderName
+    );
+
+    // ✅ Preserve Your Template Logic
+    if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+      subject = "P9 System: Verify your Email";
+      html = verifyEmailTemplate(receiverName, verifyLink);
     }
-      console.log("EMAIL SENT SUCCESS");
-    } catch (error) {
-      console.error("EMAIL ERROR:", error);
+
+    if (type === EmailType.RESET_PASSWORD && verifyLink) {
+      subject = "P9 System: Password Reset Request";
+      html = resetPasswordTemplate(verifyLink);
     }
+
+    const { data, error } = await resend.emails.send({
+      from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM}>`,
+      to,
+      subject,
+      html,
+    });
+
+    if (error) {
+      console.error("[EmailUtil] Resend Error:", error);
+      return {
+        status: false,
+        error,
+      };
+    }
+
+    console.log("[EmailUtil] Email sent successfully:", data?.id);
+
+    return {
+      status: true,
+      messageId: data?.id,
+    };
+  } catch (error: any) {
+    console.error("[EmailUtil] Unexpected Error:", error);
+    return {
+      status: false,
+      error: error.message,
+    };
+  }
     
    
 
