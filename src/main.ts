@@ -47,5 +47,8 @@ app.use('/pdf', express.static(path.join(process.cwd(), 'pdf')));
   const port = process.env.PORT || 3000
   await app.listen(port);
   console.log(`App running on port ${port}`);
+  console.log(`Swagger docs available at http://localhost:${port}/api`);
+  console.log(`LinkedIn OAuth callback URL: ${process.env.LINKEDIN_CALLBACK_URL} secured with client ID: ${process.env.LINKEDIN_CLIENT_ID}`);
+  console.log('mail service user:', process.env.MAIL_USER, 'host:', process.env.MAIL_HOST, 'port:', process.env.MAIL_PORT, 'from:', process.env.MAIL_FROM);
 }
 bootstrap();
