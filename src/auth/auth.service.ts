@@ -108,7 +108,11 @@ export class AuthService {
     });
 
     if (isUserExist) {
-      throw new CustomError(400, 'User with this email already exists');
+      if (isUserExist.status === UserStatus.PENDING) {
+        await this.sendVerificationEmail(isUserExist.id);
+        throw new CustomError(400, 'User with this email already exists. Please verify your email address to continue.');
+      }
+      throw new CustomError(400, 'User with this email already exists.');
     }
 
     // password validation
@@ -379,7 +383,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_URL}/verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_BASE_URL}verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,
