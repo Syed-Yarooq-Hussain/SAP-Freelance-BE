@@ -69,7 +69,7 @@ export async function sendEmail(
     }
 
     const { data, error } = await resend.emails.send({
-      from: `P9 System <${process.env.MAIL_FROM}>`, 
+      from: `P9 System <onboarding@resend.dev>`, 
       to,
       subject,
       html,
