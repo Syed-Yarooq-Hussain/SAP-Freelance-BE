@@ -108,8 +108,11 @@ export class AuthService {
     });
 
     if (isUserExist) {
-      await this.sendVerificationEmail(isUserExist.id);
-      throw new CustomError(400, 'User with this email already exists. A verification email has been sent to your email address.');
+      if (isUserExist.status === UserStatus.PENDING) {
+        await this.sendVerificationEmail(isUserExist.id);
+        throw new CustomError(400, 'User with this email already exists. Please verify your email address to continue.');
+      }
+      throw new CustomError(400, 'User with this email already exists.');
     }
 
     // password validation
