@@ -37,7 +37,7 @@ export class AuthController {
     const result = await this.authService.loginWithLinkedIn(req.user);
     console.log('🔵 LinkedIn login result:', result);
     return res.redirect(
-      `${process.env.FE_URL}/auth/linkedin?token=${result.token}`,
+      `${process.env.FE_BASE_URL}/auth/linkedin?token=${result.token}`,
     );
   }
 
