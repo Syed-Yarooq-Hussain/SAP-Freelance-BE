@@ -38,7 +38,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
     // ✅ Step 2: Create User Record
     const user = await this.userRepo.createUser({
-      username: consultantDto.user.username,
+      username: consultantDto.user.username ?? null,
       email: consultantDto.user.email,
       password: hashedPassword,
       role: +UserRole.CONSULTANT,
@@ -128,7 +128,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
     const user = await this.userRepo.createUser({
-      username: body.username,
+      username: body.username ?? null,
       email: body.email,
       password: hashedPassword,
       role: +UserRole.CONSULTANT,
@@ -179,7 +179,7 @@ export class AuthService {
 
     // ✅ Step 2: Create user Record
     const newUser = await this.userRepo.createUser({
-      username: userDto.username, 
+      username: userDto.username ?? null, 
       email: userDto.email,
       password: hashedPassword,
       role: +UserRole.CLIENT, 
@@ -385,12 +385,12 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_BASE_URL}verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_URL}verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,
       EmailType.SIGNUP_VERIFICATION,
-      user.username,
+      user.username ?? null,
       'SAP Freelance Portal',
       verifyLink
     );
