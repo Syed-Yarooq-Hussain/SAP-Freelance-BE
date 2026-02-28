@@ -1,11 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { User } from 'models/user.model';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { GetUsersDto } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Consultant } from 'models/consultant.model';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UserService {
@@ -131,5 +133,17 @@ export class UserService {
       raw: true,
       nest: true,
     });
+  }
+
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
+    const user = await this.findOne(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const isPasswordValid = await bcrypt.compare(changePasswordDto.oldPassword, user.password);
+    console.log('🔵 changePasswordDto', changePasswordDto,user.username,isPasswordValid);
+
+    if (!isPasswordValid) throw new UnauthorizedException('Invalid old password');
+    user.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    await user.save();
+    return user;
   }
 }
