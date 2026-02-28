@@ -16,6 +16,7 @@ import { sendEmail } from 'src/common/emails/email.util';
 
 @Injectable()
 export class AuthService {
+  private readonly DEBUG = process.env.DEBUG === 'true' || process.env.LOG_LEVEL === 'debug';
   constructor(
     private readonly userRepo: UserRepository,
     private readonly consultantRepo: ConsultantRepository,
@@ -37,7 +38,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(consultantDto.user.password, 10);
     // ✅ Step 2: Create User Record
     const user = await this.userRepo.createUser({
-      username: consultantDto.user.username,
+      username: consultantDto.user.username ?? null,
       email: consultantDto.user.email,
       password: hashedPassword,
       role: +UserRole.CONSULTANT,
@@ -127,7 +128,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
     const user = await this.userRepo.createUser({
-      username: body.username,
+      username: body.username ?? null,
       email: body.email,
       password: hashedPassword,
       role: +UserRole.CONSULTANT,
@@ -178,7 +179,7 @@ export class AuthService {
 
     // ✅ Step 2: Create user Record
     const newUser = await this.userRepo.createUser({
-      username: userDto.username, 
+      username: userDto.username ?? null, 
       email: userDto.email,
       password: hashedPassword,
       role: +UserRole.CLIENT, 
@@ -273,7 +274,8 @@ export class AuthService {
 
   async loginWithLinkedIn(linkedinUser: any) {
     try {
-      
+      console.log(`[AuthService][DEBUG] loginWithLinkedIn called: ${JSON.stringify({ id: linkedinUser?.id || linkedinUser?.linkedin_id, email: linkedinUser?.email })}`);
+
       // Validate LinkedIn user data
       if (!linkedinUser) {
         throw new CustomError(401, 'Invalid LinkedIn user data: null');
@@ -328,9 +330,9 @@ export class AuthService {
 
         
         
-        console.log('✅ New user created:', user.id);
+        console.log(`[AuthService][DEBUG] New user created: ${user.id}`);
       } else {
-        console.log('✅ Existing user found:', user.id);
+        console.log(`[AuthService][DEBUG] Existing user found: ${user.id}`);
       }
 
       // 🔐 Step 3: SAME JWT as normal login
@@ -343,7 +345,7 @@ export class AuthService {
         user,
       };
     } catch (error) {
-      console.error('❌ LinkedIn login error:', error);
+      console.log(`[AuthService][ERROR] LinkedIn login error`, error?.stack || error?.message || String(error));
       throw new CustomError(500, `LinkedIn login failed: ${error.message}`);
     }
   }
@@ -383,12 +385,12 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_BASE_URL}verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_URL}verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,
       EmailType.SIGNUP_VERIFICATION,
-      user.username,
+      user.username ?? null,
       'SAP Freelance Portal',
       verifyLink
     );
@@ -400,8 +402,8 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const user = await User.findOne({ where: { tokenMail: token } });
-    console.log('🔍 Verifying email with token:', token);
-    console.log('🔍 Verifying email with token:', user);
+    console.log(`[AuthService][DEBUG] Verifying email token: ${token}`);
+    console.log(`[AuthService][DEBUG] Found user for token: ${user?.id}`);
     if (!user) {
       throw new CustomError(400, 'Invalid verification link');
     }
@@ -427,6 +429,7 @@ export class AuthService {
 
 
   async forgotPassword(email: string) {
+    console.log(`[AuthService][DEBUG] forgotPassword called for email=${email}`);
     const user = await User.findOne({ where: { email } });
 
     // security: same response even if user not found
@@ -465,6 +468,8 @@ export class AuthService {
       resetLink
     );
 
+    console.log(`[AuthService][DEBUG] Password reset email queued for user=${user?.id} resetLink=${resetLink}`);
+
     return {
       message:
         'If an account exists with this email, a reset link has been sent.',
@@ -476,6 +481,7 @@ export class AuthService {
     newPassword: string,
     confirmPassword: string
   ) {
+    console.log(`[AuthService][DEBUG] resetPassword called for token=${token}`);
     if (newPassword !== confirmPassword) {
       throw new CustomError(400, 'Passwords do not match');
     }
