@@ -52,7 +52,7 @@ async createDetail(dto: any) {
     return this.consultantModel.findOne({ where: { user_id: userId },
       include: [{
         model: User,
-        attributes: ['id', 'username', 'email', 'city', 'country'],
+        attributes: ['id', 'username', 'email', 'city', 'country', 'phone'],
         include: [{
           model: ConsultantModule,
           attributes: ['id', 'is_primary'],

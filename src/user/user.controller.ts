@@ -5,6 +5,7 @@ import { UserService } from './user.service';
 import { GetUsersDto } from './dto/get-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'models/user.model';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('User') 
 @ApiBearerAuth() 
@@ -73,6 +74,18 @@ export class UserController {
     return this.userService.update(+id, updateUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)  
+  @Post('change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async changePassword(@Req() req: Request, @Body() changePasswordDto: ChangePasswordDto) {
+    const jwtPayload: any = (req as any).user;
+    const userId = jwtPayload?.id ?? jwtPayload?.sub;
+    if (!userId) throw new UnauthorizedException('Invalid token payload');
+    return this.userService.changePassword(+userId, changePasswordDto);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user by ID' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
@@ -80,4 +93,6 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+
 }
