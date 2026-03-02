@@ -112,4 +112,23 @@ export class Consultant extends Model<Consultant> {
   })
   languages: any | null;
 
+  @Column({
+    type: DataType.JSON,
+    allowNull: true,
+    defaultValue: [],
+  })
+  badges: string[];
+
+  @Column({
+    type: DataType.BOOLEAN,
+    defaultValue: false,
+  })
+  is_certified: boolean;
+
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+  })
+  certification_approved_at: Date;
+
 }

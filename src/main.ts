@@ -36,8 +36,8 @@ async function bootstrap() {
       cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: true,         // ALWAYS true in Railway (HTTPS)
-        sameSite: 'none',     // REQUIRED for OAuth redirects
+        secure: true, 
+        sameSite: 'none',     
       },
     }),
   );
@@ -59,7 +59,7 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log(`App running on port ${port}`);
-  console.log(`LinkedIn Callback: ${process.env.LINKEDIN_CALLBACK_URL}`);
+  
 }
 
 bootstrap();

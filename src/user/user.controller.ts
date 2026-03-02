@@ -5,7 +5,6 @@ import { UserService } from './user.service';
 import { GetUsersDto } from './dto/get-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from 'models/user.model';
-import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('User') 
 @ApiBearerAuth() 
@@ -53,7 +52,6 @@ export class UserController {
   async getMe(@Req() req: Request): Promise<User> {
     const jwtPayload: any = (req as any).user;
     const userId = jwtPayload?.id ?? jwtPayload?.sub;
-    console.log('🔵 getMe called-------->>>>', jwtPayload);
     if (!userId) throw new UnauthorizedException('Invalid token payload');
     return this.userService.findOne(Number(userId));
   }
@@ -79,7 +77,7 @@ export class UserController {
   @ApiOperation({ summary: 'Change user password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async changePassword(@Req() req: Request, @Body() changePasswordDto: ChangePasswordDto) {
+  async changePassword(@Req() req: Request, @Body() changePasswordDto: any) {
     const jwtPayload: any = (req as any).user;
     const userId = jwtPayload?.id ?? jwtPayload?.sub;
     if (!userId) throw new UnauthorizedException('Invalid token payload');

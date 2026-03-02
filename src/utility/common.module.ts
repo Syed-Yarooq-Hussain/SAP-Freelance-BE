@@ -9,11 +9,14 @@ import { ProjectConsultantRepository } from 'repository/project-consultant.repos
 import { ProjectConsultant } from 'models/project-consultant.model';
 import { ModuleEntity } from 'models/module.model';
 import { ModuleRepository } from 'repository/module.repository';
+import { Consultant } from 'models/consultant.model';
+import { ConsultantRepository } from 'repository/consultant.repository';
 
 
 @Module({
-  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity])],
+  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity, Consultant])],
   controllers: [CommonController],
-  providers: [CommonService, MeetingRepository, ProjectConsultantRepository, ModuleRepository],
+  providers: [CommonService, MeetingRepository, ProjectConsultantRepository, ModuleRepository, ConsultantRepository],
+  exports: [CommonService],
 })
 export class CommonModule {}

@@ -95,27 +95,19 @@ export class CommonController {
     return this.commonService.getSAPmodules();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('pdf-reader')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/pdf',
-        filename: (req, file, cb) => {
-          const uniqueName =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, uniqueName + extname(file.originalname));
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(new Error('Only PDF files allowed'), false);
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  async readerPdf(@UploadedFile() file: Express.Multer.File) {
-    return this.commonService.readerPdf(file.path);
+  @UseInterceptors(FileInterceptor('file'))
+  async readerPdf(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) throw new BadRequestException('File required');
+
+    const userId = req.user.id; 
+
+    return this.commonService.readerPdf(userId, file);
+
   }
 
   @Post('upload-doc')

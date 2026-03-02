@@ -7,7 +7,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { GetUsersDto } from './dto/get-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Consultant } from 'models/consultant.model';
-import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UserService {
@@ -135,7 +134,7 @@ export class UserService {
     });
   }
 
-  async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
+  async changePassword(userId: number, changePasswordDto: any) {
     const user = await this.findOne(userId);
     if (!user) throw new NotFoundException('User not found');
     const isPasswordValid = await bcrypt.compare(changePasswordDto.oldPassword, user.password);

@@ -13,9 +13,10 @@ import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { ConsultantModule  as cm} from 'models/consultant-module.model';
+import { CommonModule } from 'src/utility/common.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm])],
+  imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm])],
   providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository],
   controllers: [ConsultantController],
   exports: [ConsultantRepository, ProjectConsultantRepository, UserRepository],
