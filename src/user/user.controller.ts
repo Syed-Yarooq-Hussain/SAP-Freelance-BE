@@ -52,7 +52,6 @@ export class UserController {
   async getMe(@Req() req: Request): Promise<User> {
     const jwtPayload: any = (req as any).user;
     const userId = jwtPayload?.id ?? jwtPayload?.sub;
-    console.log('🔵 getMe called-------->>>>', jwtPayload);
     if (!userId) throw new UnauthorizedException('Invalid token payload');
     return this.userService.findOne(Number(userId));
   }
@@ -73,6 +72,18 @@ export class UserController {
     return this.userService.update(+id, updateUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)  
+  @Post('change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async changePassword(@Req() req: Request, @Body() changePasswordDto: any) {
+    const jwtPayload: any = (req as any).user;
+    const userId = jwtPayload?.id ?? jwtPayload?.sub;
+    if (!userId) throw new UnauthorizedException('Invalid token payload');
+    return this.userService.changePassword(+userId, changePasswordDto);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete user by ID' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
@@ -80,4 +91,6 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
   }
+
+
 }

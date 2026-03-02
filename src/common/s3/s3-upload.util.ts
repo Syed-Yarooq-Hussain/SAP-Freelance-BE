@@ -1,14 +1,17 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { ConfigService } from '@nestjs/config';
+
+const config = new ConfigService();
 
 const s3 = new S3Client({
-  region: process.env.AWS_REGION,
+  region: config.get<string>('AWS_REGION'),
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: config.get<string>('AWS_ACCESS_KEY_ID')!,
+    secretAccessKey: config.get<string>('AWS_SECRET_ACCESS_KEY')!,
   },
 });
 
-const BUCKET = process.env.AWS_S3_BUCKET!;
+const BUCKET = config.get<string>('AWS_S3_BUCKET')!;
 
 interface UploadToS3Params {
   file: Buffer;
@@ -44,6 +47,6 @@ export async function uploadToS3({
   );
 
   return isPublic
-    ? `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+    ? `https://${BUCKET}.s3.${config.get<string>('AWS_REGION')}.amazonaws.com/${key}`
     : key;
 }

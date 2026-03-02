@@ -19,6 +19,11 @@ export async function extractText(filePath: string): Promise<string> {
   return data.text;
 }
 
+export async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
+  const data = await pdfParse(buffer);
+  return data.text;
+}
+
 export async function parseWithOpenAI(text: string) {
   const prompt = `
 You are a JSON generator.

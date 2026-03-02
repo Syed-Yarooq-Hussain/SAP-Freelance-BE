@@ -64,6 +64,12 @@ export class User extends Model<User> {
     allowNull: true,
   })
   phone: string;
+  
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  avatar: string;
 
   @Column({
     type: DataType.STRING,
@@ -77,6 +83,18 @@ export class User extends Model<User> {
 
   @Column({ allowNull: true })
   tokenMailExpiresAt: Date;
+
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  email_verified: boolean;
+
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  phone_verified: boolean;
+
+  @Column({ type: DataType.STRING, allowNull: true })
+  linkedin_url: string;
+
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  linkedin_sso_connected: boolean;
 
   @HasOne(() => Consultant)
   consultants: Consultant;
