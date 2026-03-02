@@ -305,6 +305,10 @@ export class AuthService {
           currency: 'PKR',
           city: null,
           country: null,
+          email_verified: true,
+          phone_verified: false,
+          linkedin_url: linkedinUser.linkedin_id ? `https://www.linkedin.com/in/${linkedinUser.linkedin_id}` : null,
+          linkedin_sso_connected: true,
         });
 
         const schedule = this.generateWeekSchedule(20);
@@ -419,6 +423,7 @@ export class AuthService {
       status: UserStatus.ACTIVE,
       tokenMail: null,
       tokenMailExpiresAt: null,
+      email_verified: true,
     });
 
     return {

@@ -26,6 +26,9 @@ import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
+import * as pgConnectionString from 'pg-connection-string';
+
+const config = pgConnectionString.parse(process.env.DATABASE_URL);
 
 @Module({
   imports: [
@@ -35,13 +38,19 @@ import { ChatModule } from './chat/chat.module';
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: process.env.DB_HOST,
-      port: +process.env.DB_PORT,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      host: config.host,
+      port: Number(config.port),
+      username: config.user,
+      password: config.password,
+      database: config.database,
       autoLoadModels: true,
       synchronize: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
       models: [
         User,
         ModuleEntity,

@@ -9,21 +9,62 @@ import { getAllMeetingResponse } from './transformer/meeting.transformer';
 import { sendEmail } from 'src/common/emails/email.util';
 import { generatePdf } from 'src/common/pdf/pdf.util';
 import { ModuleRepository } from 'repository/module.repository';
-import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
+import { extractText, extractTextFromBuffer, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
-import { uploadToS3 } from 'src/common/s3/s3-upload.util';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { ConsultantRepository } from 'repository/consultant.repository';
 
 @Injectable()
 export class CommonService {
   constructor(
     private readonly meetingRepo: MeetingRepository,
     private readonly projectConsultantRepo: ProjectConsultantRepository,
+    private readonly consultantRepo: ConsultantRepository,
     private readonly moduleRepo: ModuleRepository
   ) { }
   private industry = [
     { id: 1, name: "Information tecnology" },
     { id: 2, name: "Healthcare" }
   ]
+
+  private get s3() {
+    return new S3Client({
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+  }
+
+  private get bucket() {
+    return process.env.AWS_S3_BUCKET!;
+  }
+
+  async uploadToS3({
+    file,
+    folder,
+    filename,
+    mimetype,
+  }: {
+    file: Buffer;
+    folder: string;
+    filename: string;
+    mimetype: string;
+  }): Promise<string> {
+    const key = `${folder}/${Date.now()}-${filename}`;
+
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: file,
+        ContentType: mimetype,
+      }),
+    );
+
+    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
+  }
 
   // 🔹 Create New Entry
   createIndustry(dto: CreateCommonDto) {
@@ -138,20 +179,33 @@ export class CommonService {
     return { core, others };
   }
 
-  async readerPdf(filePath: string) {
-    const text = await extractText(filePath);
+  async readerPdf(userId: any, file: Express.Multer.File) {
+
+    const url = await this.uploadToS3({
+      file: file.buffer,
+      folder: 'cvs',
+      filename: file.originalname,
+      mimetype: file.mimetype,
+    });
+
+    const text = await extractTextFromBuffer(file.buffer);
     const userInfo = await parseWithOpenAI(text);
     const transormedUser = await consultantRegistertObjectTransformer(userInfo);
+
+    await this.consultantRepo.updateByUserId(userId, {
+      cv_url: url,
+    });
+
+    transormedUser.cv_url = url;
     return transormedUser;
   }
 
   async uploadDoc(file: Express.Multer.File) {
-    const key = await uploadToS3({
+    const key = await this.uploadToS3({
       file: file.buffer,
-      folder: 'projects/12/documents',
+      folder: 'profileImages',
       filename: file.originalname,
       mimetype: file.mimetype,
-      isPublic: false,
     });
 
     return key;
