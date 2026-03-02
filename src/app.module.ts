@@ -32,6 +32,9 @@ const config = pgConnectionString.parse(process.env.DATABASE_URL);
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
