@@ -28,8 +28,7 @@ import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 import * as pgConnectionString from 'pg-connection-string';
 
-const config = pgConnectionString.parse(process.env.DATABASE_URL);
-
+/* const config = pgConnectionString.parse(process.env.DATABASE_URL); */
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,19 +37,19 @@ const config = pgConnectionString.parse(process.env.DATABASE_URL);
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: config.host,
-      port: Number(config.port),
-      username: config.user,
-      password: config.password,
-      database: config.database,
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: false,
-      dialectOptions: {
+      /* dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false,
         },
-      },
+      }, */
       models: [
         User,
         ModuleEntity,
