@@ -29,7 +29,6 @@ import { ChatModule } from './chat/chat.module';
 import * as pgConnectionString from 'pg-connection-string';
 
 const config = pgConnectionString.parse(process.env.DATABASE_URL);
-
 @Module({
   imports: [
     ConfigModule.forRoot({
