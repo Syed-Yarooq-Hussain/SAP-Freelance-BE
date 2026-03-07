@@ -379,7 +379,7 @@ export class ConsultantService {
         },
         profile: {
           profile_strength: '80%',
-          badges: ['Verified', 'Certified', 'Expert'],
+          badges: ['VERIFIED', 'CERTIFIED', 'EXPERT'],
         }
       }
       
