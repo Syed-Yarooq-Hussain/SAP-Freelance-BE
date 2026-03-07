@@ -15,6 +15,7 @@ import { CustomError } from 'src/config/custom-error.exception';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { UserRepository } from 'repository/user.repository';
 import { CommonService } from 'src/utility/common.service';
+import { profile } from 'console';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -354,6 +355,36 @@ export class ConsultantService {
       await this.userRepo.updateUser(consultantId, { avatar: key });
       
       return key
+    }
+    
+    async getDashboradData(consultantId: number) {
+      let consultants = {
+        calender:{
+          weekly_availability: 20,
+          interview_schedule: 5,
+          next_interview: new Date()
+        },
+        projects: {
+          total_projects: 5,
+          active: 2,
+          projects: ['Project A', 'Project B', 'Project C', 'Project D', 'Project E', 'Project F'],
+        },
+        payment: {
+          next_payment: 8500,
+          projected_earning: 10000,
+        },
+        documents: {
+          pending: 2,
+          upcoming: 1,
+        },
+        profile: {
+          profile_strength: '80%',
+          badges: ['VERIFIED', 'CERTIFIED', 'EXPERT'],
+        }
+      }
+      
+      return consultants
+      
     }
 
     

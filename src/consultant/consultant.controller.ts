@@ -105,5 +105,13 @@ export class ConsultantController {
 
     return { url };
   }
+  
+  @Get('dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getDashboardData(
+    @Req() req: any,
+  ) {
+    return await this.consultantService.getDashboradData(+req.user.id);
+  }
 
 }
