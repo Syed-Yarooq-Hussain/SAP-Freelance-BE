@@ -34,15 +34,19 @@ export async function sendEmail(
       case EmailType.SHORTLIST:
         message = "Your candidate has been shortlisted.";
         break;
+
       case EmailType.INVITE:
         message = "You have received the portal invite.";
         break;
+
       case EmailType.NDA:
         message = "Your NDA has been generated.";
         break;
+
       case EmailType.INVOICE:
         message = "Your invoice has been generated.";
         break;
+
       case EmailType.BILL:
         message = "Your bill has been generated.";
         break;

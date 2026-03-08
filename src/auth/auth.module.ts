@@ -16,7 +16,7 @@ import { SessionSerializer } from './session.serializer';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, ProjectDetail, ConsultantModule]),
+    SequelizeModule.forFeature([User, ProjectDetail, ConsultantModule ]),
     PassportModule.register({
       defaultStrategy: 'jwt',
       session: true,

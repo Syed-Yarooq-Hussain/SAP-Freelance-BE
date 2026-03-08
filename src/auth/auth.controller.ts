@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')

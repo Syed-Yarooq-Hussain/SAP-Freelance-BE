@@ -14,7 +14,8 @@ import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto'
 import { CustomError } from 'src/config/custom-error.exception';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { UserRepository } from 'repository/user.repository';
-
+import { CommonService } from 'src/utility/common.service';
+import { profile } from 'console';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -23,6 +24,7 @@ export class ConsultantService {
       private readonly meetingRepo: MeetingRepository,
       private readonly consultantModuleRepo: ConsultantModuleRepository,
       private readonly userRepo: UserRepository,
+      private readonly commonService: CommonService
     ) {}
 
 
@@ -71,31 +73,64 @@ export class ConsultantService {
   }
 
   async getConsultantDetail(id: number) {
-    const user = await this.consultantRepository.findConsultantProfileByUserId(id);
-    let consultant = user.toJSON();
-    let module = {core: '', others: ''};
+  const user = await this.consultantRepository.findConsultantProfileByUserId(id);
 
+    if (!user) return null;
+
+    let consultant = user.toJSON();
+    let module = { core: '', others: '' };
+
+    // modules combine
     for (const mod of consultant?.user?.modules || []) {
       if (!mod?.module) continue;
 
-        if (mod.is_primary) {
-          module.core += mod.module.name + ', ';
-        } else {
-          module.others += mod.module.name + ', ';
-        }
+      if (mod.is_primary) {
+        module.core += mod.module.name + ', ';
+      } else {
+        module.others += mod.module.name + ', ';
       }
+    }
 
-      // last comma remove
-      module.core = module.core.replace(/, $/, '');
-      module.others = module.others.replace(/, $/, '');
+    module.core = module.core.replace(/, $/, '');
+    module.others = module.others.replace(/, $/, '');
 
-      return {
-        ...consultant,
-        user: {
-          ...consultant.user,
-          module
-        },
-      };
+    // BADGES LOGIC
+    const badges = consultant.badges || [];
+
+    // VERIFIED
+    if (
+      consultant.user?.email ||
+      consultant.user?.phone ||
+      consultant.user?.linkedin_url
+    ) {
+      badges.push('VERIFIED');
+    }
+
+    // CERTIFIED
+    if (consultant.is_certified) {
+      badges.push('CERTIFIED');
+    }
+
+    // EXPERIENCE
+    if (consultant.experience >= 5 && consultant.experience < 10) {
+      badges.push('EXPERT');
+    } else if (consultant.experience >= 10 && consultant.experience < 20) {
+      badges.push('SENIOR_EXPERT');
+    } else if (consultant.experience >= 20) {
+      badges.push('SOLUTION_ARCHITECT');
+    }
+
+    // remove duplicates
+    const uniqueBadges = Array.from(new Set(badges));
+
+    return {
+      ...consultant,
+      badges: uniqueBadges,
+      user: {
+        ...consultant.user,
+        module,
+      },
+    };
   }
 
   
@@ -303,6 +338,56 @@ export class ConsultantService {
       
       return resp
     }
+    
+    
+    async uploadProfileImage(consultantId: number, file: Express.Multer.File) {
+      let consultants = await this.userRepo.findById(consultantId);
+      if (!consultants) {
+        throw new CustomError(404, 'Consultant not found');
+      }
+      let key = await this.commonService.uploadToS3({
+        file: file.buffer,
+        folder: 'profiles',
+        filename: file.originalname,
+        mimetype: file.mimetype,
+      });
+
+      await this.userRepo.updateUser(consultantId, { avatar: key });
+      
+      return key
+    }
+    
+    async getDashboradData(consultantId: number) {
+      let consultants = {
+        calender:{
+          weekly_availability: 20,
+          interview_schedule: 5,
+          next_interview: new Date()
+        },
+        projects: {
+          total_projects: 5,
+          active: 2,
+          projects: ['Project A', 'Project B', 'Project C', 'Project D', 'Project E', 'Project F'],
+        },
+        payment: {
+          next_payment: 8500,
+          projected_earning: 10000,
+        },
+        documents: {
+          pending: 2,
+          upcoming: 1,
+        },
+        profile: {
+          profile_strength: '80%',
+          badges: ['VERIFIED', 'CERTIFIED', 'EXPERT'],
+        }
+      }
+      
+      return consultants
+      
+    }
+
+    
 
 }
 

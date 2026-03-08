@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query, Patch, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Consultants') 
 @Controller('consultants')
@@ -88,6 +89,29 @@ export class ConsultantController {
       updateDto,
     );
     return updatedUser;
+  }
+
+  @Post('upload-profile/:id')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfile(
+    @Param('id') id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const url = await this.consultantService.uploadProfileImage(id, file);
+
+    return { url };
+  }
+  
+  @Get('dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getDashboardData(
+    @Req() req: any,
+  ) {
+    return await this.consultantService.getDashboradData(+req.user.id);
   }
 
 }
