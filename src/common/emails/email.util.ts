@@ -27,8 +27,8 @@ export async function sendEmail(
 
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT) || 587,
-      secure: false, // 587 ke liye false (STARTTLS use hota hai)
+      port: 465,
+      secure: true, // 587 ke liye false (STARTTLS use hota hai)
 
       auth: {
         user: process.env.MAIL_USER,
