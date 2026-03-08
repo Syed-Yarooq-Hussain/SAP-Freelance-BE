@@ -1,12 +1,10 @@
-import { Resend } from "resend";
+import * as nodemailer from "nodemailer";
 import {
   generalTemplate,
   resetPasswordTemplate,
   verifyEmailTemplate,
 } from "./email.template";
 import { EmailType } from "constant/enums";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmail(
   to: string,
@@ -16,7 +14,19 @@ export async function sendEmail(
   verifyLink?: string
 ) {
   try {
-    console.log(`[EmailUtil] sendEmail via Resend -> to=${to} type=${type}`);
+    console.log("--------------------------------------------------");
+    console.log("📧 EMAIL SERVICE STARTED");
+    console.log("📧 To:", to);
+    console.log("📧 Type:", type);
+    console.log("📧 Receiver:", receiverName);
+    console.log("📧 Sender:", senderName);
+    console.log("📧 VerifyLink:", verifyLink || "N/A");
+
+    console.log("📧 ENV CHECK");
+    console.log("MAIL_HOST:", process.env.MAIL_HOST);
+    console.log("MAIL_PORT:", process.env.MAIL_PORT);
+    console.log("MAIL_USER exists:", !!process.env.MAIL_USER);
+    console.log("MAIL_PASS exists:", !!process.env.MAIL_PASS);
 
     let message = "";
 
@@ -42,58 +52,76 @@ export async function sendEmail(
       case EmailType.SIGNUP:
         message = "Your signup has been confirmed.";
         break;
-      case EmailType.CUSTOMER_SIGNED:
-        message = "Customer has signed the contract and NDA.";
-        break;
-      case EmailType.CONSULTANT_REJECTED:
-        message = "Consultant has been rejected by the client.";
-        break;
-      case EmailType.CLIENT_REJECTED:
-        message = "Client has rejected the NDA.";
-        break;
       default:
         message = "This is a system notification.";
     }
+
+    console.log("📧 Message Selected:", message);
+
+    console.log("📧 Creating SMTP transporter...");
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.MAIL_HOST,
+      port: Number(process.env.MAIL_PORT),
+      secure: Number(process.env.MAIL_PORT) === 465,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+      logger: true,
+      debug: true,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    console.log("📧 Verifying SMTP connection...");
+
+    await transporter.verify();
+    console.log("✅ SMTP CONNECTION SUCCESSFUL");
 
     let subject = `Notification: ${type}`;
     let html = generalTemplate(receiverName, message, senderName);
 
     if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+      console.log("📧 Using VERIFY EMAIL template");
       subject = "P9 System: Verify your Email";
       html = verifyEmailTemplate(receiverName, verifyLink);
     }
 
     if (type === EmailType.RESET_PASSWORD && verifyLink) {
+      console.log("📧 Using RESET PASSWORD template");
       subject = "P9 System: Password Reset Request";
       html = resetPasswordTemplate(verifyLink);
     }
 
-    const { data, error } = await resend.emails.send({
-      from: `P9 System <onboarding@resend.dev>`, 
+    console.log("📧 Sending email now...");
+
+    const info = await transporter.sendMail({
+      from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
       to,
       subject,
       html,
     });
 
-    if (error) {
-      console.error("[EmailUtil] Resend Error:", error);
-      return {
-        status: false,
-        error,
-      };
-    }
-
-    console.log("[EmailUtil] Email sent successfully:", data?.id);
+    console.log("✅ EMAIL SENT SUCCESSFULLY");
+    console.log("📧 Message ID:", info.messageId);
+    console.log("📧 Response:", info.response);
+    console.log("--------------------------------------------------");
 
     return {
       status: true,
-      messageId: data?.id,
+      messageId: info.messageId,
     };
   } catch (error: any) {
-    console.error("[EmailUtil] Unexpected Error:", error);
+    console.error("❌ EMAIL ERROR OCCURRED");
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
+    console.error("Full error:", error);
+
     return {
       status: false,
-      error: error.message,
+      error: error?.message,
     };
   }
 }
