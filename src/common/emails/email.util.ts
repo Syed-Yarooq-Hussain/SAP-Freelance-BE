@@ -22,14 +22,13 @@ export async function sendEmail(
     console.log("📧 ENV CHECK");
     console.log("MAIL_HOST:", process.env.MAIL_HOST);
     console.log("MAIL_PORT:", process.env.MAIL_PORT);
-    console.log("MAIL_USER exists:", !!process.env.MAIL_USER);
-    console.log("MAIL_PASS exists:", !!process.env.MAIL_PASS);
+    console.log("MAIL_USER exists:", process.env.MAIL_USER);
+    console.log("MAIL_PASS exists:", process.env.MAIL_PASS);
 
     const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
-      port: 465,
-      secure: true, // 587 ke liye false (STARTTLS use hota hai)
-
+      port: 587,
+      secure: false, // 587 ke liye false (STARTTLS use hota hai)
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
@@ -38,14 +37,9 @@ export async function sendEmail(
       // Railway fixes
       family: 4,
       requireTLS: true,
-      connectionTimeout: 60000,
-      greetingTimeout: 60000,
-      socketTimeout: 60000,
-
       tls: {
         rejectUnauthorized: false,
       },
-
       logger: true,
       debug: true,
     });
