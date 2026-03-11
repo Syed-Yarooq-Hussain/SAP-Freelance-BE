@@ -49,27 +49,7 @@ export class ConsultantService {
   
   async getConsultantPayments(id: number) {
 
-    return [
-        {
-            "id": "1",
-            "project_id": "1",
-            "project_milestone_id": null,
-            "doc_id": null,
-            "amount": 200,
-            "payment_module": "custom",
-            "is_paid": false,
-            "deleted_at": null,
-            "project": {
-                "id": "1",
-                "name": "p1",
-                "consultant_id": id,
-                "company_name": "ABC test",
-                "status": "initiated",
-                "deleted_at": null
-            },
-            "due_date": "2026-02-28T14:30:00.000Z"
-        }
-    ];
+    return [];
   }
 
   async getConsultantDetail(id: number) {
@@ -357,7 +337,7 @@ export class ConsultantService {
       return key
     }
     
-    async getDashboradData(consultantId: number) {
+    /* async getDashboradData(consultantId: number) {
       let consultants = {
         calender:{
           weekly_availability: 20,
@@ -385,9 +365,179 @@ export class ConsultantService {
       
       return consultants
       
-    }
+    } */
 
-    
+      async getDashboradData(consultantId: number) {
+
+        const meetings = await this.meetingRepo.getMeetingWithDetails(
+          consultantId,
+          'interview',
+        );
+
+        const projects =
+          await this.projectConsultantRepo.findByConsultantId(consultantId);
+
+        const consultant =
+          await this.consultantRepository.findByUserId(consultantId);
+        const now = new Date();
+
+        /* =========================
+            CALENDAR
+        ========================= */
+
+        const upcomingMeetings = meetings
+          .filter(m => new Date(m.date_time) > now)
+          .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
+
+        const calendar = {
+          weekly_availability: consultant?.weekly_available_hours || 0,
+          interview_schedule: upcomingMeetings.length,
+          next_interview: upcomingMeetings[0]?.date_time || null
+        };
+
+        /* =========================
+            PROJECTS
+        ========================= */
+
+        const activeProjects = projects.filter(p =>
+          p?.project?.projectDetails?.end_date
+            ? new Date(p.project.projectDetails.end_date) > now
+            : false
+        );
+
+        const projectNames = projects.map(p => p?.project?.name).filter(Boolean);
+
+        const projectData = {
+          total_projects: projects.length,
+          active: activeProjects.length,
+          projects: projectNames
+        };
+
+        /* =========================
+            PAYMENTS
+        ========================= */
+
+        const projectedEarning =
+          consultant?.weekly_available_hours && consultant?.rate
+            ? consultant.weekly_available_hours * consultant.rate
+            : 0;
+
+        const nextPayment =
+          projects?.[0]?.requested_hours && consultant?.rate
+            ? projects[0].requested_hours * consultant.rate
+            : 0;
+
+        const payment = {
+          next_payment: nextPayment,
+          projected_earning: projectedEarning
+        };
+
+        /* =========================
+            DOCUMENTS (placeholder logic)
+        ========================= */
+
+        const documents = {
+          pending: 0,
+          upcoming: 0
+        };
+
+        /* =========================
+            PROFILE
+        ========================= */
+        const badges = consultant.badges || [];
+
+        // VERIFIED
+        if (
+          consultant.user?.email ||
+          consultant.user?.phone ||
+          consultant.user?.linkedin_url
+        ) {
+          badges.push('VERIFIED');
+        }
+
+        // CERTIFIED
+        if (consultant.is_certified) {
+          badges.push('CERTIFIED');
+        }
+
+        // EXPERIENCE
+        if (consultant.experience >= 5 && consultant.experience < 10) {
+          badges.push('EXPERT');
+        } else if (consultant.experience >= 10 && consultant.experience < 20) {
+          badges.push('SENIOR_EXPERT');
+        } else if (consultant.experience >= 20) {
+          badges.push('SOLUTION_ARCHITECT');
+        }
+
+        // remove duplicates
+        const uniqueBadges = Array.from(new Set(badges));
+        const profile = {
+         // profile_strength: consultant?.profile_strength || '0%',
+          badges: uniqueBadges
+        };
+
+        return {
+          calender: calendar,
+          projects: projectData,
+          payment,
+          documents,
+          profile
+        };
+      }
+
+      calculateProfileStrength(consultant: any): string {
+
+        let score = 0;
+
+        /* BASIC USER INFO (20) */
+        if (consultant?.user?.username) score += 4;
+        if (consultant?.user?.email) score += 4;
+        if (consultant?.user?.city) score += 4;
+        if (consultant?.user?.country) score += 4;
+        if (consultant?.user?.avatar) score += 4;
+
+        /* CONSULTANT CORE (20) */
+        if (consultant?.experience) score += 5;
+        if (consultant?.rate) score += 5;
+        if (consultant?.weekly_available_hours) score += 5;
+        if (consultant?.level) score += 5;
+
+        /* SKILLS (15) */
+        if (consultant?.skills && consultant.skills.length > 0) {
+          score += 15;
+        }
+
+        /* MODULES (10) */
+        if (consultant?.user?.modules?.length > 0) {
+          score += 10;
+        }
+
+        /* CAREER DETAILS (10) */
+        if (consultant?.career_details) score += 5;
+        if (consultant?.clients_summary) score += 5;
+
+        /* WORK EXPERIENCE (10) */
+        if (consultant?.work_experiences?.length > 0) {
+          score += 10;
+        }
+
+        /* EDUCATION (5) */
+        if (consultant?.education?.length > 0) {
+          score += 5;
+        }
+
+        /* CERTIFICATION (5) */
+        if (consultant?.certification?.length > 0 || consultant?.is_certified) {
+          score += 5;
+        }
+
+        /* CV (5) */
+        if (consultant?.cv_url) {
+          score += 5;
+        }
+
+        return `${score}%`;
+      }
 
 }
 
