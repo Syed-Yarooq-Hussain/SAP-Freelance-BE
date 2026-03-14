@@ -1,6 +1,9 @@
 import * as nodemailer from 'nodemailer';
 import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
 import { EmailType } from 'constant/enums';
+import { Resend } from "resend";
+
+const resend = new Resend('re_disroJ34_NJedanEEfxJVYRSBRy15i6Sd');
 
 export async function sendEmail(
   to: string,
@@ -54,7 +57,7 @@ export async function sendEmail(
     }
 
     // 🔹 Transporter
-    const transporter = nodemailer.createTransport({
+    /* const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT),
       secure: false,
@@ -62,34 +65,41 @@ export async function sendEmail(
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
-    });
+    }); */
 
     let info = null;
     // 🔹 Email Send
-    if(type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
-      info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+    try {
+      if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+        info = await resend.emails.send({
+          from: `onboarding@resend.dev`,
           to,
           subject: `P9 System: Verify your Email`,
           html: verifyEmailTemplate(receiverName, verifyLink),
         });
-       
-    }else if(type === EmailType.RESET_PASSWORD && verifyLink) {
-       info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+
+      } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
+        console.log("Sending reset password email to:", to);
+        info = await resend.emails.send({
+          from: `onboarding@resend.dev`,
           to,
           subject: `P9 System: Password Reset Request`,
           html: resetPasswordTemplate(verifyLink),
         });
-    } else{
-       info = await transporter.sendMail({
-          from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
+      } else {
+        info = await resend.emails.send({
+          from: `onboarding@resend.dev`,
           to,
           subject: `Notification: ${type}`,
           html: generalTemplate(receiverName, message, senderName),
         });
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error;
     }
-   
+
+
 
     return {
       status: true,
