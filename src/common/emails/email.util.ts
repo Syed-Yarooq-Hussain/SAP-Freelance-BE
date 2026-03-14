@@ -72,7 +72,7 @@ export async function sendEmail(
     try {
       if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
         info = await resend.emails.send({
-          from: `onboarding@resend.dev`,
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `P9 System: Verify your Email`,
           html: verifyEmailTemplate(receiverName, verifyLink),
@@ -81,14 +81,14 @@ export async function sendEmail(
       } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
         console.log("Sending reset password email to:", to);
         info = await resend.emails.send({
-          from: `onboarding@resend.dev`,
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `P9 System: Password Reset Request`,
           html: resetPasswordTemplate(verifyLink),
         });
       } else {
         info = await resend.emails.send({
-          from: `onboarding@resend.dev`,
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `Notification: ${type}`,
           html: generalTemplate(receiverName, message, senderName),
