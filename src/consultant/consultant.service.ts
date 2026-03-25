@@ -92,11 +92,17 @@ export class ConsultantService {
     }
 
     // EXPERIENCE
-    if (consultant.experience >= 5 && consultant.experience < 10) {
-      badges.push('EXPERT');
-    } else if (consultant.experience >= 10 && consultant.experience < 20) {
-      badges.push('SENIOR_EXPERT');
-    } else if (consultant.experience >= 20) {
+    if (consultant.experience > 0 && consultant.experience < 1) {
+      badges.push('JUNIOR');
+    } else if (consultant.experience >= 1 && consultant.experience < 3) {
+      badges.push('ASSOCIATE');
+    } else if (consultant.experience >= 3 && consultant.experience < 6) {
+      badges.push('MID_LEVEL');
+    } else if (consultant.experience >= 6 && consultant.experience < 9) {
+      badges.push('SENIOR');
+    } else if (consultant.experience >= 9 && consultant.experience < 12) {
+      badges.push('PRINCIPAL');
+    } else if (consultant.experience >= 12) {
       badges.push('SOLUTION_ARCHITECT');
     }
 
@@ -461,13 +467,20 @@ export class ConsultantService {
         }
 
         // EXPERIENCE
-        if (consultant.experience >= 5 && consultant.experience < 10) {
-          badges.push('EXPERT');
-        } else if (consultant.experience >= 10 && consultant.experience < 20) {
-          badges.push('SENIOR_EXPERT');
-        } else if (consultant.experience >= 20) {
+        if (consultant.experience >= 0 && consultant.experience < 1) {
+          badges.push('JUNIOR');
+        } else if (consultant.experience >= 1 && consultant.experience < 3) {
+          badges.push('ASSOCIATE');
+        } else if (consultant.experience >= 3 && consultant.experience < 6) {
+          badges.push('MID_LEVEL');
+        } else if (consultant.experience >= 6 && consultant.experience < 9) {
+          badges.push('SENIOR');
+        } else if (consultant.experience >= 9 && consultant.experience < 12) {
+          badges.push('PRINCIPAL');
+        } else if (consultant.experience >= 12) {
           badges.push('SOLUTION_ARCHITECT');
         }
+        
 
         // remove duplicates
         const uniqueBadges = Array.from(new Set(badges));

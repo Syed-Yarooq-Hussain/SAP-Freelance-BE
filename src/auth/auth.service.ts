@@ -139,7 +139,7 @@ export class AuthService {
       country: 'N/A',
     });
     
-    const schedule = this.generateWeekSchedule(20);
+    const schedule = this.generateWeekSchedule(0);
     
     await this.consultantRepo.createDetail(
       {
@@ -147,7 +147,7 @@ export class AuthService {
         level: null,
         experience: null,
         rate: null,
-        weekly_available_hours: 20,
+        weekly_available_hours: 0,
         working_schedule: schedule,
         cv_url: null,
         user_id: user.id,
@@ -311,7 +311,7 @@ export class AuthService {
           linkedin_sso_connected: true,
         });
 
-        const schedule = this.generateWeekSchedule(20);
+        const schedule = this.generateWeekSchedule(0);
         
         await this.consultantRepo.createDetail(
           {
@@ -319,7 +319,7 @@ export class AuthService {
             level: null,
             experience: null,
             rate: null,
-            weekly_available_hours: 20,
+            weekly_available_hours: 0,
             working_schedule: schedule,
             cv_url: null,
             user_id: user.id,
@@ -389,7 +389,7 @@ export class AuthService {
       tokenMailExpiresAt: expiresAt,
     });
 
-    const verifyLink = `${process.env.FE_URL}verify-email?token=${tokenMail}`;
+    const verifyLink = `${process.env.FE_URL}/verify-email?token=${tokenMail}`;
 
     await sendEmail(
       user.email,

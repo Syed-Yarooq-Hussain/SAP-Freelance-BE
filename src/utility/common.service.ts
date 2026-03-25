@@ -167,7 +167,7 @@ export class CommonService {
 
     resend.emails.send({
       from: "P9 System <no-reply@safeedposhkarachi.xyz>",
-      to: "tumhariemail@gmail.com",
+      to: "syed.yarooq1701@gmail.com",
       subject: "Test Email",
       html: "<p>Hello from Railways!</p>",
     }).then(console.log).catch(console.error);

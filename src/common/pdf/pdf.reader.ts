@@ -72,6 +72,27 @@ Required structure:
   "languages": string[]
 }
 
+For the "clients_summary" field, contain the following information in a concise summary format:
+
+  - **Name:** (from CV)
+  - **Current Role:** (latest job title)
+  - **Total SAP Experience:** X years
+  - **Core Modules:** (max 2 most prominent SAP modules)
+  - **Industries:** (max 4 industries worked in)
+  - **Projects:** (total number of projects/companies)
+  - **Current Location:** (city, country)
+  - **SAP Versions:** (list from: ECC / S/4HANA / Cloud)
+
+  ## SKILLS
+  **SAP Functional Skills:** (comma separated)
+  **Business Processes:** (comma separated)
+  **Integration Exposure:** (comma separated)
+  **Support / Delivery Capabilities:** (comma separated)
+  **Tools & Platforms:** (comma separated)
+
+For the "username" field, generate a structured SAP consultant profile in this exact format:
+ --Name should be full name and with proper spaces
+
 CV:
 """${text}"""
 `;
