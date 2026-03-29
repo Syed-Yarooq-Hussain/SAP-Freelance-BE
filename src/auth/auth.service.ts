@@ -156,6 +156,7 @@ export class AuthService {
         education: null,
         certification: null,
         work_experiences: null,
+        projects: null,
         languages: null,
       }
     );
@@ -328,6 +329,7 @@ export class AuthService {
             education: null,
             certification: null,
             work_experiences: null,
+            projects: null,
             languages: null,
           }
         );

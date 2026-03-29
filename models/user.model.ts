@@ -77,6 +77,13 @@ export class User extends Model<User> {
     defaultValue: 1 || 'active',
   })
   status: string | number;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: new Date(),
+  })
+  created_at: any;
 
   @Column({ allowNull: true })
   tokenMail: string;

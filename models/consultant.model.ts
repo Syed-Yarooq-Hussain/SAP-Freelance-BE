@@ -90,6 +90,13 @@ export class Consultant extends Model<Consultant> {
     defaultValue: null,
   })
   work_experiences: any | null;
+  
+  @Column({
+    type: DataType.JSONB,
+    allowNull: true,
+    defaultValue: null,
+  })
+  projects: any | null;
 
   @Column({
     type: DataType.JSONB,

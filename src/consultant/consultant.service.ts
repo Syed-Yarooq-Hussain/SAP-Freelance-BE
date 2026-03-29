@@ -16,6 +16,7 @@ import { ConsultantModuleRepository } from 'repository/consultant-module.reposit
 import { UserRepository } from 'repository/user.repository';
 import { CommonService } from 'src/utility/common.service';
 import { profile } from 'console';
+import { create } from 'domain';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -40,7 +41,6 @@ export class ConsultantService {
   
   async getScheduleByConsultantId(id: number) {
 
-    console.log('🔵 getScheduleByConsultantId called with id:', id);
     const booking_schedule = await this.projectConsultantRepo.findBookingScheduleByConsultantId(id);
     const consultant_schedule = await this.consultantRepository.findByUserId(id);
 
@@ -190,6 +190,7 @@ export class ConsultantService {
       if (updateDto.consultant?.education) consultantFields.education = updateDto.consultant.education;
       if (updateDto.consultant?.certification) consultantFields.certification = updateDto.consultant.certification;
       if (updateDto.consultant?.work_experiences) consultantFields.work_experiences = updateDto.consultant.work_experiences;
+      if (updateDto.consultant?.projects) consultantFields.projects = updateDto.consultant.projects;
       if (updateDto.consultant?.languages) consultantFields.languages = updateDto.consultant.languages;
   
       if (Object.keys(consultantFields).length) {
@@ -550,6 +551,162 @@ export class ConsultantService {
         }
 
         return `${score}%`;
+      }
+
+      async getNewDashboardData(consultantId: number) {
+          const meetings = await this.meetingRepo.getMeetingWithDetails(
+          consultantId,
+          'interview',
+        );
+
+        const projects =
+          await this.projectConsultantRepo.findByConsultantId(consultantId);
+
+        const consultant =
+          await this.consultantRepository.findByUserId(consultantId);
+        const now = new Date();
+
+        /* =========================
+            CALENDAR
+        ========================= */
+
+        const upcomingMeetings = meetings
+          .filter(m => new Date(m.date_time) > now)
+          .sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
+
+        const calendar = {
+          weekly_availability: consultant?.weekly_available_hours || 0,
+          interview_schedule: upcomingMeetings.length,
+          next_interview: upcomingMeetings[0]?.date_time || null
+        };
+
+        /* =========================
+            PROJECTS
+        ========================= */
+
+        const activeProjects = projects.filter(p =>
+          p?.project?.projectDetails?.end_date
+            ? new Date(p.project.projectDetails.end_date) > now
+            : false
+        );
+
+        const projectNames = projects
+          .map(p => ({
+            name: p?.project?.name,
+            client: p?.project?.client?.username,
+            status: p?.project?.status,
+          }))
+          .filter(Boolean);
+
+        const projectData = {
+          total_projects: projects.length,
+          active: activeProjects.length,
+          projects: projectNames
+        };
+
+        /* =========================
+            PAYMENTS
+        ========================= */
+
+        const projectedEarning =
+          consultant?.weekly_available_hours && consultant?.rate
+            ? consultant.weekly_available_hours * consultant.rate
+            : 0;
+
+        const nextPayment =
+          projects?.[0]?.requested_hours && consultant?.rate
+            ? projects[0].requested_hours * consultant.rate
+            : 0;
+
+        const payment = {
+          next_payment: nextPayment,
+          projected_earning: projectedEarning
+        };
+
+        /* =========================
+            DOCUMENTS (placeholder logic)
+        ========================= */
+
+        const documents = {
+          pending: 0,
+          upcoming: 0
+        };
+
+        /* =========================
+            PROFILE
+        ========================= */
+        const badges = consultant.badges || [];
+
+        // VERIFIED
+        if (
+          consultant.user?.email ||
+          consultant.user?.phone ||
+          consultant.user?.linkedin_url
+        ) {
+          badges.push('VERIFIED');
+        }
+
+        // CERTIFIED
+        if (consultant.is_certified) {
+          badges.push('CERTIFIED');
+        }
+
+        // EXPERIENCE
+        if (consultant.experience >= 0 && consultant.experience < 1) {
+          badges.push('JUNIOR');
+        } else if (consultant.experience >= 1 && consultant.experience < 3) {
+          badges.push('ASSOCIATE');
+        } else if (consultant.experience >= 3 && consultant.experience < 6) {
+          badges.push('MID_LEVEL');
+        } else if (consultant.experience >= 6 && consultant.experience < 9) {
+          badges.push('SENIOR');
+        } else if (consultant.experience >= 9 && consultant.experience < 12) {
+          badges.push('PRINCIPAL');
+        } else if (consultant.experience >= 12) {
+          badges.push('SOLUTION_ARCHITECT');
+        }
+        
+
+        // remove duplicates
+        const uniqueBadges = Array.from(new Set(badges));
+        const profile = {
+          profile_strength: this.calculateProfileStrength(consultant) || '0%',
+          badges: uniqueBadges,
+          name: consultant?.user?.username || '',
+          city: consultant?.user?.city || '',
+          country: consultant?.user?.country || '',
+          avatar: consultant?.user?.avatar || '',
+          created_at: consultant?.user?.created_at || null,
+          modules: consultant?.user?.modules?.map((m: any) => m.module?.name).filter(Boolean)[0] || []
+        };
+
+        const today_schedule = meetings.length > 0 ? [{
+            project_name: meetings[0]?.project?.name || 'N/A',
+            date_time: meetings[0]?.date_time || null,
+            client: meetings[0]?.project?.client?.username || 'N/A',
+            source: 'Client',
+          },
+          {
+            project_name: meetings[0]?.project?.name || 'N/A',
+            date_time: meetings[0]?.date_time || null,
+            client: meetings[0]?.project?.client?.username || 'N/A',
+            source: 'Client',
+          },
+          {
+            project_name: meetings[0]?.project?.name || 'N/A',
+            date_time: meetings[0]?.date_time || null,
+            client: meetings[0]?.project?.client?.username || 'N/A',
+            source: 'Client',
+          },] : []
+
+        return {
+          calender: calendar,
+          projects: projectData,
+          payment,
+          documents,
+          profile,
+          today_schedule
+        }; 
       }
 
 }

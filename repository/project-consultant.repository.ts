@@ -92,7 +92,7 @@ export class ProjectConsultantRepository {
             {
               model: User,
               as: 'client',
-              attributes: ['id', 'username'],
+              attributes: ['id', 'username', 'created_at'],
             },
             {
               model: ProjectDetail,
