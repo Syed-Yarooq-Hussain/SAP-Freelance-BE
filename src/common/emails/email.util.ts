@@ -1,10 +1,9 @@
-import * as nodemailer from "nodemailer";
-import {
-  generalTemplate,
-  resetPasswordTemplate,
-  verifyEmailTemplate,
-} from "./email.template";
-import { EmailType } from "constant/enums";
+import * as nodemailer from 'nodemailer';
+import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
+import { EmailType } from 'constant/enums';
+import { Resend } from "resend";
+
+const resend = new Resend('re_disroJ34_NJedanEEfxJVYRSBRy15i6Sd');
 
 export async function sendEmail(
   to: string,
@@ -14,80 +13,102 @@ export async function sendEmail(
   verifyLink?: string
 ) {
   try {
-    console.log("--------------------------------------------------");
-    console.log("📧 EMAIL SERVICE STARTED");
-    console.log("📧 To:", to);
-    console.log("📧 Type:", type);
+    let message = "";
 
-    console.log("📧 ENV CHECK");
-    console.log("MAIL_HOST:", process.env.MAIL_HOST);
-    console.log("MAIL_PORT:", process.env.MAIL_PORT);
-    console.log("MAIL_USER exists:", process.env.MAIL_USER);
-    console.log("MAIL_PASS exists:", process.env.MAIL_PASS);
+    switch (type) {
+      case EmailType.SHORTLIST:
+        message = "Your candidate has been shortlisted.";
+        break;
 
-    const transporter = nodemailer.createTransport({
+      case EmailType.INVITE:
+        message = "You have received the portal invite.";
+        break;
+
+      case EmailType.NDA:
+        message = "Your NDA has been generated.";
+        break;
+
+      case EmailType.INVOICE:
+        message = "Your invoice has been generated.";
+        break;
+
+      case EmailType.BILL:
+        message = "Your bill has been generated.";
+        break;
+      case EmailType.WELCOME:
+        message = "Welcome to our portal!";
+        break;
+      case EmailType.SIGNUP:
+        message = "Your signup has been confirmed.";
+        break;
+      case EmailType.CUSTOMER_SIGNED:
+        message = "Customer has signed the contract and NDA.";
+        break;
+      case EmailType.CONSULTANT_REJECTED:
+        message = "Consultant has been rejected by the client.";
+        break;
+      case EmailType.CLIENT_REJECTED:
+        message = "Client has rejected the NDA.";
+        break;
+
+
+      default:
+        message = "This is a system notification.";
+    }
+
+    // 🔹 Transporter
+    /* const transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
-      port: 587,
-      secure: false, // 587 ke liye false (STARTTLS use hota hai)
+      port: Number(process.env.MAIL_PORT),
+      secure: false,
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
       },
+    }); */
 
-      // Railway fixes
-      family: 4,
-      requireTLS: true,
-      tls: {
-        rejectUnauthorized: false,
-      },
-      logger: true,
-      debug: true,
-    });
+    let info = null;
+    // 🔹 Email Send
+    try {
+      if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
+        info = await resend.emails.send({
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          to,
+          subject: `P9 System: Verify your Email`,
+          html: verifyEmailTemplate(receiverName, verifyLink),
+        });
 
-    console.log("📧 Verifying SMTP connection...");
-    await transporter.verify();
-    console.log("✅ SMTP CONNECTION SUCCESSFUL");
-
-    let message = "This is a system notification.";
-
-    let subject = `Notification: ${type}`;
-    let html = generalTemplate(receiverName, message, senderName);
-
-    if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
-      subject = "P9 System: Verify your Email";
-      html = verifyEmailTemplate(receiverName, verifyLink);
+      } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
+        console.log("Sending reset password email to:", to);
+        info = await resend.emails.send({
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          to,
+          subject: `P9 System: Password Reset Request`,
+          html: resetPasswordTemplate(verifyLink),
+        });
+      } else {
+        info = await resend.emails.send({
+          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          to,
+          subject: `Notification: ${type}`,
+          html: generalTemplate(receiverName, message, senderName),
+        });
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error;
     }
 
-    if (type === EmailType.RESET_PASSWORD && verifyLink) {
-      subject = "P9 System: Password Reset Request";
-      html = resetPasswordTemplate(verifyLink);
-    }
 
-    console.log("📧 Sending email...");
-
-    const info = await transporter.sendMail({
-      from: `"${process.env.MAIL_FROM_NAME}" <${process.env.MAIL_FROM}>`,
-      to,
-      subject,
-      html,
-    });
-
-    console.log("✅ EMAIL SENT SUCCESSFULLY");
-    console.log("📧 Message ID:", info.messageId);
-    console.log("📧 SMTP Response:", info.response);
 
     return {
       status: true,
-      messageId: info.messageId,
+      messageId: info?.messageId,
     };
   } catch (error: any) {
-    console.error("❌ EMAIL ERROR OCCURRED");
-    console.error("Error message:", error?.message);
-    console.error("Full error:", error);
-
     return {
       status: false,
-      error: error?.message,
+      error: error.message,
     };
   }
 }

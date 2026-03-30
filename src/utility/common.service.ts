@@ -13,6 +13,7 @@ import { extractText, extractTextFromBuffer, parseWithOpenAI } from 'src/common/
 import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConsultantRepository } from 'repository/consultant.repository';
+import { Resend } from 'resend';
 
 @Injectable()
 export class CommonService {
@@ -156,12 +157,20 @@ export class CommonService {
   }
 
   async sendEmail(body: any) {
-    const { to, type, receiverName, senderName } = body;
+    /* const { to, type, receiverName, senderName } = body;
 
     if (!to || !type || !receiverName || !senderName)
       return { status: false, message: "Missing required fields" };
 
-    return await sendEmail(to, type, receiverName, senderName);
+    return await sendEmail(to, type, receiverName, senderName); */
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    resend.emails.send({
+      from: "P9 System <no-reply@safeedposhkarachi.xyz>",
+      to: "syed.yarooq1701@gmail.com",
+      subject: "Test Email",
+      html: "<p>Hello from Railways!</p>",
+    }).then(console.log).catch(console.error);
   }
 
 

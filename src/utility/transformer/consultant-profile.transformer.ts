@@ -10,9 +10,10 @@ export function consultantRegistertObjectTransformer(user: any) {
             rate: null,
             weekly_available_hours: null,
             cv_url: "",
-            clients_summary: user.clients_summary,
+            clients_summary: user.profile_summary,
             skills: user.skills,
             work_experiences: user.work_experiences,
+            projects: user.projects,
             education: user.education,
             certifications: user.certifications,
             languages: user.languages

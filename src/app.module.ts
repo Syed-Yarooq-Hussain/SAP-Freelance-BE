@@ -28,7 +28,10 @@ import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 import * as pgConnectionString from 'pg-connection-string';
 
-const config = pgConnectionString.parse(process.env.DATABASE_URL);
+let config:any = null
+if (process.env.NODE_ENV === 'production') {
+  config = pgConnectionString.parse(process.env.DATABASE_URL);
+}
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,19 +40,19 @@ const config = pgConnectionString.parse(process.env.DATABASE_URL);
     }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: config.host,
-      port: Number(config.port),
-      username: config.user,
-      password: config.password,
-      database: config.database,
+      host: process.env.NODE_ENV == 'production' ? config.host : process.env.DB_HOST,
+      port: process.env.NODE_ENV == 'production' ? Number(config.port) : Number(process.env.DB_PORT),
+      username: process.env.NODE_ENV == 'production' ? config.user : process.env.DB_USER,
+      password: process.env.NODE_ENV == 'production' ? config.password : process.env.DB_PASSWORD,
+      database: process.env.NODE_ENV == 'production' ? config.database : process.env.DB_NAME,
       autoLoadModels: true,
       synchronize: false,
-      dialectOptions: {
+      dialectOptions: process.env.NODE_ENV == 'production' ? {
         ssl: {
           require: true,
           rejectUnauthorized: false,
         },
-      },
+      } : undefined,
       models: [
         User,
         ModuleEntity,

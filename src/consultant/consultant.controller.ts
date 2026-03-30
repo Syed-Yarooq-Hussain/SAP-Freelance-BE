@@ -113,5 +113,13 @@ export class ConsultantController {
   ) {
     return await this.consultantService.getDashboradData(+req.user.id);
   }
+  
+  @Get('v2/dashboard')
+  @UseGuards(JwtAuthGuard)
+  async getNewDashboardData(
+    @Req() req: any,
+  ) {
+    return await this.consultantService.getNewDashboardData(+req.user.id);
+  }
 
 }
