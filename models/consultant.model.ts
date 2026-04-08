@@ -138,4 +138,22 @@ export class Consultant extends Model<Consultant> {
   })
   certification_approved_at: Date;
 
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  industries: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  professional_headline: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  expertise_level: string;
+
 }

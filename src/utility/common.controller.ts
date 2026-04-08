@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
@@ -9,6 +9,7 @@ import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { ModuleEntity } from 'models/module.model';
 
 @ApiTags('Common')
 @Controller('common')
@@ -120,5 +121,49 @@ export class CommonController {
     }
 
     return this.commonService.uploadDoc(file);
+  }
+
+  @Post('module')
+  create(@Body() body: Partial<ModuleEntity>) {
+    return this.commonService.create(body);
+  }
+
+  // 📋 Get All (flat)
+  @Get('module')
+  findAll(@Query('is_core') is_core?: string) {
+    let parsed;
+
+    if (is_core !== undefined) {
+      parsed = is_core === 'true';
+    }
+
+    return this.commonService.findAll(parsed);
+  }
+
+  // 🌳 Get Tree 🔥
+  @Get('module/tree')
+  getTree() {
+    return this.commonService.getTree();
+  }
+
+  // 🔍 Get By Id
+  @Get('module/:id')
+  findOne(@Param('id') id: string) {
+    return this.commonService.findById(Number(id));
+  }
+
+  // 🧠 Update
+  @Put('module/:id')
+  update(
+    @Param('id') id: string,
+    @Body() body: Partial<ModuleEntity>,
+  ) {
+    return this.commonService.update(Number(id), body);
+  }
+
+  // ❌ Delete
+  @Delete('module/:id')
+  delete(@Param('id') id: string) {
+    return this.commonService.delete(Number(id));
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto, UpdateMeetingStatusDto } from './dto/meeting-invite.dto';
@@ -14,6 +14,7 @@ import { consultantRegistertObjectTransformer } from './transformer/consultant-p
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConsultantRepository } from 'repository/consultant.repository';
 import { Resend } from 'resend';
+import { ModuleEntity } from 'models/module.model';
 
 @Injectable()
 export class CommonService {
@@ -218,6 +219,85 @@ export class CommonService {
     });
 
     return key;
+  }
+
+   // 🆕 Create Module
+  async create(data: Partial<ModuleEntity>): Promise<ModuleEntity> {
+    // ✅ Parent validation
+    if (data.parent_id) {
+      const parent = await this.moduleRepo.findById(data.parent_id);
+
+      if (!parent) {
+        throw new BadRequestException('Parent module not found');
+      }
+    }
+
+    return this.moduleRepo.create(data);
+  }
+
+  // 📋 Get All (flat)
+  async findAll(isCore?: boolean): Promise<ModuleEntity[]> {
+    return this.moduleRepo.findAll(isCore);
+  }
+
+  // 🌳 Get Tree (MAIN 🔥)
+  async getTree(): Promise<any[]> {
+    return this.moduleRepo.getTree(null);
+  }
+
+  // 🔍 Get By Id
+  async findById(id: number): Promise<ModuleEntity> {
+    const module = await this.moduleRepo.findById(id);
+
+    if (!module) {
+      throw new NotFoundException('Module not found');
+    }
+
+    return module;
+  }
+
+  // 🧠 Update
+  async update(id: number, data: Partial<ModuleEntity>) {
+    const module = await this.moduleRepo.findById(id);
+
+    if (!module) {
+      throw new NotFoundException('Module not found');
+    }
+
+    // ✅ Parent validation
+    if (data.parent_id) {
+      if (data.parent_id === id) {
+        throw new BadRequestException('Module cannot be its own parent');
+      }
+
+      const parent = await this.moduleRepo.findById(data.parent_id);
+
+      if (!parent) {
+        throw new BadRequestException('Parent module not found');
+      }
+    }
+
+    return this.moduleRepo.update(id, data);
+  }
+
+  // ❌ Delete (SAFE 🔥)
+  async delete(id: number) {
+    const module = await this.moduleRepo.findById(id);
+
+    if (!module) {
+      throw new NotFoundException('Module not found');
+    }
+
+    // ✅ check children
+    const children = await this.moduleRepo.findChildren(id);
+
+    if (children.length > 0) {
+      throw new BadRequestException(
+        'Cannot delete module with child modules',
+      );
+    }
+
+    return this.moduleRepo.delete(id);
   }
   
 }

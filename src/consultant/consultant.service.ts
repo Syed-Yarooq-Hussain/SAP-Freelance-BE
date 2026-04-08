@@ -192,7 +192,9 @@ export class ConsultantService {
       if (updateDto.consultant?.work_experiences) consultantFields.work_experiences = updateDto.consultant.work_experiences;
       if (updateDto.consultant?.projects) consultantFields.projects = updateDto.consultant.projects;
       if (updateDto.consultant?.languages) consultantFields.languages = updateDto.consultant.languages;
-  
+      if (updateDto.consultant?.industries) consultantFields.industries = updateDto.consultant.industries;
+      if (updateDto.consultant?.professional_headline) consultantFields.professional_headline = updateDto.consultant.professional_headline;
+      if (updateDto.consultant?.expertise_level) consultantFields.expertise_level = updateDto.consultant.expertise_level;
       if (Object.keys(consultantFields).length) {
         await this.consultantRepository.updateByUserId(user_id, consultantFields);
       }
