@@ -81,7 +81,10 @@ export interface UpdateConsultantDetailDto {
     certification?: any[];
     languages?: string[];
     career_details?: any;
-    projects?: any
+    projects?: any;
+    industries?: string;
+    professional_headline?: string;
+    expertise_level?: string;
   };
 }
 
