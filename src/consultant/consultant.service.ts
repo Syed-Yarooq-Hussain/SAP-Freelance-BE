@@ -154,7 +154,12 @@ export class ConsultantService {
     if (updateDto.user?.city) userFields.city = updateDto.user.city;
     if (updateDto.user?.country) userFields.country = updateDto.user.country;
     if (updateDto.user?.currency) userFields.currency = updateDto.user.currency;
+    if (updateDto.user?.linkedin_url) userFields.linkedin_url = updateDto.user.linkedin_url;
   
+    if (updateDto.user && Object.prototype.hasOwnProperty.call(updateDto.user, 'avatar')) { 
+      userFields.avatar = updateDto.user.avatar ?? ''; 
+    }
+
     // Optional: password update
     if (updateDto.user?.password) {
       userFields.password = await bcrypt.hash(updateDto.user.password, 10);
@@ -179,7 +184,6 @@ export class ConsultantService {
     if (updateDto.consultant?.rate !== undefined) consultantFields.rate = updateDto.consultant.rate;
     if (updateDto.consultant?.weekly_available_hours !== undefined)
       consultantFields.weekly_available_hours = updateDto.consultant.weekly_available_hours;
-  
     // ✅ Working schedule comes directly from FE
       if (updateDto.consultant?.working_schedule)
         consultantFields.working_schedule = updateDto.consultant.working_schedule;
@@ -198,7 +202,7 @@ export class ConsultantService {
       if (Object.keys(consultantFields).length) {
         await this.consultantRepository.updateByUserId(user_id, consultantFields);
       }
-  
+
       // ✅ Step 4: Update Modules if provided
       if (updateDto.consultant?.core_module?.length) {
         await this.consultantModuleRepo.updateModule({

@@ -44,6 +44,8 @@ export interface UpdateConsultantDetailDto {
     city?: string;
     country?: string;
     currency?: string;
+    avatar?: string;
+    linkedin_url?: string;
   };
   consultant?: {
     experience?: number;
