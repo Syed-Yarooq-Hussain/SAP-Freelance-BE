@@ -204,21 +204,27 @@ export class ConsultantService {
       }
 
       // ✅ Step 4: Update Modules if provided
-      if (updateDto.consultant?.core_module?.length) {
-        await this.consultantModuleRepo.updateModule({
-          user_id,
-          module_id: +updateDto.consultant.core_module[0],
-          is_primary: true,
-        });
-      }
-  
-      if (updateDto.consultant?.other_module?.length) {
-        await this.consultantModuleRepo.updateModule({
-          user_id,
-          module_id: +updateDto.consultant.other_module[0],
-          is_primary: false,
-        });
-      }
+      const coreModules = updateDto.consultant?.core_module || [];
+        const otherModules = updateDto.consultant?.other_module || [];
+
+        const allModules = [
+          ...coreModules.map(id => ({ module_id: +id, is_primary: true })),
+          ...otherModules.map(id => ({ module_id: +id, is_primary: false })),
+        ];
+
+        // delete old
+        await this.consultantModuleRepo.delete( user_id );
+
+        // insert new
+        if (allModules.length) {
+          await this.consultantModuleRepo.bulkCreateModules(
+            allModules.map(m => ({
+              user_id,
+              module_id: m.module_id,
+              is_primary: m.is_primary,
+            }))
+          );
+        }
   
       // ✅ Step 5: Return Updated User without password
       const updatedUser = await User.findOne({ where: { id: user_id } });

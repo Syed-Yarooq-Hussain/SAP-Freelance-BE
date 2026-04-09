@@ -45,8 +45,8 @@ export class ConsultantModuleRepository {
   }
 
   // ❌ Delete Record
-  async delete(id: number): Promise<number> {
-    return this.consultantModuleModel.destroy({ where: { id } });
+  async delete(user_id: number): Promise<number> {
+    return this.consultantModuleModel.destroy({ where: { user_id } });
   }
 
   // update consultant module 
@@ -79,6 +79,14 @@ export class ConsultantModuleRepository {
     });
 
     return newModule;
+  }
+
+  async bulkCreateModules(data: {
+    user_id: number;
+    module_id: number;
+    is_primary: boolean;
+  }[]): Promise<ConsultantModule[]> {
+    return this.consultantModuleModel.bulkCreate(data);
   }
 
 }
