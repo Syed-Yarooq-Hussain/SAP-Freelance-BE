@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -46,5 +46,29 @@ export class AdminController {
     return null;
   }
 
-  
+  // 🏭 Industries CRUD Endpoints
+  @Post('industries')
+  createIndustry(@Body() body: { name: string }) {
+    return this.adminService.createIndustry(body.name);
+  }
+
+  @Get('industries')
+  getAllIndustries() {
+    return this.adminService.getAllIndustries();
+  }
+
+  @Get('industries/:id')
+  getIndustryById(@Param('id') id: string) {
+    return this.adminService.getIndustryById(+id);
+  }
+
+  @Put('industries/:id')
+  updateIndustry(@Param('id') id: string, @Body() body: { name: string }) {
+    return this.adminService.updateIndustry(+id, body.name);
+  }
+
+  @Delete('industries/:id')
+  deleteIndustry(@Param('id') id: string) {
+    return this.adminService.deleteIndustry(+id);
+  }
 }

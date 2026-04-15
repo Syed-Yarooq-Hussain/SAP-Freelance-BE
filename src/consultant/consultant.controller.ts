@@ -6,6 +6,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
 
 @ApiTags('Consultants') 
 @Controller('consultants')
@@ -120,6 +121,16 @@ export class ConsultantController {
     @Req() req: any,
   ) {
     return await this.consultantService.getNewDashboardData(+req.user.id);
+  }
+
+  @Get('experience-levels')
+  @ApiOperation({ summary: 'Get all consultant experience levels' })
+  @ApiResponse({ status: 200, description: 'List of all consultant experience levels' })
+  getExperienceLevels() {
+    return {
+      message: 'Experience levels fetched successfully',
+      data: ['Junior', 'Associate', 'Mid-Level', 'Senior', 'Principal', 'Solution Architect']
+    };
   }
 
 }

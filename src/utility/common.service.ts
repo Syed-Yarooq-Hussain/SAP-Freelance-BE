@@ -13,6 +13,7 @@ import { extractText, extractTextFromBuffer, parseWithOpenAI } from 'src/common/
 import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConsultantRepository } from 'repository/consultant.repository';
+import { IndustriesRepository } from 'repository/indutries.repository';
 import { Resend } from 'resend';
 import { ModuleEntity } from 'models/module.model';
 
@@ -22,12 +23,9 @@ export class CommonService {
     private readonly meetingRepo: MeetingRepository,
     private readonly projectConsultantRepo: ProjectConsultantRepository,
     private readonly consultantRepo: ConsultantRepository,
-    private readonly moduleRepo: ModuleRepository
+    private readonly moduleRepo: ModuleRepository,
+    private readonly industriesRepo: IndustriesRepository
   ) { }
-  private industry = [
-    { id: 1, name: "Information tecnology" },
-    { id: 2, name: "Healthcare" }
-  ]
 
   private get s3() {
     return new S3Client({
@@ -68,21 +66,21 @@ export class CommonService {
     return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`
   }
 
-  // 🔹 Create New Entry
-  createIndustry(dto: CreateCommonDto) {
-    const newIndustry = { id: Date.now(), ...dto };
-    this.industry.push(newIndustry);
+  // 🔹 Create New Industry
+  async createIndustry(dto: CreateCommonDto) {
+    const newIndustry = await this.industriesRepo.create({ name: dto.name });
     return {
       message: "Industry created successfully",
       data: newIndustry
     };
   }
 
-  // 🔹 Get All Entries
-  getAllIndustry() {
+  // 🔹 Get All Industries
+  async getAllIndustry() {
+    const industries = await this.industriesRepo.findAll();
     return {
-      message: "Industry created successfully",
-      data: this.industry
+      message: "Industries fetched successfully",
+      data: industries
     };
   }
 
@@ -90,14 +88,29 @@ export class CommonService {
     return MEETING_STATUS_ARRAY
   }
 
-  // 🔹 Update Entry By Id
-  updateIndustry(id: number, dto: UpdateCommonDto) {
-    const index = this.industry.findIndex((i) => i.id === id);
-    if (index === -1) { return { massage: "Industry not found" }; }
-    this.industry[index] = { ...this.industry[index], ...dto };
+  // 🔹 Update Industry By Id
+  async updateIndustry(id: number, dto: UpdateCommonDto) {
+    const industry = await this.industriesRepo.findById(id);
+    if (!industry) {
+      return { message: "Industry not found" };
+    }
+    const [, updatedIndustries] = await this.industriesRepo.update(id, { name: dto.name });
     return {
       message: 'Industry updated successfully',
-      data: this.industry[index],
+      data: updatedIndustries[0],
+    };
+  }
+
+  // 🔹 Delete Industry By Id
+  async deleteIndustry(id: number) {
+    const industry = await this.industriesRepo.findById(id);
+    if (!industry) {
+      return { message: "Industry not found" };
+    }
+    const deletedCount = await this.industriesRepo.delete(id);
+    return {
+      message: 'Industry deleted successfully',
+      deletedCount
     };
   }
 

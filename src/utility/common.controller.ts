@@ -45,6 +45,13 @@ export class CommonController {
     return this.commonService.updateIndustry(+id,dto);
   }
 
+  @Delete('industry/:id')
+  @ApiOperation({ summary: 'Delete an existing industry' })
+  @ApiResponse({ status: 200, description: 'Industry deleted successfully.' })
+  deleteIndustry(@Param('id') id: string) {
+    return this.commonService.deleteIndustry(+id);
+  }
+
   @Post("meeting-invite")
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Send meeting/interview Invite' })
