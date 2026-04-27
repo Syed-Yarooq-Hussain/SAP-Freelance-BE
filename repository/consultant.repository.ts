@@ -83,4 +83,9 @@ async createDetail(dto: any) {
   async delete(id: number): Promise<number> {
     return this.consultantModel.destroy({ where: { id } });
   }
+
+  // ❌ Delete Consultant By User Id
+  async deleteByUserId(userId: number): Promise<number> {
+    return this.consultantModel.destroy({ where: { user_id: userId } });
+  }
 }

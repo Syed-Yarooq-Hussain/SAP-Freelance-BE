@@ -4,7 +4,7 @@ export const generalTemplate = (
   senderName: string
 ) => `
   <div style="font-family: Arial; padding: 20px;">
-    <p>Hello <b>${receiverName}</b>,</p>
+    <p>Hello,</p>
 
     <p>${message}</p>
 
@@ -25,10 +25,9 @@ export const verifyEmailTemplate = (
       
       <h2 style="color: #333;">Verify My Email</h2>
 
-      <p>Hello <b>${receiverName}</b>,</p>
+      <p>Hello,</p>
 
       <p style="color:#555; line-height:1.6;">
-        Welcome,<br/><br/>
         You have requested email verification for your SAP Freelance Portal account.
         To complete the verification process, please click on the button below.
       </p>

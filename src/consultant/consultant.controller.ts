@@ -123,6 +123,14 @@ export class ConsultantController {
     return await this.consultantService.getNewDashboardData(+req.user.id);
   }
 
+  @Delete('profile/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Delete consultant profile and related consultant data' })
+  @ApiResponse({ status: 200, description: 'Consultant profile deleted successfully' })
+  deleteConsultantProfile(@Param('id') id: string) {
+    return this.consultantService.deleteConsultantProfile(+id);
+  }
+
   @Get('experience-levels')
   @ApiOperation({ summary: 'Get all consultant experience levels' })
   @ApiResponse({ status: 200, description: 'List of all consultant experience levels' })

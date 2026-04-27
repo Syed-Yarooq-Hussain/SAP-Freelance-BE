@@ -134,6 +134,11 @@ export class ProjectConsultantRepository {
     return this.projectConsultantModel.destroy({ where: { id } });
   }
 
+  // ❌ Delete all project consultant relations for a consultant user
+  async deleteByConsultantId(consultantId: number): Promise<number> {
+    return this.projectConsultantModel.destroy({ where: { consultant_id: consultantId } });
+  }
+
   // 🔎 Get ALL consultants of project (including soft deleted)
     async findAllByProjectIdWithDeleted(project_id: number,): Promise<ProjectConsultant[]> {
       return this.projectConsultantModel.findAll({

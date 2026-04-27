@@ -29,6 +29,7 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('all')
   @ApiOperation({ summary: 'Get users with filters (Admin/User specific)' })
   @ApiResponse({ status: 200, description: 'List of users returned successfully' })

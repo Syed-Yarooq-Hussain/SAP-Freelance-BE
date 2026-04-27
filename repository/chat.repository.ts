@@ -75,4 +75,9 @@ export class ChatRepository {
   deleteMessage(id: number) {
     return this.chatModel.update({ deleted_at: new Date() }, { where: { id } });
   }
+
+  // ❌ Delete all chat rows for user
+  deleteByUserId(userId: number) {
+    return this.chatModel.destroy({ where: { [Op.or]: [{ sender_id: userId }, { receiver_id: userId }] } });
+  }
 }

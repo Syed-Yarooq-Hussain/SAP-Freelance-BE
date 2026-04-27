@@ -50,6 +50,14 @@ export class MeetingRepository {
     return this.inviteeModel.findAll({ where: { meeting_id: meetingId } });
   }
 
+  async deleteBySenderId(userId: number): Promise<number> {
+    return this.meetingModel.destroy({ where: { sender_id: userId } });
+  }
+
+  async deleteInviteesByUserId(userId: number): Promise<number> {
+    return this.inviteeModel.destroy({ where: { user_id: userId } });
+  }
+
   async getMeetingWithDetails(
     user_id: number,
     type?: 'interview' | 'all',

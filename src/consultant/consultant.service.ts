@@ -15,6 +15,8 @@ import { CustomError } from 'src/config/custom-error.exception';
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { UserRepository } from 'repository/user.repository';
 import { CommonService } from 'src/utility/common.service';
+import { ChatRepository } from 'repository/chat.repository';
+import { ProjectTaskRepository } from 'repository/project-task.repository';
 import { profile } from 'console';
 import { create } from 'domain';
 @Injectable()
@@ -25,6 +27,8 @@ export class ConsultantService {
       private readonly meetingRepo: MeetingRepository,
       private readonly consultantModuleRepo: ConsultantModuleRepository,
       private readonly userRepo: UserRepository,
+      private readonly chatRepo: ChatRepository,
+      private readonly projectTaskRepo: ProjectTaskRepository,
       private readonly commonService: CommonService
     ) {}
 
@@ -119,7 +123,28 @@ export class ConsultantService {
     };
   }
 
-  
+  async deleteConsultantProfile(userId: number) {
+    const consultant = await this.consultantRepository.findByUserId(userId);
+    if (!consultant) {
+      throw new CustomError(404, 'Consultant profile not found');
+    }
+
+    await this.consultantModuleRepo.delete(userId);
+    await this.projectConsultantRepo.deleteByConsultantId(userId);
+    await this.meetingRepo.deleteBySenderId(userId);
+    await this.meetingRepo.deleteInviteesByUserId(userId);
+    await this.chatRepo.deleteByUserId(userId);
+    await this.projectTaskRepo.clearAssignee(userId);
+    await this.consultantRepository.deleteByUserId(userId);
+    await this.userRepo.deleteUser(userId);
+
+    return {
+      message: 'Consultant user and consultant-related records deleted safely',
+      userId,
+      consultantId: consultant.id,
+    };
+  }
+
   async setConsultantSchedule(id: number, body: any) {
     await this.consultantRepository.updateByUserId(id, {working_schedule: body});
     return body;

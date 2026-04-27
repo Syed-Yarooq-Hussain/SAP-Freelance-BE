@@ -44,4 +44,12 @@ export class ProjectTaskRepository {
   async delete(id: number): Promise<number> {
     return this.projectTaskModel.destroy({ where: { id } });
   }
+
+  // 🔄 Clear assignee for deleted user
+  async clearAssignee(userId: number): Promise<[number, ProjectTask[]]> {
+    return this.projectTaskModel.update(
+      { assignee_id: null },
+      { where: { assignee_id: userId }, returning: true },
+    );
+  }
 }
