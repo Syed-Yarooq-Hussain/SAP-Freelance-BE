@@ -173,4 +173,13 @@ export class CommonController {
   delete(@Param('id') id: string) {
     return this.commonService.delete(Number(id));
   }
+
+  @Post('read-excel-profiles')
+  @UseInterceptors(FileInterceptor('file'))
+  async readExcelProfiles(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('Excel file required');
+    return this.commonService.readExcelWithDriveProfiles(file);
+  }
 }

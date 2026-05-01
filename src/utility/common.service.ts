@@ -16,7 +16,9 @@ import { ConsultantRepository } from 'repository/consultant.repository';
 import { IndustriesRepository } from 'repository/indutries.repository';
 import { Resend } from 'resend';
 import { ModuleEntity } from 'models/module.model';
-
+import * as ExcelJS from 'exceljs';
+import axios from 'axios';
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class CommonService {
   constructor(
@@ -312,5 +314,121 @@ export class CommonService {
 
     return this.moduleRepo.delete(id);
   }
+
+  async readExcelWithDriveProfiles(file: any) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(file.buffer);
+  const worksheet = workbook.worksheets[0];
+
+  const rows: any[] = [];
+  let headers: string[] = [];
+
+  worksheet.eachRow((row, rowIndex) => {
+    if (rowIndex === 1) {
+      headers = (row.values as any[]).slice(1).map(h => String(h).trim().toLowerCase());
+    } else {
+      const rowObj: any = {};
+      (row.values as any[]).slice(1).forEach((val, i) => {
+        rowObj[headers[i]] = val;
+      });
+      rows.push(rowObj);
+    }
+  });
+
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const rawUrl = row['url'];
+      const driveUrl: string = typeof rawUrl === 'object' && rawUrl !== null
+        ? (rawUrl.hyperlink ?? rawUrl.text ?? rawUrl.result ?? '')
+        : String(rawUrl ?? '');
+      let profileInfo: any = {};
+
+      if (driveUrl) {
+        try {
+          console.log(`Processing Drive URL: ${driveUrl}`);
+          const fileId = this.extractDriveFileId(driveUrl);
+          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+          console.log(`Constructed download URL: ${downloadUrl}`);
+          const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
+          const buffer = Buffer.from(response.data);
+
+          // ✅ Sirf text extract karo — no OpenAI
+          const text = await extractTextFromBuffer(buffer);
+
+          // ✅ Regex se fields nikalo
+          profileInfo = this.extractProfileFromText(text);
+
+        } catch (err) {
+          console.error(`Error processing Drive URL: ${driveUrl}`, err);
+          profileInfo = { error: 'Could not extract profile from drive link' };
+        }
+      }
+
+      return {
+        rate: row['rate'],
+        core_module: row['core_module'],
+        experience: row['expereince'],
+        availability: row['availability'],
+        other_module: row['other_module'],
+        country: row['country'],
+        url: driveUrl,
+        profile: profileInfo,
+      };
+    })
+  );
+
+  return {
+    message: 'Excel processed successfully',
+    total: results.length,
+    data: results,
+  };
+}
+
+// ✅ Regex based extractor — no AI needed
+private extractProfileFromText(text: string): any {
+  // Email
+  const emailMatch = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  
+  // Phone — international ya local formats
+  const phoneMatch = text.match(/(\+?\d[\d\s\-().]{7,15}\d)/);
+  
+  // LinkedIn
+  const linkedinMatch = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+/i);
+  
+  // Name — pehli line jo sirf words ho (simple heuristic)
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const nameLine = lines.find(l => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(l));
+
+  // City — common heuristic: "City, Country" pattern
+  const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)?),\s*(?:[A-Z][a-z]+|[A-Z]{2})\b/);
+
+  return {
+    name: nameLine ?? null,
+    email: emailMatch?.[0] ?? null,
+    phone: phoneMatch?.[0]?.trim() ?? null,
+    city: cityMatch?.[1] ?? null,
+    linkedin_url: linkedinMatch?.[0] ?? null,
+  };
+}
+
+private extractDriveFileId(url: string): string {
+  // Handle formats:
+  // https://drive.google.com/file/d/FILE_ID/view
+  // https://drive.google.com/open?id=FILE_ID
+  // https://docs.google.com/document/d/FILE_ID/edit
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+    /\/document\/d\/([a-zA-Z0-9_-]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+
+  throw new Error(`Could not extract file ID from URL: ${url}`);
+}
   
 }
+
