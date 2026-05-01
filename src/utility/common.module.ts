@@ -13,12 +13,14 @@ import { Consultant } from 'models/consultant.model';
 import { ConsultantRepository } from 'repository/consultant.repository';
 import { Industries } from 'models/industries.model';
 import { IndustriesRepository } from 'repository/indutries.repository';
+import { User } from 'models/user.model';
+import { UserRepository } from 'repository/user.repository';
 
 
 @Module({
-  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity, Consultant, Industries])],
+  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity, Consultant, Industries, User])],
   controllers: [CommonController],
-  providers: [CommonService, MeetingRepository, ProjectConsultantRepository, ModuleRepository, ConsultantRepository, IndustriesRepository],
+  providers: [CommonService, MeetingRepository, ProjectConsultantRepository, ModuleRepository, ConsultantRepository, IndustriesRepository, UserRepository],
   exports: [CommonService],
 })
 export class CommonModule {}

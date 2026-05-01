@@ -19,6 +19,10 @@ import { ModuleEntity } from 'models/module.model';
 import * as ExcelJS from 'exceljs';
 import axios from 'axios';
 import * as bcrypt from 'bcrypt';
+import { InjectModel } from '@nestjs/sequelize';
+import { User } from 'models/user.model';
+import { Consultant } from 'models/consultant.model';
+
 @Injectable()
 export class CommonService {
   constructor(
@@ -26,7 +30,9 @@ export class CommonService {
     private readonly projectConsultantRepo: ProjectConsultantRepository,
     private readonly consultantRepo: ConsultantRepository,
     private readonly moduleRepo: ModuleRepository,
-    private readonly industriesRepo: IndustriesRepository
+    private readonly industriesRepo: IndustriesRepository,
+    @InjectModel(User) private readonly userModel: typeof User,
+    @InjectModel(Consultant) private readonly consultantModel: typeof Consultant,
   ) { }
 
   private get s3() {
@@ -173,12 +179,6 @@ export class CommonService {
   }
 
   async sendEmail(body: any) {
-    /* const { to, type, receiverName, senderName } = body;
-
-    if (!to || !type || !receiverName || !senderName)
-      return { status: false, message: "Missing required fields" };
-
-    return await sendEmail(to, type, receiverName, senderName); */
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     resend.emails.send({
@@ -189,15 +189,14 @@ export class CommonService {
     }).then(console.log).catch(console.error);
   }
 
-
-  async generatePdf( data: { text?: string; imagePath?: string; title?: string }) {
+  async generatePdf(data: { text?: string; imagePath?: string; title?: string }) {
     const pdfUrl = await generatePdf(data);
     return pdfUrl;
   }
 
   async getSAPmodules() {
     const allModules = await this.moduleRepo.findAll();
-    
+
     const core = allModules.filter(m => m.is_core === true);
     const others = allModules.filter(m => m.is_core === false);
 
@@ -236,17 +235,14 @@ export class CommonService {
     return key;
   }
 
-   // 🆕 Create Module
+  // 🆕 Create Module
   async create(data: Partial<ModuleEntity>): Promise<ModuleEntity> {
-    // ✅ Parent validation
     if (data.parent_id) {
       const parent = await this.moduleRepo.findById(data.parent_id);
-
       if (!parent) {
         throw new BadRequestException('Parent module not found');
       }
     }
-
     return this.moduleRepo.create(data);
   }
 
@@ -255,7 +251,7 @@ export class CommonService {
     return this.moduleRepo.findAll(isCore);
   }
 
-  // 🌳 Get Tree (MAIN 🔥)
+  // 🌳 Get Tree
   async getTree(): Promise<any[]> {
     return this.moduleRepo.getTree(null);
   }
@@ -263,172 +259,223 @@ export class CommonService {
   // 🔍 Get By Id
   async findById(id: number): Promise<ModuleEntity> {
     const module = await this.moduleRepo.findById(id);
-
     if (!module) {
       throw new NotFoundException('Module not found');
     }
-
     return module;
   }
 
   // 🧠 Update
   async update(id: number, data: Partial<ModuleEntity>) {
     const module = await this.moduleRepo.findById(id);
-
     if (!module) {
       throw new NotFoundException('Module not found');
     }
-
-    // ✅ Parent validation
     if (data.parent_id) {
       if (data.parent_id === id) {
         throw new BadRequestException('Module cannot be its own parent');
       }
-
       const parent = await this.moduleRepo.findById(data.parent_id);
-
       if (!parent) {
         throw new BadRequestException('Parent module not found');
       }
     }
-
     return this.moduleRepo.update(id, data);
   }
 
-  // ❌ Delete (SAFE 🔥)
+  // ❌ Delete
   async delete(id: number) {
     const module = await this.moduleRepo.findById(id);
-
     if (!module) {
       throw new NotFoundException('Module not found');
     }
-
-    // ✅ check children
     const children = await this.moduleRepo.findChildren(id);
-
     if (children.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete module with child modules',
-      );
+      throw new BadRequestException('Cannot delete module with child modules');
     }
-
     return this.moduleRepo.delete(id);
   }
 
+  // ============================================================
+  // 📊 Excel + Google Drive — Consultant Bulk Import
+  // ============================================================
+
   async readExcelWithDriveProfiles(file: any) {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(file.buffer);
-  const worksheet = workbook.worksheets[0];
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+    const worksheet = workbook.worksheets[0];
 
-  const rows: any[] = [];
-  let headers: string[] = [];
+    const rows: any[] = [];
+    let headers: string[] = [];
 
-  worksheet.eachRow((row, rowIndex) => {
-    if (rowIndex === 1) {
-      headers = (row.values as any[]).slice(1).map(h => String(h).trim().toLowerCase());
-    } else {
-      const rowObj: any = {};
-      (row.values as any[]).slice(1).forEach((val, i) => {
-        rowObj[headers[i]] = val;
-      });
-      rows.push(rowObj);
-    }
-  });
-
-  const results = await Promise.all(
-    rows.map(async (row) => {
-      const rawUrl = row['url'];
-      const driveUrl: string = typeof rawUrl === 'object' && rawUrl !== null
-        ? (rawUrl.hyperlink ?? rawUrl.text ?? rawUrl.result ?? '')
-        : String(rawUrl ?? '');
-      let profileInfo: any = {};
-
-      if (driveUrl) {
-        try {
-          console.log(`Processing Drive URL: ${driveUrl}`);
-          const fileId = this.extractDriveFileId(driveUrl);
-          const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-          console.log(`Constructed download URL: ${downloadUrl}`);
-          const response = await axios.get(downloadUrl, { responseType: 'arraybuffer' });
-          const buffer = Buffer.from(response.data);
-
-          // ✅ Sirf text extract karo — no OpenAI
-          const text = await extractTextFromBuffer(buffer);
-
-          // ✅ Regex se fields nikalo
-          profileInfo = this.extractProfileFromText(text);
-
-        } catch (err) {
-          console.error(`Error processing Drive URL: ${driveUrl}`, err);
-          profileInfo = { error: 'Could not extract profile from drive link' };
-        }
+    worksheet.eachRow((row, rowIndex) => {
+      if (rowIndex === 1) {
+        headers = (row.values as any[]).slice(1).map(h => String(h).trim().toLowerCase());
+      } else {
+        const rowObj: any = {};
+        (row.values as any[]).slice(1).forEach((val, i) => {
+          rowObj[headers[i]] = val;
+        });
+        rows.push(rowObj);
       }
+    });
 
-      return {
-        rate: row['rate'],
-        core_module: row['core_module'],
-        experience: row['expereince'],
-        availability: row['availability'],
-        other_module: row['other_module'],
-        country: row['country'],
-        url: driveUrl,
-        profile: profileInfo,
-      };
-    })
-  );
+    const results = await Promise.all(
+      rows.map(async (row, index) => {
+        // ✅ Hyperlink object bhi handle karo
+        const rawUrl = row['url'];
+        const driveUrl: string = typeof rawUrl === 'object' && rawUrl !== null
+          ? (rawUrl.hyperlink ?? rawUrl.text ?? rawUrl.result ?? '')
+          : String(rawUrl ?? '');
 
-  return {
-    message: 'Excel processed successfully',
-    total: results.length,
-    data: results,
-  };
-}
+        let profileInfo: any = {};
 
-// ✅ Regex based extractor — no AI needed
-private extractProfileFromText(text: string): any {
-  // Email
-  const emailMatch = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
-  
-  // Phone — international ya local formats
-  const phoneMatch = text.match(/(\+?\d[\d\s\-().]{7,15}\d)/);
-  
-  // LinkedIn
-  const linkedinMatch = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+/i);
-  
-  // Name — pehli line jo sirf words ho (simple heuristic)
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const nameLine = lines.find(l => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(l));
+        if (driveUrl) {
+          try {
+            const fileId = this.extractDriveFileId(driveUrl);
+            const buffer = await this.downloadFromGoogleDrive(fileId);
+            const text = await extractTextFromBuffer(buffer);
+            profileInfo = this.extractProfileFromText(text);
+          } catch (err) {
+            profileInfo = { error: err?.message ?? 'Unknown error' };
+          }
+        }
 
-  // City — common heuristic: "City, Country" pattern
-  const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)?),\s*(?:[A-Z][a-z]+|[A-Z]{2})\b/);
+        // ✅ User + Consultant DB entry
+        let userStatus = '';
+        const email = profileInfo?.email ?? null;
 
-  return {
-    name: nameLine ?? null,
-    email: emailMatch?.[0] ?? null,
-    phone: phoneMatch?.[0]?.trim() ?? null,
-    city: cityMatch?.[1] ?? null,
-    linkedin_url: linkedinMatch?.[0] ?? null,
-  };
-}
+        if (email) {
+          const existingUser = await this.userModel.findOne({ where: { email } });
 
-private extractDriveFileId(url: string): string {
-  // Handle formats:
-  // https://drive.google.com/file/d/FILE_ID/view
-  // https://drive.google.com/open?id=FILE_ID
-  // https://docs.google.com/document/d/FILE_ID/edit
-  const patterns = [
-    /\/file\/d\/([a-zA-Z0-9_-]+)/,
-    /[?&]id=([a-zA-Z0-9_-]+)/,
-    /\/document\/d\/([a-zA-Z0-9_-]+)/,
-  ];
+          if (existingUser) {
+            userStatus = 'already_exists';
+          } else {
+            const hashedPassword = await bcrypt.hash('123456', 10);
 
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
+            const newUser = await this.userModel.create({
+              email,
+              password: hashedPassword,
+              username: profileInfo?.name ?? null,
+              phone: profileInfo?.phone ?? null,
+              city: profileInfo?.city ?? null,
+              country: row['country'] ?? null,
+              linkedin_url: profileInfo?.linkedin_url ?? null,
+              role: 2,
+              currency: 'USD',
+              email_verified: true,
+              phone_verified: false,
+              linkedin_sso_connected: false,
+              status: 'active',
+            });
+
+            await this.consultantModel.create({
+              user_id: newUser.id,
+              rate: row['rate'] ? Number(row['rate']) || 0 : 0,
+              experience: row['expereince'] ? Math.round(Number(row['expereince'])) || 0 : 0,
+              weekly_available_hours: row['availability'] ? Number(row['availability']) || 0 : 0,
+              cv_url: driveUrl ?? null,
+            });
+
+            userStatus = 'created';
+          }
+        } else {
+          userStatus = 'skipped_no_email';
+        }
+
+        return {
+          status: userStatus,
+          email,
+          rate: Number(row['rate']) || 0,
+          core_module: row['core_module'],
+          experience: row['expereince'],
+          availability: row['availability'],
+          other_module: row['other_module'],
+          country: row['country'],
+          url: driveUrl,
+          profile: profileInfo,
+          row_number: index + 2,
+        };
+      })
+    );
+
+    return {
+      message: 'Excel processed successfully',
+      total: results.length,
+      created: results.filter(r => r.status === 'created').length,
+      already_exists: results.filter(r => r.status === 'already_exists').length,
+      skipped: results.filter(r => r.status === 'skipped_no_email').length,
+      data: results,
+      skipped_rows: results
+        .filter(r => r.status === 'skipped_no_email' || r.status === 'already_exists')
+        .map(r => ({ row: r.row_number, email: r.email, reason: r.status })),
+        };
   }
 
-  throw new Error(`Could not extract file ID from URL: ${url}`);
-}
-  
-}
+  private async downloadFromGoogleDrive(fileId: string): Promise<Buffer> {
+    const url = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=t`;
 
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      maxRedirects: 10,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/pdf,application/octet-stream,*/*',
+      },
+    });
+
+    const contentType: any = response.headers['content-type'] ?? '';
+
+    if (contentType.includes('text/html')) {
+      // Try 2: export=view
+      const url2 = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      const response2 = await axios.get(url2, {
+        responseType: 'arraybuffer',
+        maxRedirects: 10,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+      });
+
+      const ct2: any = response2.headers['content-type'] ?? '';
+      if (ct2.includes('text/html')) {
+        throw new Error(`Drive file download failed — file publicly shared nahi ya block ho raha hai. FileId: ${fileId}`);
+      }
+
+      return Buffer.from(response2.data);
+    }
+
+    return Buffer.from(response.data);
+  }
+
+  private extractDriveFileId(url: string): string {
+    const patterns = [
+      /\/file\/d\/([a-zA-Z0-9_-]+)/,
+      /[?&]id=([a-zA-Z0-9_-]+)/,
+      /\/document\/d\/([a-zA-Z0-9_-]+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    throw new Error(`Drive file ID nahi mila URL se: ${url}`);
+  }
+
+  private extractProfileFromText(text: string): any {
+    const emailMatch = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+    const phoneMatch = text.match(/(\+?\d[\d\s\-().]{7,15}\d)/);
+    const linkedinMatch = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+/i);
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const nameLine = lines.find(l => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(l));
+    const cityMatch = text.match(/\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)?),\s*(?:[A-Z][a-z]+|[A-Z]{2})\b/);
+
+    return {
+      name: nameLine ?? null,
+      email: emailMatch?.[0] ?? null,
+      phone: phoneMatch?.[0]?.trim() ?? null,
+      city: cityMatch?.[1] ?? null,
+      linkedin_url: linkedinMatch?.[0] ?? null,
+    };
+  }
+
+}
