@@ -253,7 +253,7 @@ export class CommonService {
 
   // 🌳 Get Tree
   async getTree(): Promise<any[]> {
-    return this.moduleRepo.getTree(null);
+    return this.moduleRepo.getTree();
   }
 
   // 🔍 Get By Id

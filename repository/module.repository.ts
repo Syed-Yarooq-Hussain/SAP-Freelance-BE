@@ -48,27 +48,26 @@ export class ModuleRepository {
   }
 
   // 🌲 Recursive Tree Fetch (MAIN FUNCTION 🔥)
-  async getTree(parentId: number | null = null): Promise<any[]> {
-    const modules = await this.moduleModel.findAll({
-      where: {
-        parent_id: parentId,
-        deleted_at: null,
-      },
-      raw: true,
+  async getTree(): Promise<any[]> {
+    const categories = await this.moduleModel.findAll({
+      where: { is_core: true, deleted_at: null },
+      attributes: ['id', 'name'],
+      include: [
+        {
+          model: ModuleEntity,
+          as: 'children',
+          where: { deleted_at: null },
+          required: false,
+          attributes: ['id', 'name'],
+        },
+      ],
     });
 
-    const result = [];
-
-    for (const module of modules) {
-      const children = await this.getTree(module.id);
-
-      result.push({
-        ...module,
-        children,
-      });
-    }
-
-    return result;
+    return categories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      modules: cat.children ?? [],
+    }));
   }
 
   // 🔍 Get Module By Id

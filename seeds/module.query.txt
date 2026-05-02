@@ -1,0 +1,174 @@
+-- ============================================================
+-- SAP MODULES REORGANIZATION
+-- Step 1: Sab ko is_core = false karo
+-- Step 2: 9 nai categories insert karo
+-- Step 3: Har module ko uski category se link karo
+-- ============================================================
+
+-- STEP 1: Sab existing modules is_core = false aur parent_id = NULL
+UPDATE modules SET is_core = false, parent_id = NULL WHERE deleted_at IS NULL;
+
+-- ============================================================
+-- STEP 2: 9 Categories INSERT
+-- ============================================================
+INSERT INTO modules (name, is_core, parent_id, deleted_at) VALUES
+('SAP Finance', true, NULL, NULL),
+('SAP Logistics', true, NULL, NULL),
+('SAP Manufacturing', true, NULL, NULL),
+('SAP Human Resources', true, NULL, NULL),
+('SAP Technology', true, NULL, NULL),
+('SAP Analytics', true, NULL, NULL),
+('SAP Customer Experience', true, NULL, NULL),
+('SAP GRC', true, NULL, NULL),
+('Others', true, NULL, NULL);
+
+-- ============================================================
+-- STEP 3: Modules ko Categories se link karo
+-- (parent_id = category ka id jo abhi upar insert hua)
+-- ============================================================
+
+-- 💰 SAP Finance
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Finance' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  15,  -- SAP FI (Finance)
+  16,  -- SAP FICO
+  10,  -- SAP Controlling (CO)
+  36,  -- SAP Treasury and Risk Management
+  40,  -- SAP BPC (Business Planning and Consolidation)
+  49,  -- SAP Convergent Charging (CC)
+  56,  -- SAP Finance (FI)
+  58,  -- SAP Flexible Real Estate Management (RE-FX)
+  81   -- SAP Treasury and Risk Management (TRM)
+);
+
+-- 🚚 SAP Logistics
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Logistics' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  27,  -- SAP Materials Management (MM)
+  32,  -- SAP Sales and Distribution (SD)
+  14,  -- SAP EWM (Extended Warehouse Management)
+  34,  -- SAP Supply Chain Management (SCM)
+  35,  -- SAP Transportation Management (TM)
+  3,   -- SAP Ariba
+  79,  -- SAP Supplier Relationship Management (SRM)
+  55,  -- SAP Fieldglass
+  62,  -- SAP IBP (Integrated Business Planning)
+  65,  -- SAP Integrated Business Planning (IBP)
+  80,  -- SAP Transportation Management (TM) duplicate
+  83   -- SAP Warehouse Management (WM)
+);
+
+-- 🏭 SAP Manufacturing
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Manufacturing' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  29,  -- SAP Production Planning (PP)
+  28,  -- SAP Plant Maintenance (PM)
+  31,  -- SAP Quality Management (QM)
+  30,  -- SAP Project System (PS)
+  12,  -- SAP EAM (Enterprise Asset Management)
+  24,  -- SAP Manufacturing
+  74,  -- SAP Product Lifecycle Management (PLM)
+  63,  -- SAP IM&C (Industrial Machinery & Components)
+  53   -- SAP EHS (Environment Health and Safety)
+);
+
+-- 👥 SAP Human Resources
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Human Resources' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  22,  -- SAP HCM (Human Capital Management)
+  33,  -- SAP SuccessFactors
+  61,  -- SAP Human Capital Management (HCM)
+  54,  -- SAP Enterprise Learning
+  48   -- SAP Concur
+);
+
+-- 💻 SAP Technology
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Technology' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  1,   -- SAP ABAP
+  4,   -- SAP Basis
+  20,  -- SAP HANA
+  21,  -- SAP HANA Cloud
+  5,   -- SAP BTP (Business Technology Platform)
+  8,   -- SAP Business Technology Platform (BTP)
+  13,  -- SAP ECC (Enterprise Central Component)
+  66,  -- SAP Internet Transaction Server (ITS)
+  67,  -- SAP IoT (Internet of Things)
+  25,  -- SAP Master Data Governance (MDG)
+  26   -- SAP Master Data Management (MDM)
+);
+
+-- 📊 SAP Analytics
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Analytics' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  2,   -- SAP Analytics Cloud
+  6,   -- SAP Business Information Warehouse (BW)
+  17,  -- SAP Fiori Cloud
+  57,  -- SAP Fiori
+  44,  -- SAP BusinessObjects Lumira
+  45,  -- SAP BusinessObjects Web Intelligence (Webi)
+  51,  -- SAP Design Studio
+  64,  -- SAP Information Design Tool (IDT)
+  50   -- SAP Data Warehouse Cloud
+);
+
+-- 🤝 SAP Customer Experience
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP Customer Experience' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  9,   -- SAP C4C (Cloud for Customer)
+  11,  -- SAP Customer Experience (CX)
+  46,  -- SAP Cloud for Customer (C4C)
+  47,  -- SAP Commerce Cloud
+  73,  -- SAP Marketing Cloud
+  77,  -- SAP Sales Cloud
+  78   -- SAP Service Cloud
+);
+
+-- 🔒 SAP GRC
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'SAP GRC' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  19,  -- SAP GRC (Governance, Risk, and Compliance)
+  60,  -- SAP GRC (Governance Risk and Compliance) duplicate
+  42   -- SAP Business Partner Screening
+);
+
+-- 📁 Others
+UPDATE modules SET parent_id = (SELECT id FROM modules WHERE name = 'Others' AND is_core = true AND deleted_at IS NULL LIMIT 1)
+WHERE id IN (
+  18,  -- SAP IS-Retail (Retail)
+  23,  -- SAP IS-Retail duplicate
+  7,   -- SAP Business One
+  41,  -- SAP Business ByDesign
+  43,  -- SAP Business Workflow
+  52,  -- SAP EC&O
+  59,  -- SAP for Mill Products & Mining
+  68,  -- SAP IS-Auto (Automotive)
+  69,  -- SAP IS-H (Healthcare)
+  70,  -- SAP IS-Oil (Oil & Gas)
+  71,  -- SAP IS-PS (Public Sector)
+  72,  -- SAP IS-T (Telecommunications)
+  75,  -- SAP Professional Services
+  76,  -- SAP Public Sector
+  82,  -- SAP Utilities (IS-U)
+  38,  -- SAP Advanced Data Migration (ADP)
+  39,  -- SAP Apparel and Footwear Solution (AFS)
+  37   -- Not in the list
+);
+
+-- ============================================================
+-- STEP 4: Cleanup — bad test entries soft delete
+-- ============================================================
+UPDATE modules SET deleted_at = NOW() WHERE id IN (84, 85);
+
+-- ============================================================
+-- VERIFY: Result dekho
+-- ============================================================
+SELECT
+  c.id   AS category_id,
+  c.name AS category_name,
+  m.id   AS module_id,
+  m.name AS module_name
+FROM modules c
+LEFT JOIN modules m ON m.parent_id = c.id AND m.deleted_at IS NULL
+WHERE c.is_core = true AND c.deleted_at IS NULL
+ORDER BY c.name, m.name;
