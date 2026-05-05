@@ -280,6 +280,9 @@ export class CommonService {
         throw new BadRequestException('Parent module not found');
       }
     }
+    if(!data.parent_id) {
+      data.is_core = true;
+    }
     return this.moduleRepo.update(id, data);
   }
 
