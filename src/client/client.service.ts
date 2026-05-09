@@ -108,14 +108,23 @@ export class ClientService {
   }
 
   async getAllConsultants(query: GetClientConsultantsQueryDto) {
-    const consultants = await this.userRepository.findAllUsersWithConsultants(undefined, {
-      module_id: this.toNumber(query.module_id),
+    let consultants = await this.userRepository.findAllUsersWithConsultants(undefined, {
+      module_ids: query.modules,
       experience: this.toNumber(query.experience),
-      available_hours: this.toNumber(query.available_hours),
-      min_rate: this.toNumber(query.min_rate),
-      max_rate: this.toNumber(query.max_rate),
+      available_hours: this.toNumber(query.availability),
+      min_rate: this.toNumber(query.budgetMin),
+      max_rate: this.toNumber(query.budgetMax),
       country: query.country,
     });
+
+    // Filter for AND condition on modules: consultant must have ALL specified modules
+    if (query.modules && query.modules.length > 0) {
+      consultants = consultants.filter(consultant => {
+        const userModuleIds = consultant.modules.map(m => m.module_id);
+        return query.modules.every(modId => userModuleIds.includes(modId));
+      });
+    }
+
     let consultantList = [];
     for(const consultant of consultants){
       let modules = {core:'',others:''};

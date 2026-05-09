@@ -7,7 +7,7 @@ import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
 
 export interface ConsultantSearchFilters {
-  module_id?: number;
+  module_ids?: number[];
   experience?: number;
   available_hours?: number;
   min_rate?: number;
@@ -148,9 +148,8 @@ class UserRepository {
       };
     }
 
-    if (filters.module_id !== undefined) {
-      moduleWhere.module_id = filters.module_id;
-      moduleEntityWhere.is_core = true;
+    if (filters.module_ids && filters.module_ids.length > 0) {
+      moduleWhere.module_id = { [Op.in]: filters.module_ids };
     }
 
     return await this.userModel.findAll({
@@ -165,7 +164,7 @@ class UserRepository {
         },
         {
           model: ConsultantModule,
-          required: filters.module_id !== undefined,
+          required: filters.module_ids && filters.module_ids.length > 0,
           where: moduleWhere,
           attributes: ['id'],
           include: [

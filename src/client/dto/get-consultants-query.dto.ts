@@ -1,11 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumberString, IsOptional, IsString } from 'class-validator';
+import { IsNumberString, IsOptional, IsString, IsArray, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class GetClientConsultantsQueryDto {
-  @ApiPropertyOptional({ description: 'Core module ID for filtering consultants' })
+  @ApiPropertyOptional({ description: 'Core module IDs for filtering consultants', type: [Number] })
   @IsOptional()
-  @IsNumberString()
-  module_id?: number;
+  @IsArray()
+  @Transform(({ value }) => value ? value.map(Number) : [])
+  modules?: number[];
 
   @ApiPropertyOptional({ description: 'Minimum consultant experience' })
   @IsOptional()
@@ -15,17 +17,17 @@ export class GetClientConsultantsQueryDto {
   @ApiPropertyOptional({ description: 'Return consultants with available hours less than this value' })
   @IsOptional()
   @IsNumberString()
-  available_hours?: number;
+  availability?: number;
 
   @ApiPropertyOptional({ description: 'Minimum consultant hourly rate' })
   @IsOptional()
   @IsNumberString()
-  min_rate?: number;
+  budgetMin?: number;
 
   @ApiPropertyOptional({ description: 'Maximum consultant hourly rate' })
   @IsOptional()
   @IsNumberString()
-  max_rate?: number;
+  budgetMax?: number;
 
   @ApiPropertyOptional({ description: 'Country search text' })
   @IsOptional()
