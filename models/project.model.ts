@@ -7,6 +7,7 @@ import { ProjectMilestone } from './project-milestone.model';
 import { ProjectTask } from './project-task.model';
 import { ProjectPayment } from './project-payment.model';
 import { Meeting } from './meeting.model';
+import { ConsultantMonthlyBill } from './consultant-monthly-bill.model';
 @Table({ tableName: 'project', timestamps: false })
 export class Project extends Model<Project> {
   @Column({
@@ -72,5 +73,8 @@ export class Project extends Model<Project> {
   deleted_at: Date | null;
   @HasMany(() => Meeting)
   meetings: Meeting[];
+
+  @HasMany(() => ConsultantMonthlyBill)
+  monthlyBills: ConsultantMonthlyBill[];
 
 }

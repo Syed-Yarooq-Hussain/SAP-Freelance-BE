@@ -25,9 +25,6 @@ export class DocumentRepository {
   }
 
   // 🔎 Get Users Documents By Id
-  async findByUserId(userId: number): Promise<Document[]> {
-    return this.documentModel.findAll({ where: { user_id: userId } });
-  }
 
   // 🧠 Update Document
   async update(id: number, data: Partial<Document>): Promise<[number, Document[]]> {

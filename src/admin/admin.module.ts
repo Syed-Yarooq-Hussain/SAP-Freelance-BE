@@ -8,11 +8,17 @@ import { ProjectRepository } from 'repository/project.repository';
 import { Project } from 'models/project.model';
 import { Industries } from 'models/industries.model';
 import { IndustriesRepository } from 'repository/indutries.repository';
+import { ProjectPayment } from 'models/project-payment.model';
+import { ProjectPaymentRepository } from 'repository/project-payment.repository';
+import { ProjectMilestone } from 'models/project-milestone.model';
+import { Document } from 'models/document.model';
+import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Project, Industries])],
+  imports: [SequelizeModule.forFeature([User, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill])],
   controllers: [AdminController],
-  providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository],
+  providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository],
   exports: [AdminService],
 })
 export class AdminModule {}

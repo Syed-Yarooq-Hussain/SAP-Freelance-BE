@@ -4,6 +4,7 @@ import { ProjectService } from './project.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectConsultantDto, UpdateProjectConsultantStatusDto } from './dto/create-project-consultant.dto';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
+import { UpdateProjectPaymentDto } from './dto/update-project-payment.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ConsultantStatus } from 'constant/enums';
 import { CreateProjectTaskDto, UpdateProjectTaskDto } from './dto/project_task.dto';
@@ -104,6 +105,17 @@ export class ProjectController {
   getProjectPayments(@Param('id') projectId: string) {
     return this.projectService.getPaymentsByProject(+projectId);
   }
+
+  @Put('payments/:id')
+  @ApiOperation({ summary: 'Update project payment' })
+  @ApiResponse({ status: 200, description: 'Project payment updated successfully' })
+  @ApiBody({ type: UpdateProjectPaymentDto })
+  updateProjectPayment(
+    @Param('id') paymentId: string,
+    @Body() body: UpdateProjectPaymentDto,
+  ) {
+    return this.projectService.updatePayment(+paymentId, body);
+  }
   
   @Put('milestones/:id')
   @ApiOperation({ summary: 'Update project milestone' })
@@ -155,5 +167,14 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Task deleted successfully' })
   deleteTask(@Param('taskId') taskId: string) {
     return this.projectService.deleteTask(+taskId);
+  }
+
+  @Get('project/:projectId/consultant/:userId/monthly-bills')
+  @UseGuards(JwtAuthGuard)
+  getMonthlyBills(
+    @Param('projectId') projectId: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.projectService.getConsultantMonthlyBills(+projectId, +userId);
   }
 }

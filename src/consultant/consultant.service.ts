@@ -19,6 +19,8 @@ import { ChatRepository } from 'repository/chat.repository';
 import { ProjectTaskRepository } from 'repository/project-task.repository';
 import { profile } from 'console';
 import { create } from 'domain';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
+import { groupBillsByMonth } from './transformer/monthly-bill.transformer';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -29,6 +31,7 @@ export class ConsultantService {
       private readonly userRepo: UserRepository,
       private readonly chatRepo: ChatRepository,
       private readonly projectTaskRepo: ProjectTaskRepository,
+      private readonly monthlyBillRepo: ConsultantMonthlyBillRepository,
       private readonly commonService: CommonService
     ) {}
 
@@ -54,6 +57,11 @@ export class ConsultantService {
   async getConsultantPayments(id: number) {
 
     return [];
+  }
+
+  async getConsultantMonthlyBills(id: number) {
+    const bills = await this.monthlyBillRepo.findByConsultant(id);
+    return groupBillsByMonth(bills);
   }
 
   async getConsultantDetail(id: number) {
@@ -463,17 +471,21 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? consultant.weekly_available_hours * consultant.rate
+            ? consultant.weekly_available_hours * consultant.rate * 90
             : 0;
 
-        const nextPayment =
-          projects?.[0]?.requested_hours && consultant?.rate
-            ? projects[0].requested_hours * consultant.rate
-            : 0;
+        const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
+        const totalEarnings = bills
+          .filter(bill => bill.is_paid)
+          .reduce((sum, bill) => sum + (bill.amount || 0), 0);
+
+        const nextUnpaidBill = bills.slice().reverse().find(bill => !bill.is_paid);
+        const nextPayment = nextUnpaidBill ? nextUnpaidBill.amount : 0;
 
         const payment = {
           next_payment: nextPayment,
-          projected_earning: projectedEarning
+          projected_earning: projectedEarning,
+          total_earnings: totalEarnings,
         };
 
         /* =========================
@@ -647,17 +659,21 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? consultant.weekly_available_hours * consultant.rate
+            ? consultant.weekly_available_hours * consultant.rate * 90
             : 0;
 
-        const nextPayment =
-          projects?.[0]?.requested_hours && consultant?.rate
-            ? projects[0].requested_hours * consultant.rate
-            : 0;
+        const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
+        const totalEarnings = bills
+          .filter(bill => bill.is_paid)
+          .reduce((sum, bill) => sum + (bill.amount || 0), 0);
+
+        const nextUnpaidBill = bills.slice().reverse().find(bill => !bill.is_paid);
+        const nextPayment = nextUnpaidBill ? nextUnpaidBill.amount : 0;
 
         const payment = {
           next_payment: nextPayment,
-          projected_earning: projectedEarning
+          projected_earning: projectedEarning,
+          total_earnings: totalEarnings,
         };
 
         /* =========================

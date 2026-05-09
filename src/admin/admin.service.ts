@@ -4,6 +4,8 @@ import { UserRepository } from 'repository/user.repository';
 import { getAdminsClientResponse, getAdminsConsultantResponse, getAdminsProjectResponse } from './transformer/response.transformer';
 import { ProjectRepository } from 'repository/project.repository';
 import { IndustriesRepository } from 'repository/indutries.repository';
+import { ProjectPaymentRepository } from 'repository/project-payment.repository';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Injectable()
 export class AdminService {
@@ -11,6 +13,8 @@ export class AdminService {
     private userRepo: UserRepository,
     private projectRepo: ProjectRepository,
     private industriesRepo: IndustriesRepository,
+    private projectPaymentRepo: ProjectPaymentRepository,
+    private monthlyBillRepo: ConsultantMonthlyBillRepository,
   ) {}
 
   async dashboardStatistic() {
@@ -52,6 +56,18 @@ export class AdminService {
   async getAllProjects() {
     let projects = await this.projectRepo.findAllforAdmin();
     return getAdminsProjectResponse(projects);
+  }
+
+  async getAllPayments() {
+    const [clientPayments, consultantPayments] = await Promise.all([
+      this.projectPaymentRepo.findAllForAdmin(),
+      this.monthlyBillRepo.findAllForAdmin(),
+    ]);
+
+    return {
+      client_payments: clientPayments,
+      consultant_payments: consultantPayments,
+    };
   }
 
   // 🏭 Industries CRUD Operations

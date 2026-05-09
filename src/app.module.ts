@@ -27,6 +27,7 @@ import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 import * as pgConnectionString from 'pg-connection-string';
+import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 
 let config:any = null
 if (process.env.NODE_ENV === 'production') {
@@ -69,7 +70,8 @@ if (process.env.NODE_ENV === 'production') {
         MilestoneDocs,
         ProjectPayment,
         Meeting,
-        MeetingInvitee
+        MeetingInvitee,
+        ConsultantMonthlyBill 
       ],
     }),
     CommonModule,

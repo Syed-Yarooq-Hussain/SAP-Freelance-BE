@@ -18,10 +18,12 @@ import { Chat } from 'models/chat.model';
 import { ProjectTaskRepository } from 'repository/project-task.repository';
 import { ProjectTask } from 'models/project-task.model';
 import { CommonModule } from 'src/utility/common.module';
+import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Module({
-  imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm, Chat, ProjectTask])],
-  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository, ChatRepository, ProjectTaskRepository],
+  imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm, Chat, ProjectTask, ConsultantMonthlyBill])],
+  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository, ChatRepository, ProjectTaskRepository, ConsultantMonthlyBillRepository],
   controllers: [ConsultantController],
   exports: [ConsultantRepository, ProjectConsultantRepository, UserRepository],
 })

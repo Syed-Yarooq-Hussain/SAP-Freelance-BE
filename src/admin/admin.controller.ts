@@ -36,6 +36,11 @@ export class AdminController {
     return this.adminService.getAllProjects();
   }
 
+  @Get('payments')
+  getAllPayments() {
+    return this.adminService.getAllPayments();
+  }
+
   @Post('consultant/payment')
   createConsultantPayment(@Body() body: any) {
     return null;

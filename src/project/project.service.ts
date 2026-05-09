@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -23,11 +24,14 @@ import {
   CreateProjectTaskDto,
   UpdateProjectTaskDto,
 } from './dto/project_task.dto';
+import { UpdateProjectPaymentDto } from './dto/update-project-payment.dto';
 import { ProjectTask } from 'models/project-task.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
 import { transformProjectConsultant } from './transformers/project-consultant-transformer';
 import { GetConsultantsQueryDto } from './dto/get-query.dto';
 import { ConsultantRepository } from 'repository/consultant.repository';
+import { formatDate } from 'src/common/utils/date.filter';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Injectable()
 export class ProjectService {
@@ -40,6 +44,7 @@ export class ProjectService {
     private readonly projectDetailrepository: ProjectDetailRepository,
     private readonly projectTaskRepo: ProjectTaskRepository,
     private readonly consultantRepo: ConsultantRepository,
+    private readonly monthlyBillRepo: ConsultantMonthlyBillRepository,
   ) {}
 
   async createProject(user: any) {
@@ -259,91 +264,218 @@ export class ProjectService {
     });
   }
 
-  async addMilestone(data: CreateProjectMilestoneDto) {
-    return this.milestoneRepo.create(data);
+  // ============================================================
+// HELPER / REUSABLE FUNCTIONS
+// ============================================================
+
+private async validateMilestoneDates(
+  projectId: number,
+  startDate: Date,
+  dueDate: Date,
+  excludeMilestoneId?: number,
+): Promise<void> {
+  const overlapping = await this.milestoneRepo.findOverlapping(
+    projectId,
+    startDate,
+    dueDate,
+    excludeMilestoneId,
+  );
+
+  if (overlapping) {
+    throw new ConflictException(
+  `A milestone already exists in this date range (${await formatDate(overlapping.start_date)} → ${await formatDate(overlapping.due_date)})`,
+);
+  }
+}
+
+// ============================================================
+// HELPER — milestone ke months generate karo with working hours
+// ============================================================
+private getMonthlyHoursBreakdown(
+  startDate: Date,
+  dueDate: Date,
+  totalHours: number,
+): { month: string; hours: number }[] {
+  const result: { month: string; hours: number }[] = [];
+
+  // Har month ke working days count karo
+  const monthlyWorkingDays: { month: string; days: number }[] = [];
+  let current = new Date(startDate);
+
+  while (current <= dueDate) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // skip weekends
+      const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      const existing = monthlyWorkingDays.find(m => m.month === key);
+      if (existing) {
+        existing.days++;
+      } else {
+        monthlyWorkingDays.push({ month: key, days: 1 });
+      }
+    }
+    current.setDate(current.getDate() + 1);
   }
 
-  async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
+  const totalWorkingDays = monthlyWorkingDays.reduce((s, m) => s + m.days, 0);
+  if (!totalWorkingDays) return result;
+
+  for (const m of monthlyWorkingDays) {
+    const ratio = m.days / totalWorkingDays;
+    result.push({
+      month: m.month,
+      hours: parseFloat((totalHours * ratio).toFixed(2)),
+    });
+  }
+
+  return result;
+}
+
+// ============================================================
+// UPDATED — calculateAndSyncPayments
+// ============================================================
+private async calculateAndSyncPayments(
+  milestone: ProjectMilestone,
+): Promise<void> {
+  if (!milestone?.required_hours) return;
+
+  const consultants = await this.projectConsultantRepo.findByProjectId(
+    milestone.project_id,
+  );
+  if (!consultants.length) return;
+
+  const totalRequestedHours = consultants.reduce(
+    (sum, c) => sum + (c.requested_hours || 0),
+    0,
+  );
+  if (!totalRequestedHours) return;
+
+  // Purane unpaid payments aur monthly bills delete karo
+  await this.paymentRepo.deleteUnpaidByMilestoneId(milestone.id);
+  await this.monthlyBillRepo.deleteUnpaidByMilestoneId(milestone.id);
+
+  for (const consultant of consultants) {
+    const ratio = (consultant.requested_hours || 0) / totalRequestedHours;
+    const consultantHours = milestone.required_hours * ratio;
+    const amount = consultantHours * (consultant.decided_rate || 0);
+
+    // 1. Payment record (existing)
+    await this.paymentRepo.create({
+      project_id: milestone.project_id,
+      project_milestone_id: milestone.id,
+      amount,
+      payment_module: 'milestone',
+      is_paid: false,
+    });
+
+    // 2. Monthly bills (NAYA) — sirf agar dates hain
+    if (milestone.start_date && milestone.due_date) {
+      const monthlyBreakdown = this.getMonthlyHoursBreakdown(
+        new Date(milestone.start_date),
+        new Date(milestone.due_date),
+        consultantHours,
+      );
+
+      for (const mb of monthlyBreakdown) {
+        const monthlyAmount = mb.hours * (consultant.decided_rate || 0);
+
+        await this.monthlyBillRepo.create({
+          project_id: milestone.project_id,
+          user_id: consultant.consultant_id, // consultant ki user_id
+          milestone_id: milestone.id,
+          month: mb.month,
+          hours: mb.hours,
+          amount: parseFloat(monthlyAmount.toFixed(2)),
+          is_paid: false,
+          pdf_url: null,
+        });
+      }
+    }
+  }
+}
+
+
+// ============================================================
+// ADD MILESTONE
+// ============================================================
+
+async addMilestone(data: CreateProjectMilestoneDto) {
+  // 1. Date range check
+  if (data.start_date && data.due_date) {
+    await this.validateMilestoneDates(
+      data.project_id,
+      new Date(data.start_date),
+      new Date(data.due_date),
+    );
+
+    // 2. Required hours calculate
+    data.required_hours = this.calculateWorkingHours(
+      new Date(data.start_date),
+      new Date(data.due_date),
+    );
+  } else {
+    data.required_hours = 0;
+  }
+
+  // 3. Create milestone
+  const milestone = await this.milestoneRepo.create(data);
+
+  // 4. Payments sync
+  await this.calculateAndSyncPayments(milestone);
+
+  return milestone;
+}
+
+
+// ============================================================
+// UPDATE MILESTONE
+// ============================================================
+
+async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   const milestone = await this.milestoneRepo.findById(id);
 
   if (!milestone) {
     throw new NotFoundException(`Milestone with ID ${id} not found`);
   }
 
-  // 1️⃣ required_hours auto calculate
+  // 1. Paid check — block update, suggest new module
+  const hasPaidPayments = await this.paymentRepo.hasPaidByMilestoneId(id);
+
+  if (hasPaidPayments) {
+    throw new ConflictException(
+      'This milestone has already been paid. Please create a revision instead.',
+    );
+  }
+
+  // 2. Date range check (exclude self)
   if (data.start_date && data.due_date) {
+    await this.validateMilestoneDates(
+      milestone.project_id,
+      new Date(data.start_date),
+      new Date(data.due_date),
+      id, // exclude current milestone from overlap check
+    );
+
+    // 3. Required hours recalculate
     data.required_hours = this.calculateWorkingHours(
       new Date(data.start_date),
       new Date(data.due_date),
     );
+  } else {
+    data.required_hours = 0;
   }
 
-
-  // 2️⃣ milestone update
+  // 4. Update milestone
   const updatedMilestone = await this.milestoneRepo.update(id, data);
 
-  // 3️⃣ required_hours missing → skip
-  if (!updatedMilestone?.required_hours) {
-    return updatedMilestone;
-  }
-
-  // 🔒 4️⃣ PAYMENT GUARD (MOST IMPORTANT PART)
-  const paymentAlreadyExists =
-    await this.paymentRepo.existsByMilestoneId(updatedMilestone.id);
-
-  if (paymentAlreadyExists) {
-    // ⛔ already calculated — DO NOTHING
-    return updatedMilestone;
-  }
-
-  // 5️⃣ Project consultants lao
-  const consultants =
-    await this.projectConsultantRepo.findByProjectId(
-      milestone.project_id,
-    );
-
-  console.log('Consultants for payment calculation:', consultants);
-
-  if (!consultants.length) {
-    return updatedMilestone;
-  }
-
-  // 6️⃣ Total requested hours
-  const totalRequestedHours = consultants.reduce(
-    (sum, c) => sum + (c.requested_hours || 0),
-    0,
-  );
-
-  if (!totalRequestedHours) {
-    return updatedMilestone;
-  }
-
-  // 7️⃣ Payment entries create
-  for (const consultant of consultants) {
-    const ratio =
-      (consultant.requested_hours || 0) / totalRequestedHours;
-
-    const consultantHours =
-      updatedMilestone.required_hours * ratio;
-
-    const rate = consultant.decided_rate || 0;
-
-    const amount = consultantHours * rate;
-
-    await this.paymentRepo.create({
-      project_id: milestone.project_id,
-      project_milestone_id: milestone.id,
-      amount,
-      payment_module: 'CONSULTANT',
-      is_paid: false,
-    });
-  }
+  // 5. Payments recalculate (unpaid wale delete hokey naye banenge)
+  await this.calculateAndSyncPayments(updatedMilestone);
 
   return updatedMilestone;
 }
+  async getConsultantMonthlyBills(projectId: number, userId: number) {
+  return this.monthlyBillRepo.findByProjectAndConsultant(projectId, userId);
+}
 
-
-  
   async getMilestonesByProject(id: number) {
     let isMMilestoneExist = await this.milestoneRepo.findAll({
       where: { project_id: id }
@@ -474,6 +606,37 @@ export class ProjectService {
     return this.paymentRepo.findAll({
       where: { project_id: projectId },
     });
+  }
+
+  async updatePayment(paymentId: number, data: UpdateProjectPaymentDto) {
+    const payment = await this.paymentRepo.findById(paymentId);
+
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID ${paymentId} not found`);
+    }
+
+    const payload: any = {};
+
+    if (data.project_id !== undefined) payload.project_id = Number(data.project_id);
+    if (data.project_milestone_id !== undefined) {
+      payload.project_milestone_id = Number(data.project_milestone_id);
+    }
+    if (data.doc_id !== undefined) payload.doc_id = Number(data.doc_id);
+    if (data.amount !== undefined) payload.amount = Number(data.amount);
+    if (data.payment_module !== undefined) payload.payment_module = data.payment_module;
+    if (data.is_paid !== undefined) payload.is_paid = data.is_paid;
+
+    if (Object.keys(payload).length === 0) {
+      throw new BadRequestException('At least one payment field is required');
+    }
+
+    const [count, [updatedPayment]] = await this.paymentRepo.update(paymentId, payload);
+
+    if (count === 0) {
+      throw new NotFoundException(`Payment with ID ${paymentId} not found`);
+    }
+
+    return updatedPayment;
   }
 
 }

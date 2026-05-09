@@ -6,6 +6,15 @@ import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
 
+export interface ConsultantSearchFilters {
+  module_id?: number;
+  experience?: number;
+  available_hours?: number;
+  min_rate?: number;
+  max_rate?: number;
+  country?: string;
+}
+
 class UserRepository {
   private readonly userModel: typeof User;
 
@@ -108,24 +117,62 @@ class UserRepository {
     return { data: rows, total: count, page, limit };
   }
 
-  async findAllUsersWithConsultants(status?: string): Promise<User[]> {
+  async findAllUsersWithConsultants(
+    status?: string,
+    filters: ConsultantSearchFilters = {},
+  ): Promise<User[]> {
+    const consultantWhere: any = {};
+    const userWhere: any = {
+      role: UserRole.CONSULTANT,
+      ...(status ? { status } : {}),
+    };
+    const moduleWhere: any = {};
+    const moduleEntityWhere: any = {};
+
+    if (filters.country) {
+      userWhere.country = { [Op.iLike]: `%${filters.country}%` };
+    }
+
+    if (filters.experience !== undefined) {
+      consultantWhere.experience = { [Op.gte]: filters.experience };
+    }
+
+    if (filters.available_hours !== undefined) {
+      consultantWhere.weekly_available_hours = { [Op.lt]: filters.available_hours };
+    }
+
+    if (filters.min_rate !== undefined || filters.max_rate !== undefined) {
+      consultantWhere.rate = {
+        ...(filters.min_rate !== undefined ? { [Op.gte]: filters.min_rate } : {}),
+        ...(filters.max_rate !== undefined ? { [Op.lte]: filters.max_rate } : {}),
+      };
+    }
+
+    if (filters.module_id !== undefined) {
+      moduleWhere.module_id = filters.module_id;
+      moduleEntityWhere.is_core = true;
+    }
+
     return await this.userModel.findAll({
-      where: { role: UserRole.CONSULTANT, ...(status ? { status } : {}), },
-      attributes: ['id', 'username', 'status'],
+      where: userWhere,
+      attributes: ['id', 'username', 'status', 'country'],
       include: [
         {
           model: Consultant,
           required: true,
+          where: consultantWhere,
           attributes: [ 'weekly_available_hours', 'rate', 'experience', 'working_schedule' ],
         },
         {
           model: ConsultantModule,
-          required: false,
+          required: filters.module_id !== undefined,
+          where: moduleWhere,
           attributes: ['id'],
           include: [
             {
               model: ModuleEntity,
               required: true,
+              where: moduleEntityWhere,
               attributes: ['id', 'name', 'is_core'],
             },
           ],

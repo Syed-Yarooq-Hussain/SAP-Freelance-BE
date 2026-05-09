@@ -73,7 +73,7 @@ export class LinkedinAuthMiddleware implements NestMiddleware {
       // Call it as a middleware
       this.logger.log('🔵 Calling passport.authenticate()');
       authenticate(req, res, callback);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error('❌ Middleware exception:', {
         message: error.message,
         stack: error.stack,

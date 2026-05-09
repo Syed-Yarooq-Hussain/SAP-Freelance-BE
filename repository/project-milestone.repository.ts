@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectMilestone } from '../models/project-milestone.model';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class ProjectMilestoneRepository {
@@ -66,4 +67,23 @@ export class ProjectMilestoneRepository {
   ) {
     return this.projectMilestoneModel.bulkCreate(data, { transaction });
   }
+
+  async findOverlapping(
+  projectId: number,
+  startDate: Date,
+  dueDate: Date,
+  excludeId?: number,
+): Promise<ProjectMilestone | null> {
+  const where: any = {
+    project_id: projectId,
+    start_date: { [Op.lte]: dueDate },
+    due_date: { [Op.gte]: startDate },
+  };
+
+  if (excludeId) {
+    where.id = { [Op.ne]: excludeId };
+  }
+
+  return this.projectMilestoneModel.findOne({ where });
+}
 }

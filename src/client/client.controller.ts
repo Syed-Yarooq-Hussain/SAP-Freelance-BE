@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { GetClientConsultantsQueryDto } from './dto/get-consultants-query.dto';
 
 @ApiTags('Clients')
 @Controller('clients')
@@ -12,10 +13,10 @@ export class ClientController {
 
   // ✅ Get All Consultants
   @Get('consultants')
-  @ApiOperation({ summary: '+ all consultants' })
-  getAllConsultants() {
+  @ApiOperation({ summary: 'Get all consultants' })
+  getAllConsultants(@Query() query: GetClientConsultantsQueryDto) {
     console.log('Fetching all consultants');
-    return this.clientService.getAllConsultants();
+    return this.clientService.getAllConsultants(query);
   }
   // ✅ Create Client
   @Post()

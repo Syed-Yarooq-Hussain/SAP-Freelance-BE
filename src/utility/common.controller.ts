@@ -182,4 +182,13 @@ export class CommonController {
     if (!file) throw new BadRequestException('Excel file required');
     return this.commonService.readExcelWithDriveProfiles(file);
   }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('type') type: string,
+  ) {
+    return this.commonService.uploadDocument(file, type);
+  }
 }

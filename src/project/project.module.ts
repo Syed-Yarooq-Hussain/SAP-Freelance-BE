@@ -25,6 +25,8 @@ import { ProjectDetail } from 'models/project-detail.model';
 import { ProjectDetailRepository } from 'repository/project-detail.repository';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantRepository } from 'repository/consultant.repository';
+import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
+import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Module({
   imports: [
@@ -37,7 +39,8 @@ import { ConsultantRepository } from 'repository/consultant.repository';
       ProjectTask,
       ProjectDetail,
       User,
-      Consultant
+      Consultant,
+      ConsultantMonthlyBill
     ]),
   ],
   controllers: [ProjectController],
@@ -51,7 +54,8 @@ import { ConsultantRepository } from 'repository/consultant.repository';
     ProjectTaskRepository,
     ProjectDetailRepository,
     UserRepository,
-    ConsultantRepository
+    ConsultantRepository,
+    ConsultantMonthlyBillRepository
   ],
   exports: [
     ProjectRepository,

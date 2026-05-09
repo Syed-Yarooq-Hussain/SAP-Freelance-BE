@@ -9,10 +9,32 @@ import { ProjectRepository } from '../../repository/project.repository';
 import { Project } from 'models/project.model';
 import { ProjectPayment } from 'models/project-payment.model';
 import { ProjectPaymentRepository } from 'repository/project-payment.repository';
+import { ProjectMilestone } from 'models/project-milestone.model';
+import { Document } from 'models/document.model';
+import { Meeting } from 'models/meeting.model';
+import { MeetingInvitee } from 'models/meeting-invitee.model';
+import { MeetingRepository } from 'repository/meeting.repository';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Consultant, Project, ProjectPayment])],
+  imports: [
+    SequelizeModule.forFeature([
+      User,
+      Consultant,
+      Project,
+      ProjectPayment,
+      ProjectMilestone,
+      Document,
+      Meeting,
+      MeetingInvitee,
+    ]),
+  ],
   controllers: [ClientController],
-  providers: [ClientService, UserRepository, ProjectRepository, ProjectPaymentRepository],
+  providers: [
+    ClientService,
+    UserRepository,
+    ProjectRepository,
+    ProjectPaymentRepository,
+    MeetingRepository,
+  ],
 })
 export class ClientModule {}

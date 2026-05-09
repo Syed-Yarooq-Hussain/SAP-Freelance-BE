@@ -22,6 +22,7 @@ import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
+import { DocumentRepository } from 'repository/document.repository';
 
 @Injectable()
 export class CommonService {
@@ -31,6 +32,7 @@ export class CommonService {
     private readonly consultantRepo: ConsultantRepository,
     private readonly moduleRepo: ModuleRepository,
     private readonly industriesRepo: IndustriesRepository,
+    private readonly documentRepo: DocumentRepository,
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(Consultant) private readonly consultantModel: typeof Consultant,
   ) { }
@@ -340,7 +342,7 @@ export class CommonService {
             const text = await extractTextFromBuffer(buffer);
             profileInfo = this.extractProfileFromText(text);
           } catch (err) {
-            profileInfo = { error: err?.message ?? 'Unknown error' };
+            profileInfo = { error: err ?? 'Unknown error' };
           }
         }
 
@@ -478,6 +480,33 @@ export class CommonService {
       phone: phoneMatch?.[0]?.trim() ?? null,
       city: cityMatch?.[1] ?? null,
       linkedin_url: linkedinMatch?.[0] ?? null,
+    };
+  }
+
+
+  async uploadDocument(
+    file: Express.Multer.File,
+    type: string,
+  ) {
+    // Upload file to S3
+    const fileUrl = await this.uploadToS3({
+      file: file.buffer,
+      folder: 'documents',
+      filename: file.originalname,
+      mimetype: file.mimetype,
+    });
+
+    // Save in DB
+    const document = await this.documentRepo.create({
+      url: fileUrl,
+      type,
+    });
+
+    // Return response
+    return {
+      id: document.id,
+      url: document.url,
+      type: document.type,
     };
   }
 
