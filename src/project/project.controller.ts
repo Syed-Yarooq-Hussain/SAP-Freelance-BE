@@ -1,5 +1,6 @@
-import {Body,Controller,Delete,Get,Param,Post,Put, Query, Req, UseGuards,} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {Body,Controller,Delete,Get,Param,Post,Put, Query, Req, UploadedFile, UseGuards, UseInterceptors, BadRequestException,} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ProjectService } from './project.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectConsultantDto, UpdateProjectConsultantStatusDto } from './dto/create-project-consultant.dto';
@@ -9,6 +10,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ConsultantStatus } from 'constant/enums';
 import { CreateProjectTaskDto, UpdateProjectTaskDto } from './dto/project_task.dto';
 import { GetConsultantsQueryDto } from './dto/get-query.dto';
+import { UploadProjectDocumentDto } from './dto/upload-project-document.dto';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -51,6 +53,33 @@ export class ProjectController {
   @ApiBody({ type: CreateProjectConsultantDto })
   addConsultant(@Param('id') projectId: string, @Body() body: CreateProjectConsultantDto[]) {
     return this.projectService.addConsultant(body, +projectId );
+  }
+
+  @Post('documents/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload a project document' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'project_id', 'user_id', 'type'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        project_id: { type: 'number' },
+        user_id: { type: 'number' },
+        type: { type: 'string' },
+      },
+    },
+  })
+  uploadProjectDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: UploadProjectDocumentDto,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File required');
+    }
+
+    return this.projectService.uploadProjectDocument(body, file);
   }
 
   @Get(':id/consultants')

@@ -14,6 +14,8 @@ import { Document } from 'models/document.model';
 import { Meeting } from 'models/meeting.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { MeetingRepository } from 'repository/meeting.repository';
+import { ProjectConsultant } from 'models/project-consultant.model';
+import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
 
 @Module({
   imports: [
@@ -26,6 +28,7 @@ import { MeetingRepository } from 'repository/meeting.repository';
       Document,
       Meeting,
       MeetingInvitee,
+      ProjectConsultant,
     ]),
   ],
   controllers: [ClientController],
@@ -35,6 +38,7 @@ import { MeetingRepository } from 'repository/meeting.repository';
     ProjectRepository,
     ProjectPaymentRepository,
     MeetingRepository,
+    ProjectConsultantRepository,
   ],
 })
 export class ClientModule {}

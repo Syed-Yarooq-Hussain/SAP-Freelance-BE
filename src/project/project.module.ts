@@ -10,6 +10,7 @@ import { ProjectIndustry } from '../../models/project-industries.model';
 import { ProjectMilestone } from '../../models/project-milestone.model';
 import { ProjectPayment } from '../../models/project-payment.model';
 import { ProjectTask } from '../../models/project-task.model';
+import { ProjectDocument } from '../../models/project-document.model';
 
 
 // ✅ Repositories Import
@@ -27,9 +28,12 @@ import { Consultant } from 'models/consultant.model';
 import { ConsultantRepository } from 'repository/consultant.repository';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
+import { ProjectDocumentRepository } from 'repository/project-document.repository';
+import { CommonModule } from 'src/utility/common.module';
 
 @Module({
   imports: [
+    CommonModule,
     SequelizeModule.forFeature([
       Project,
       ProjectConsultant,
@@ -40,7 +44,8 @@ import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-b
       ProjectDetail,
       User,
       Consultant,
-      ConsultantMonthlyBill
+      ConsultantMonthlyBill,
+      ProjectDocument
     ]),
   ],
   controllers: [ProjectController],
@@ -55,7 +60,8 @@ import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-b
     ProjectDetailRepository,
     UserRepository,
     ConsultantRepository,
-    ConsultantMonthlyBillRepository
+    ConsultantMonthlyBillRepository,
+    ProjectDocumentRepository
   ],
   exports: [
     ProjectRepository,
@@ -66,7 +72,8 @@ import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-b
     ProjectTaskRepository,
     ProjectDetailRepository,
     UserRepository,
-    ConsultantRepository
+    ConsultantRepository,
+    ProjectDocumentRepository
   ],
 })
 export class ProjectModule {}
