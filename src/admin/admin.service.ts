@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UserRepository } from 'repository/user.repository';
 import { getAdminsClientResponse, getAdminsConsultantResponse, getAdminsProjectResponse } from './transformer/response.transformer';
@@ -67,6 +67,28 @@ export class AdminService {
     return {
       client_payments: clientPayments,
       consultant_payments: consultantPayments,
+    };
+  }
+
+  async getConsultantPayments(userId?: number) {
+    if (userId) {
+      return this.monthlyBillRepo.findByConsultant(userId);
+    }
+
+    return this.monthlyBillRepo.findAllForAdmin();
+  }
+
+  async markConsultantPaymentPaid(id: number, body: { pdf_url?: string }) {
+    const bill = await this.monthlyBillRepo.findById(id);
+    if (!bill) {
+      throw new NotFoundException('Consultant payment not found');
+    }
+
+    await this.monthlyBillRepo.markPaid(id, body?.pdf_url || null);
+
+    return {
+      message: 'Consultant payment marked as paid',
+      id,
     };
   }
 

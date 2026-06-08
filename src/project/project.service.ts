@@ -392,6 +392,7 @@ private async calculateAndSyncPayments(
           month: mb.month,
           hours: mb.hours,
           amount: parseFloat(monthlyAmount.toFixed(2)),
+          bill_type: 'auto',
           is_paid: false,
           pdf_url: null,
         });

@@ -11,12 +11,13 @@ import { IndustriesRepository } from 'repository/indutries.repository';
 import { ProjectPayment } from 'models/project-payment.model';
 import { ProjectPaymentRepository } from 'repository/project-payment.repository';
 import { ProjectMilestone } from 'models/project-milestone.model';
+import { ProjectTask } from 'models/project-task.model';
 import { Document } from 'models/document.model';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill])],
+  imports: [SequelizeModule.forFeature([User, Project, Industries, ProjectPayment, ProjectMilestone, ProjectTask, Document, ConsultantMonthlyBill])],
   controllers: [AdminController],
   providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository],
   exports: [AdminService],

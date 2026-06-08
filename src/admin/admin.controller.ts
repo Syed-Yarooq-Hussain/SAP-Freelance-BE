@@ -43,12 +43,22 @@ export class AdminController {
 
   @Post('consultant/payment')
   createConsultantPayment(@Body() body: any) {
-    return null;
+    return this.adminService.getConsultantPayments();
   }
   
   @Get('consultant/payment/:userId')
-  getConsultantPayment() {
-    return null;
+  getConsultantPayment(@Param('userId') userId: string) {
+    return this.adminService.getConsultantPayments(+userId);
+  }
+
+  @Get('consultant/payments')
+  getConsultantPayments() {
+    return this.adminService.getConsultantPayments();
+  }
+
+  @Patch('consultant/payment/:id/paid')
+  markConsultantPaymentPaid(@Param('id') id: string, @Body() body: { pdf_url?: string }) {
+    return this.adminService.markConsultantPaymentPaid(+id, body);
   }
 
   // 🏭 Industries CRUD Endpoints
