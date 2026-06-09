@@ -350,7 +350,7 @@ export class AuthService {
         token,
         user,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.log(`[AuthService][ERROR] LinkedIn login error`, error?.stack || error?.message || String(error));
       throw new CustomError(500, `LinkedIn login failed: ${error.message}`);
     }
@@ -397,7 +397,7 @@ export class AuthService {
       user.email,
       EmailType.SIGNUP_VERIFICATION,
       user.username ?? null,
-      'SAP Freelance Portal',
+      'Consultcrew',
       verifyLink
     );
 
@@ -471,7 +471,7 @@ export class AuthService {
       user.email,
       EmailType.RESET_PASSWORD,
       user.username || 'User',
-      'SAP Freelance Portal',
+      'Consultcrew',
       resetLink
     );
 

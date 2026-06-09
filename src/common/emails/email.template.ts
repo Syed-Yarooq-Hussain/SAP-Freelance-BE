@@ -28,7 +28,7 @@ export const verifyEmailTemplate = (
       <p>Hello,</p>
 
       <p style="color:#555; line-height:1.6;">
-        You have requested email verification for your SAP Freelance Portal account.
+        You have requested email verification for your Consultcrew account.
         To complete the verification process, please click on the button below.
       </p>
 
@@ -55,7 +55,7 @@ export const verifyEmailTemplate = (
       <br/>
 
       <p>Best regards,</p>
-      <b>SAP Freelance Portal</b>
+      <b>Consultcrew Team</b>
     </div>
   </div>
 `;
@@ -72,7 +72,7 @@ export const resetPasswordTemplate = (
       <p>Hi,</p>
 
       <p style="color:#555; line-height:1.6;">
-        We received a request to reset the password for your account on SAP Freelance Portal.
+        We received a request to reset the password for your account on Consultcrew Portal.
       </p>
 
       <p style="color:#555;">
@@ -104,7 +104,7 @@ export const resetPasswordTemplate = (
       </p>
 
       <br/>
-      <b>SAP Freelance Portal</b>
+      <b>Consultcrew Team</b>
     </div>
   </div>
 `;

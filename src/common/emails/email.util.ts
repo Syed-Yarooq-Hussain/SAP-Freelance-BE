@@ -21,7 +21,7 @@ export async function sendEmail(
         break;
 
       case EmailType.INVITE:
-        message = "You have received the portal invite.";
+        message = "You have received the Consultcrew invite.";
         break;
 
       case EmailType.NDA:
@@ -36,7 +36,7 @@ export async function sendEmail(
         message = "Your bill has been generated.";
         break;
       case EmailType.WELCOME:
-        message = "Welcome to our portal!";
+        message = "Welcome to Consultcrew portal!";
         break;
       case EmailType.SIGNUP:
         message = "Your signup has been confirmed.";
@@ -72,25 +72,25 @@ export async function sendEmail(
     try {
       if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
         info = await resend.emails.send({
-          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
-          subject: `P9 System: Verify your Email`,
+          subject: `Consultcrew: Verify your Email`,
           html: verifyEmailTemplate(receiverName, verifyLink),
         });
 
       } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
         console.log("Sending reset password email to:", to);
         info = await resend.emails.send({
-          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
-          subject: `P9 System: Password Reset Request`,
+          subject: `Consultcrew: Password Reset Request`,
           html: resetPasswordTemplate(verifyLink),
         });
       } else {
         info = await resend.emails.send({
-          from: `P9 System <no-reply@safeedposhkarachi.xyz>`,
+          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
-          subject: `Notification: ${type}`,
+          subject: `Consultcrew: Notification`,
           html: generalTemplate(receiverName, message, senderName),
         });
       }
