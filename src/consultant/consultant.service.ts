@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
@@ -153,9 +153,130 @@ export class ConsultantService {
     };
   }
 
+  private normalizeSchedulePayload(body: any) {
+    const payload = body?.working_schedule || body?.schedule || body || {};
+
+    return {
+      weekly: Array.isArray(payload.weekly) ? payload.weekly : [],
+      custom: Array.isArray(payload.custom)
+        ? payload.custom
+        : payload.date
+          ? [payload]
+          : [],
+    };
+  }
+
+  private mergeSchedule(existingSchedule: any, scheduleUpdate: any) {
+    const existing = {
+      weekly: Array.isArray(existingSchedule?.weekly) ? existingSchedule.weekly : [],
+      custom: Array.isArray(existingSchedule?.custom) ? existingSchedule.custom : [],
+    };
+
+    const update = this.normalizeSchedulePayload(scheduleUpdate);
+
+    const weeklyByDay = new Map<string, any>();
+    for (const item of existing.weekly) {
+      if (item?.day) weeklyByDay.set(item.day, item);
+    }
+    for (const item of update.weekly) {
+      if (item?.day) weeklyByDay.set(item.day, item);
+    }
+
+    const customByDate = new Map<string, any>();
+    for (const item of existing.custom) {
+      if (item?.date) customByDate.set(item.date, item);
+    }
+    for (const item of update.custom) {
+      if (item?.date) customByDate.set(item.date, item);
+    }
+
+    return {
+      weekly: Array.from(weeklyByDay.values()),
+      custom: Array.from(customByDate.values()).sort((a, b) =>
+        String(a.date).localeCompare(String(b.date)),
+      ),
+    };
+  }
+
+  private generateWeekSchedule(totalHours: number) {
+    const weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    const dailyHours = Number(totalHours || 0) / 5;
+    const startHour = 9;
+    const endHour = startHour + dailyHours;
+
+    const formatTime = (hour: number) => {
+      const h = Math.floor(hour);
+      const m = Math.round((hour - h) * 60);
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    return {
+      weekly: weekdays.map((day) => {
+        if (day === 'Saturday' || day === 'Sunday' || dailyHours <= 0) {
+          return { day, active: false, slot: [] };
+        }
+
+        return {
+          day,
+          active: true,
+          slot: [{ start: formatTime(startHour), end: formatTime(endHour) }],
+        };
+      }),
+      custom: [],
+    };
+  }
+
+  private timeToMinutes(value: string) {
+    const [hours, minutes] = String(value || '00:00').split(':').map(Number);
+    return (hours || 0) * 60 + (minutes || 0);
+  }
+
+  private getWeeklyScheduleHours(schedule: any) {
+    return (schedule?.weekly || []).reduce((total: number, day: any) => {
+      if (!day?.active) return total;
+
+      const dayMinutes = (day.slot || []).reduce((sum: number, slot: any) => {
+        const start = this.timeToMinutes(slot.start);
+        const end = this.timeToMinutes(slot.end);
+        return end > start ? sum + (end - start) : sum;
+      }, 0);
+
+      return total + dayMinutes / 60;
+    }, 0);
+  }
+
+  private validateScheduleAgainstWeeklyHours(schedule: any, weeklyAvailableHours: number) {
+    const allowedHours = Number(weeklyAvailableHours || 0);
+    const scheduleHours = this.getWeeklyScheduleHours(schedule);
+
+    if (scheduleHours > allowedHours) {
+      throw new BadRequestException(
+        `Schedule hours (${scheduleHours}) cannot be greater than weekly available hours (${allowedHours})`,
+      );
+    }
+  }
+
   async setConsultantSchedule(id: number, body: any) {
-    await this.consultantRepository.updateByUserId(id, {working_schedule: body});
-    return body;
+    const consultant = await this.consultantRepository.getSchedulesByUserId(id);
+    const mergedSchedule = this.mergeSchedule(consultant?.working_schedule, body);
+    this.validateScheduleAgainstWeeklyHours(
+      mergedSchedule,
+      consultant?.weekly_available_hours,
+    );
+
+    await this.consultantRepository.updateByUserId(id, {
+      working_schedule: mergedSchedule,
+    });
+
+    return mergedSchedule;
   }
 
   async getConsultantSchedule(id: number, month: number, year: number) {
@@ -164,7 +285,7 @@ export class ConsultantService {
   const meetings =
     await this.meetingRepo.getMeetingWithDetails(id);
 
-  const monthlySchedule = await buildMonthlySchedule(year, month, consultant.working_schedule);
+  const monthlySchedule = await buildMonthlySchedule(year, month, consultant?.working_schedule || { weekly: [], custom: [] });
 
   const eventsByDate = groupEventsByDate(meetings);
 
@@ -218,8 +339,22 @@ export class ConsultantService {
     if (updateDto.consultant?.weekly_available_hours !== undefined)
       consultantFields.weekly_available_hours = updateDto.consultant.weekly_available_hours;
     // ✅ Working schedule comes directly from FE
-      if (updateDto.consultant?.working_schedule)
-        consultantFields.working_schedule = updateDto.consultant.working_schedule;
+      if (updateDto.consultant?.working_schedule) {
+        const mergedSchedule = this.mergeSchedule(
+          consultant.working_schedule,
+          updateDto.consultant.working_schedule,
+        );
+
+        this.validateScheduleAgainstWeeklyHours(
+          mergedSchedule,
+          updateDto.consultant?.weekly_available_hours ?? consultant.weekly_available_hours,
+        );
+        consultantFields.working_schedule = mergedSchedule;
+      } else if (updateDto.consultant?.weekly_available_hours !== undefined) {
+        consultantFields.working_schedule = this.generateWeekSchedule(
+          Number(updateDto.consultant.weekly_available_hours || 0),
+        );
+      }
   
       if (updateDto.consultant?.cv_url) consultantFields.cv_url = updateDto.consultant.cv_url;
       if (updateDto.consultant?.clients_summary) consultantFields.clients_summary = updateDto.consultant.clients_summary;
@@ -471,7 +606,7 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? consultant.weekly_available_hours * consultant.rate * 90
+            ? consultant.weekly_available_hours * consultant.rate * 12 
             : 0;
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
@@ -659,9 +794,11 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? consultant.weekly_available_hours * consultant.rate * 90
+            ? (consultant.weekly_available_hours/5) * consultant.rate * 66
             : 0;
-
+        console.log('Projected Earning:', projectedEarning);
+        console.log('Projected Earning:', consultant.weekly_available_hours);
+        console.log('Projected Earning:', consultant.rate);
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills
           .filter(bill => bill.is_paid)

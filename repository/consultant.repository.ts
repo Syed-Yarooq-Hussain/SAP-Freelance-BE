@@ -69,7 +69,7 @@ async createDetail(dto: any) {
   async getSchedulesByUserId(id: number): Promise<Consultant | null> 
   {
     return this.consultantModel.findOne({ where: { user_id: id },
-      attributes: ['working_schedule'],
+      attributes: ['working_schedule', 'weekly_available_hours'],
     });
   }
 
