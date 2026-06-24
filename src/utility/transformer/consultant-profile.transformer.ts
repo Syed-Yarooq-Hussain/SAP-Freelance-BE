@@ -1,5 +1,14 @@
 import { UserRole, UserStatus } from "constant/enums";
 
+function limitText(value: any, maxLength: number) {
+    if (typeof value !== 'string') return value ?? null;
+
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized.length > maxLength
+        ? normalized.slice(0, maxLength).trim()
+        : normalized;
+}
+
 export function consultantRegistertObjectTransformer(user: any) {
     let transformed: any = {};
     transformed = {
@@ -10,7 +19,7 @@ export function consultantRegistertObjectTransformer(user: any) {
             rate: null,
             weekly_available_hours: null,
             cv_url: "",
-            clients_summary: user.profile_summary,
+            clients_summary: limitText(user.clients_summary ?? user.profile_summary, 100),
             skills: user.skills,
             work_experiences: user.work_experiences,
             projects: user.projects,

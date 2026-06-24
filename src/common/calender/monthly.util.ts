@@ -1,54 +1,63 @@
 export async function buildMonthlySchedule(
   year: number,
   month: number,
-  scheduleConfig: any
+  scheduleConfig: any,
 ) {
+  const config = scheduleConfig || {};
   const dates = getDatesOfMonth(year, month);
 
   return {
     month: `${year}-${String(month).padStart(2, '0')}`,
-    days: dates.map(date => {
+    days: dates.map((date) => {
       const dayName = getDayName(date);
-
-      // 1️⃣ custom override
-      const custom = findCustomSchedule(scheduleConfig.custom || [], date);
+      const custom = findCustomSchedule(config.custom || [], date);
 
       if (custom) {
         return {
           date,
-          day_name: dayName, 
+          day_name: dayName,
           availability: {
             available: custom.active,
-            slots: (custom.slot || []).map(s => ({
-              start_time: s.start,
-              end_time: s.end
-            }))
+            slots: (custom.slot || []).map((slot) => ({
+              start_time: slot.start,
+              end_time: slot.end,
+            })),
           },
-          events: []
+          events: [],
         };
       }
 
-      // 2️⃣ weekly fallback
-      const weekly = findWeeklySchedule(scheduleConfig.weekly || [], dayName);
+      if (!isWithinScheduleWindow(config, date)) {
+        return {
+          date,
+          day_name: dayName,
+          availability: {
+            available: false,
+            slots: [],
+          },
+          events: [],
+        };
+      }
+
+      const weekly = findWeeklySchedule(config.weekly || [], dayName);
 
       return {
         date,
-        day_name: dayName, 
+        day_name: dayName,
         availability: {
           available: weekly?.active ?? false,
           slots: weekly?.active
-            ? (weekly.slot || []).map(s => ({
-                start_time: s.start,
-                end_time: s.end
+            ? (weekly.slot || []).map((slot) => ({
+                start_time: slot.start,
+                end_time: slot.end,
               }))
-            : []
+            : [],
         },
-        events: []
+        events: [],
       };
-    })
+    }),
   };
 }
-
 
 function getDatesOfMonth(year: number, month: number): string[] {
   const dates: string[] = [];
@@ -62,16 +71,25 @@ function getDatesOfMonth(year: number, month: number): string[] {
   return dates;
 }
 
-
 function getDayName(date: string): string {
   return new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
 }
 
-
 function findCustomSchedule(custom: any[], date: string) {
-  return custom.find(c => c.date === date);
+  return custom.find((item) => item.date === date);
 }
 
 function findWeeklySchedule(weekly: any[], dayName: string) {
-  return weekly.find(w => w.day === dayName);
+  return weekly.find((item) => item.day === dayName);
+}
+
+function isWithinScheduleWindow(scheduleConfig: any, date: string) {
+  const effectiveFrom = scheduleConfig?.effective_from;
+  const effectiveTo = scheduleConfig?.effective_to;
+
+  if (!effectiveFrom && !effectiveTo) return true;
+  if (effectiveFrom && date < effectiveFrom) return false;
+  if (effectiveTo && date > effectiveTo) return false;
+
+  return true;
 }

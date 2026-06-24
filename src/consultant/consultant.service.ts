@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
@@ -21,6 +21,7 @@ import { profile } from 'console';
 import { create } from 'domain';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 import { groupBillsByMonth } from './transformer/monthly-bill.transformer';
+import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -163,6 +164,8 @@ export class ConsultantService {
         : payload.date
           ? [payload]
           : [],
+      effective_from: payload.effective_from,
+      effective_to: payload.effective_to,
     };
   }
 
@@ -191,6 +194,14 @@ export class ConsultantService {
     }
 
     return {
+      effective_from:
+        update.effective_from ||
+        existingSchedule?.effective_from ||
+        undefined,
+      effective_to:
+        update.effective_to ||
+        existingSchedule?.effective_to ||
+        undefined,
       weekly: Array.from(weeklyByDay.values()),
       custom: Array.from(customByDate.values()).sort((a, b) =>
         String(a.date).localeCompare(String(b.date)),
@@ -219,6 +230,7 @@ export class ConsultantService {
     };
 
     return {
+      ...createThreeMonthScheduleWindow(),
       weekly: weekdays.map((day) => {
         if (day === 'Saturday' || day === 'Sunday' || dailyHours <= 0) {
           return { day, active: false, slot: [] };
@@ -234,43 +246,14 @@ export class ConsultantService {
     };
   }
 
-  private timeToMinutes(value: string) {
-    const [hours, minutes] = String(value || '00:00').split(':').map(Number);
-    return (hours || 0) * 60 + (minutes || 0);
-  }
-
-  private getWeeklyScheduleHours(schedule: any) {
-    return (schedule?.weekly || []).reduce((total: number, day: any) => {
-      if (!day?.active) return total;
-
-      const dayMinutes = (day.slot || []).reduce((sum: number, slot: any) => {
-        const start = this.timeToMinutes(slot.start);
-        const end = this.timeToMinutes(slot.end);
-        return end > start ? sum + (end - start) : sum;
-      }, 0);
-
-      return total + dayMinutes / 60;
-    }, 0);
-  }
-
-  private validateScheduleAgainstWeeklyHours(schedule: any, weeklyAvailableHours: number) {
-    const allowedHours = Number(weeklyAvailableHours || 0);
-    const scheduleHours = this.getWeeklyScheduleHours(schedule);
-
-    if (scheduleHours > allowedHours) {
-      throw new BadRequestException(
-        `Schedule hours (${scheduleHours}) cannot be greater than weekly available hours (${allowedHours})`,
-      );
-    }
-  }
-
   async setConsultantSchedule(id: number, body: any) {
     const consultant = await this.consultantRepository.getSchedulesByUserId(id);
     const mergedSchedule = this.mergeSchedule(consultant?.working_schedule, body);
-    this.validateScheduleAgainstWeeklyHours(
-      mergedSchedule,
-      consultant?.weekly_available_hours,
-    );
+    const update = this.normalizeSchedulePayload(body);
+
+    if (update.weekly.length && !update.effective_from && !update.effective_to) {
+      Object.assign(mergedSchedule, createThreeMonthScheduleWindow());
+    }
 
     await this.consultantRepository.updateByUserId(id, {
       working_schedule: mergedSchedule,
@@ -308,7 +291,9 @@ export class ConsultantService {
     if (updateDto.user?.city) userFields.city = updateDto.user.city;
     if (updateDto.user?.country) userFields.country = updateDto.user.country;
     if (updateDto.user?.currency) userFields.currency = updateDto.user.currency;
-    if (updateDto.user?.linkedin_url) userFields.linkedin_url = updateDto.user.linkedin_url;
+    if (updateDto.user?.linkedin_url && !user.linkedin_sso_connected) {
+      userFields.linkedin_url = updateDto.user.linkedin_url;
+    }
   
     if (updateDto.user && Object.prototype.hasOwnProperty.call(updateDto.user, 'avatar')) { 
       userFields.avatar = updateDto.user.avatar ?? ''; 
@@ -344,11 +329,18 @@ export class ConsultantService {
           consultant.working_schedule,
           updateDto.consultant.working_schedule,
         );
-
-        this.validateScheduleAgainstWeeklyHours(
-          mergedSchedule,
-          updateDto.consultant?.weekly_available_hours ?? consultant.weekly_available_hours,
+        const scheduleUpdate = this.normalizeSchedulePayload(
+          updateDto.consultant.working_schedule,
         );
+
+        if (
+          scheduleUpdate.weekly.length &&
+          !scheduleUpdate.effective_from &&
+          !scheduleUpdate.effective_to
+        ) {
+          Object.assign(mergedSchedule, createThreeMonthScheduleWindow());
+        }
+
         consultantFields.working_schedule = mergedSchedule;
       } else if (updateDto.consultant?.weekly_available_hours !== undefined) {
         consultantFields.working_schedule = this.generateWeekSchedule(
@@ -683,39 +675,41 @@ export class ConsultantService {
         };
       }
 
-      calculateProfileStrength(consultant: any): string {
-        const modules =
-          consultant?.user?.modules?.filter((m: any) => m?.deleted_at == null) ?? [];
-        const hasCoreModules = modules.some((m: any) => m.is_primary);
-        const hasOtherModules = modules.some((m: any) => !m.is_primary);
+      private hasProfileValue(value: any): boolean {
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (typeof value === 'number') return value > 0;
+        if (typeof value === 'boolean') return value;
+        if (value && typeof value === 'object') return Object.keys(value).length > 0;
+        return value !== null && value !== undefined;
+      }
 
-        const hasText = (value: unknown) =>
-          typeof value === 'string' && value.trim().length > 0;
-        const hasList = (value: unknown) =>
-          Array.isArray(value) && value.length > 0;
-        const hasNumber = (value: unknown) =>
-          value != null && value !== '' && !Number.isNaN(Number(value));
+      calculateProfileStrength(consultant: any): string {
+        const modules = consultant?.user?.modules || [];
+        const coreModules = modules.filter((module: any) => module?.is_primary);
+        const otherModules = modules.filter((module: any) => !module?.is_primary);
 
         const fields = [
-          hasNumber(consultant?.rate), // Hourly Rate
-          hasNumber(consultant?.weekly_available_hours), // Weekly Availability
-          hasCoreModules, // Core Modules
-          hasOtherModules, // Other Modules
-          hasText(consultant?.user?.email), // Email Address
-          hasList(consultant?.industries) || hasText(consultant?.industries), // Industry Focus
-          hasText(consultant?.user?.linkedin_url), // Linkedin URL
-          hasText(consultant?.professional_headline), // Professional Headline
-          hasList(consultant?.work_experiences), // Work Experience
-          hasList(consultant?.education), // Education
-          hasText(consultant?.user?.avatar), // Photo
-          hasList(consultant?.certification) || consultant?.is_certified, // Certifications
-          hasList(consultant?.projects), // Projects
-          hasNumber(consultant?.experience), // Experience
-          hasText(consultant?.user?.phone), // Phone Number
+          this.hasProfileValue(consultant?.rate),
+          this.hasProfileValue(consultant?.weekly_available_hours),
+          coreModules.length > 0,
+          otherModules.length > 0,
+          this.hasProfileValue(consultant?.user?.email),
+          this.hasProfileValue(consultant?.industries),
+          this.hasProfileValue(consultant?.user?.linkedin_url),
+          this.hasProfileValue(consultant?.professional_headline),
+          this.hasProfileValue(consultant?.work_experiences),
+          this.hasProfileValue(consultant?.education),
+          this.hasProfileValue(consultant?.user?.avatar),
+          this.hasProfileValue(consultant?.certification) || consultant?.is_certified === true,
+          this.hasProfileValue(consultant?.projects),
+          this.hasProfileValue(consultant?.experience),
+          this.hasProfileValue(consultant?.user?.phone),
         ];
 
-        const filledCount = fields.filter(Boolean).length;
-        const score = Math.round((filledCount / fields.length) * 100);
+        const completed = fields.filter(Boolean).length;
+        const score = Math.round((completed / fields.length) * 100);
+        
         return `${score}%`;
       }
 

@@ -13,6 +13,7 @@ import { extractText, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 import { UpdateConsultantDetailDto } from './dto/register-consultant.dto';
 import * as crypto from 'crypto';
 import { sendEmail } from 'src/common/emails/email.util';
+import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
 
 @Injectable()
 export class AuthService {
@@ -249,6 +250,7 @@ export class AuthService {
     `${Math.floor(h).toString().padStart(2, "0")}:00`;
 
   return {
+    ...createThreeMonthScheduleWindow(),
     weekly: weekdays.map((day) => {
       if (day === "Saturday" || day === "Sunday") {
         return {
@@ -272,6 +274,23 @@ export class AuthService {
   };
   }
 
+  private getAccurateLinkedInUrl(linkedinUser: any): string | null {
+    const url = linkedinUser?.linkedin_url;
+    if (typeof url !== 'string' || !url.trim()) return null;
+
+    const normalized = url.trim();
+    return /^https:\/\/(www\.)?linkedin\.com\/in\/[^/]+\/?$/i.test(normalized)
+      ? normalized
+      : null;
+  }
+
+  private isGeneratedLinkedInUrl(url: string | null, linkedInId: string) {
+    if (!url || !linkedInId) return false;
+    return (
+      url.replace(/\/$/, '') ===
+      `https://www.linkedin.com/in/${linkedInId}`.replace(/\/$/, '')
+    );
+  }
 
   async loginWithLinkedIn(linkedinUser: any) {
     try {
@@ -288,6 +307,7 @@ export class AuthService {
 
       // Use email if available, otherwise generate unique identifier
       const email = linkedinUser.email || `linkedin_${linkedinUser.linkedin_id}@temp.local`;
+      const linkedinUrl = this.getAccurateLinkedInUrl(linkedinUser);
       
 
       let user = await User.findOne({
@@ -308,7 +328,7 @@ export class AuthService {
           country: null,
           email_verified: true,
           phone_verified: false,
-          linkedin_url: linkedinUser.linkedin_id ? `https://www.linkedin.com/in/${linkedinUser.linkedin_id}` : null,
+          linkedin_url: linkedinUrl,
           linkedin_sso_connected: true,
         });
 
@@ -339,6 +359,18 @@ export class AuthService {
         console.log(`[AuthService][DEBUG] New user created: ${user.id}`);
       } else {
         console.log(`[AuthService][DEBUG] Existing user found: ${user.id}`);
+        const userFields: Partial<User> = {
+          linkedin_sso_connected: true,
+        };
+
+        if (linkedinUrl) {
+          userFields.linkedin_url = linkedinUrl;
+        } else if (this.isGeneratedLinkedInUrl(user.linkedin_url, linkedinUser.linkedin_id)) {
+          userFields.linkedin_url = null;
+        }
+
+        await this.userRepo.updateUser(user.id, userFields);
+        user = await User.findOne({ where: { id: user.id } });
       }
 
       // 🔐 Step 3: SAME JWT as normal login

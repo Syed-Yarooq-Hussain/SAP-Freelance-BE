@@ -30,10 +30,20 @@ async createDetail(dto: any) {
   // 🔎 Get Consultant By User Id
   async findByUserId(userId: number): Promise<Consultant | null> {
     return this.consultantModel.findOne({ where: { user_id: userId },
-      attributes: ['rate', 'experience', 'weekly_available_hours', 'level'],
       include: [{
         model: User,
-        attributes: ['id', 'username', 'email', 'city', 'country'],
+        attributes: [
+          'id',
+          'username',
+          'email',
+          'city',
+          'country',
+          'phone',
+          'avatar',
+          'linkedin_url',
+          'linkedin_sso_connected',
+          'created_at',
+        ],
         include: [{
           model: ConsultantModule,
           attributes: ['id', 'is_primary'],
@@ -52,7 +62,17 @@ async createDetail(dto: any) {
     return this.consultantModel.findOne({ where: { user_id: userId },
       include: [{
         model: User,
-        attributes: ['id', 'username', 'email', 'city', 'country', 'phone', 'avatar', 'linkedin_url'],
+        attributes: [
+          'id',
+          'username',
+          'email',
+          'city',
+          'country',
+          'phone',
+          'avatar',
+          'linkedin_url',
+          'linkedin_sso_connected',
+        ],
         include: [{
           model: ConsultantModule,
           attributes: ['id', 'is_primary'],

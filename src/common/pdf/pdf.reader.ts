@@ -157,6 +157,10 @@ CLIENT SUMMARY (keep as before)
 Include concise SAP consultant summary with:
 Name, Role, Experience, Modules, Industries, Projects, Location, SAP Versions
 
+Rules:
+- Maximum 100 characters
+- One sentence only
+
 -------------------------------------
 IMPORTANT RULES
 -------------------------------------
