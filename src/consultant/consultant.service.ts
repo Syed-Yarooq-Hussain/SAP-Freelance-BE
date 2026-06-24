@@ -684,56 +684,38 @@ export class ConsultantService {
       }
 
       calculateProfileStrength(consultant: any): string {
+        const modules =
+          consultant?.user?.modules?.filter((m: any) => m?.deleted_at == null) ?? [];
+        const hasCoreModules = modules.some((m: any) => m.is_primary);
+        const hasOtherModules = modules.some((m: any) => !m.is_primary);
 
-        let score = 0;
+        const hasText = (value: unknown) =>
+          typeof value === 'string' && value.trim().length > 0;
+        const hasList = (value: unknown) =>
+          Array.isArray(value) && value.length > 0;
+        const hasNumber = (value: unknown) =>
+          value != null && value !== '' && !Number.isNaN(Number(value));
 
-        /* BASIC USER INFO (20) */
-        if (consultant?.user?.username) score += 4;
-        if (consultant?.user?.email) score += 4;
-        if (consultant?.user?.city) score += 4;
-        if (consultant?.user?.country) score += 4;
-        if (consultant?.user?.avatar) score += 4;
+        const fields = [
+          hasNumber(consultant?.rate), // Hourly Rate
+          hasNumber(consultant?.weekly_available_hours), // Weekly Availability
+          hasCoreModules, // Core Modules
+          hasOtherModules, // Other Modules
+          hasText(consultant?.user?.email), // Email Address
+          hasList(consultant?.industries) || hasText(consultant?.industries), // Industry Focus
+          hasText(consultant?.user?.linkedin_url), // Linkedin URL
+          hasText(consultant?.professional_headline), // Professional Headline
+          hasList(consultant?.work_experiences), // Work Experience
+          hasList(consultant?.education), // Education
+          hasText(consultant?.user?.avatar), // Photo
+          hasList(consultant?.certification) || consultant?.is_certified, // Certifications
+          hasList(consultant?.projects), // Projects
+          hasNumber(consultant?.experience), // Experience
+          hasText(consultant?.user?.phone), // Phone Number
+        ];
 
-        /* CONSULTANT CORE (20) */
-        if (consultant?.experience) score += 5;
-        if (consultant?.rate) score += 5;
-        if (consultant?.weekly_available_hours) score += 5;
-        if (consultant?.level) score += 5;
-
-        /* SKILLS (15) */
-        if (consultant?.skills && consultant.skills.length > 0) {
-          score += 15;
-        }
-
-        /* MODULES (10) */
-        if (consultant?.user?.modules?.length > 0) {
-          score += 10;
-        }
-
-        /* CAREER DETAILS (10) */
-        if (consultant?.career_details) score += 5;
-        if (consultant?.clients_summary) score += 5;
-
-        /* WORK EXPERIENCE (10) */
-        if (consultant?.work_experiences?.length > 0) {
-          score += 10;
-        }
-
-        /* EDUCATION (5) */
-        if (consultant?.education?.length > 0) {
-          score += 5;
-        }
-
-        /* CERTIFICATION (5) */
-        if (consultant?.certification?.length > 0 || consultant?.is_certified) {
-          score += 5;
-        }
-
-        /* CV (5) */
-        if (consultant?.cv_url) {
-          score += 5;
-        }
-
+        const filledCount = fields.filter(Boolean).length;
+        const score = Math.round((filledCount / fields.length) * 100);
         return `${score}%`;
       }
 
@@ -747,7 +729,7 @@ export class ConsultantService {
           await this.projectConsultantRepo.findByConsultantId(consultantId);
 
         const consultant =
-          await this.consultantRepository.findByUserId(consultantId);
+          await this.consultantRepository.findConsultantProfileByUserId(consultantId);
         const now = new Date();
 
         /* =========================
