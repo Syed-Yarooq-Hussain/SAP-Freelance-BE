@@ -36,6 +36,9 @@ export class ConsultantService {
       private readonly commonService: CommonService
     ) {}
 
+  private roundAmount(value: number): number {
+    return Math.round(Number(value) || 0);
+  }
 
     
   async getProjectByConsultantId(id: number) {
@@ -440,12 +443,12 @@ export class ConsultantService {
 
           projected_monthly_revenue:
             consultant?.weekly_available_hours && consultant?.rate
-              ? consultant.weekly_available_hours * consultant.rate
+              ? this.roundAmount(consultant.weekly_available_hours * consultant.rate)
               : 0,
 
           total_earnings:
             projects?.[0]?.requested_hours && consultant?.rate
-              ? projects[0].requested_hours * consultant.rate
+              ? this.roundAmount(projects[0].requested_hours * consultant.rate)
               : 0,
         },
 
@@ -598,7 +601,7 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? consultant.weekly_available_hours * consultant.rate * 12 
+            ? this.roundAmount(consultant.weekly_available_hours * consultant.rate * 12)
             : 0;
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
@@ -770,11 +773,9 @@ export class ConsultantService {
 
         const projectedEarning =
           consultant?.weekly_available_hours && consultant?.rate
-            ? (consultant.weekly_available_hours/5) * consultant.rate * 66
+            ? this.roundAmount((consultant.weekly_available_hours / 5) * consultant.rate * 66)
             : 0;
-        console.log('Projected Earning:', projectedEarning);
-        console.log('Projected Earning:', consultant.weekly_available_hours);
-        console.log('Projected Earning:', consultant.rate);
+
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills
           .filter(bill => bill.is_paid)
