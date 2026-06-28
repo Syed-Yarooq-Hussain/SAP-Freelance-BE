@@ -687,32 +687,69 @@ export class ConsultantService {
         return value !== null && value !== undefined;
       }
 
-      calculateProfileStrength(consultant: any): string {
-        const modules = consultant?.user?.modules || [];
+      private getProfileFieldChecks(consultant: any) {
+        const modules = consultant?.user?.modules?.filter((m: any) => m?.deleted_at == null) ?? [];
         const coreModules = modules.filter((module: any) => module?.is_primary);
         const otherModules = modules.filter((module: any) => !module?.is_primary);
 
-        const fields = [
-          this.hasProfileValue(consultant?.rate),
-          this.hasProfileValue(consultant?.weekly_available_hours),
-          coreModules.length > 0,
-          otherModules.length > 0,
-          this.hasProfileValue(consultant?.user?.email),
-          this.hasProfileValue(consultant?.industries),
-          this.hasProfileValue(consultant?.user?.linkedin_url),
-          this.hasProfileValue(consultant?.professional_headline),
-          this.hasProfileValue(consultant?.work_experiences),
-          this.hasProfileValue(consultant?.education),
-          this.hasProfileValue(consultant?.user?.avatar),
-          this.hasProfileValue(consultant?.certification) || consultant?.is_certified === true,
-          this.hasProfileValue(consultant?.projects),
-          this.hasProfileValue(consultant?.experience),
-          this.hasProfileValue(consultant?.user?.phone),
-        ];
+        return {
+          photo: this.hasProfileValue(consultant?.user?.avatar),
+          email: this.hasProfileValue(consultant?.user?.email),
+          phone: this.hasProfileValue(consultant?.user?.phone),
+          professional_headline: this.hasProfileValue(consultant?.professional_headline),
+          linkedin_url: this.hasProfileValue(consultant?.user?.linkedin_url),
+          experience: this.hasProfileValue(consultant?.experience),
+          hourly_rate: this.hasProfileValue(consultant?.rate),
+          weekly_availability: this.hasProfileValue(consultant?.weekly_available_hours),
+          core_modules: coreModules.length > 0,
+          other_modules: otherModules.length > 0,
+          industry_focus: this.hasProfileValue(consultant?.industries),
+          work_experience: this.hasProfileValue(consultant?.work_experiences),
+          education: this.hasProfileValue(consultant?.education),
+          certifications:
+            this.hasProfileValue(consultant?.certification) ||
+            consultant?.is_certified === true,
+          projects: this.hasProfileValue(consultant?.projects),
+        };
+      }
 
+      private isProfileSectionComplete(checks: boolean[]): boolean {
+        return checks.length > 0 && checks.every(Boolean);
+      }
+
+      getProfileSectionsStatus(consultant: any) {
+        const fields = this.getProfileFieldChecks(consultant);
+
+        return {
+          profile_essentials_completed: this.isProfileSectionComplete([
+            fields.photo,
+            fields.email,
+            fields.phone,
+            fields.professional_headline,
+            fields.linkedin_url,
+          ]),
+          basic_information_completed: this.isProfileSectionComplete([
+            fields.experience,
+            fields.hourly_rate,
+            fields.weekly_availability,
+            fields.core_modules,
+            fields.other_modules,
+          ]),
+          professional_information_completed: this.isProfileSectionComplete([
+            fields.industry_focus,
+            fields.work_experience,
+            fields.education,
+            fields.certifications,
+            fields.projects,
+          ]),
+        };
+      }
+
+      calculateProfileStrength(consultant: any): string {
+        const fields = Object.values(this.getProfileFieldChecks(consultant));
         const completed = fields.filter(Boolean).length;
         const score = Math.round((completed / fields.length) * 100);
-        
+
         return `${score}%`;
       }
 
@@ -838,6 +875,7 @@ export class ConsultantService {
         const uniqueBadges = Array.from(new Set(badges));
         const profile = {
           profile_strength: this.calculateProfileStrength(consultant) || '0%',
+          ...this.getProfileSectionsStatus(consultant),
           badges: uniqueBadges,
           name: consultant?.user?.username || '',
           city: consultant?.user?.city || '',
