@@ -131,6 +131,7 @@ export class ConsultantService {
       user: {
         ...consultant.user,
         module,
+        loginWithLinkedin: Boolean(consultant.user?.linkedin_sso_connected),
       },
     };
   }

@@ -217,6 +217,7 @@ export class AuthService {
     const token = await this.jwtService.signAsync(payload);
 
     user['token'] = token;
+    user['loginWithLinkedin'] = Boolean(user.linkedin_sso_connected);
     (user as any).password = undefined;
 
     return user;
@@ -380,7 +381,11 @@ export class AuthService {
 
       return {
         token,
-        user,
+        user: {
+          ...(user.toJSON() as any),
+          password: undefined,
+          loginWithLinkedin: Boolean(user.linkedin_sso_connected),
+        },
       };
     } catch (error: any) {
       console.log(`[AuthService][ERROR] LinkedIn login error`, error?.stack || error?.message || String(error));
