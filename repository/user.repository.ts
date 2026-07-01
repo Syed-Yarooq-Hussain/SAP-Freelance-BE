@@ -166,7 +166,7 @@ class UserRepository {
           model: ConsultantModule,
           required: filters.module_ids && filters.module_ids.length > 0,
           where: moduleWhere,
-          attributes: ['id'],
+          attributes: ['id', 'module_id', 'is_primary'],
           include: [
             {
               model: ModuleEntity,

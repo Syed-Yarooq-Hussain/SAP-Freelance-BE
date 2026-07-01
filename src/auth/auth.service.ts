@@ -14,6 +14,7 @@ import { UpdateConsultantDetailDto } from './dto/register-consultant.dto';
 import * as crypto from 'crypto';
 import { sendEmail } from 'src/common/emails/email.util';
 import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class AuthService {
@@ -302,23 +303,29 @@ export class AuthService {
         throw new CustomError(401, 'Invalid LinkedIn user data: null');
       }
 
-      if (!linkedinUser.linkedin_id && !linkedinUser.sub) {
+      const linkedinId = linkedinUser.linkedin_id || linkedinUser.sub;
+      if (!linkedinId) {
         throw new CustomError(401, 'Invalid LinkedIn user data: missing identifier');
       }
 
       // Use email if available, otherwise generate unique identifier
-      const email = linkedinUser.email || `linkedin_${linkedinUser.linkedin_id}@temp.local`;
+      const email = linkedinUser.email || `linkedin_${linkedinId}@temp.local`;
       const linkedinUrl = this.getAccurateLinkedInUrl(linkedinUser);
       
 
       let user = await User.findOne({
-        where: { email: email },
+        where: {
+          [Op.or]: [
+            { linkedin_id: linkedinId },
+            { email },
+          ],
+        },
       });
 
       if (!user) {
         
         user = await this.userRepo.createUser({
-          username: linkedinUser.name || `LinkedIn User ${linkedinUser.linkedin_id}`,
+          username: linkedinUser.name || `LinkedIn User ${linkedinId}`,
           email: email,
           password: '123456',
           role: +UserRole.CONSULTANT,
@@ -329,6 +336,7 @@ export class AuthService {
           country: null,
           email_verified: true,
           phone_verified: false,
+          linkedin_id: linkedinId,
           linkedin_url: linkedinUrl,
           linkedin_sso_connected: true,
         });
@@ -361,12 +369,13 @@ export class AuthService {
       } else {
         console.log(`[AuthService][DEBUG] Existing user found: ${user.id}`);
         const userFields: Partial<User> = {
+          linkedin_id: linkedinId,
           linkedin_sso_connected: true,
         };
 
         if (linkedinUrl) {
           userFields.linkedin_url = linkedinUrl;
-        } else if (this.isGeneratedLinkedInUrl(user.linkedin_url, linkedinUser.linkedin_id)) {
+        } else if (this.isGeneratedLinkedInUrl(user.linkedin_url, linkedinId)) {
           userFields.linkedin_url = null;
         }
 

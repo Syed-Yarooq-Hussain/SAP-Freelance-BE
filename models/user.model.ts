@@ -100,6 +100,9 @@ export class User extends Model<User> {
   @Column({ type: DataType.STRING, allowNull: true })
   linkedin_url: string;
 
+  @Column({ type: DataType.STRING, allowNull: true })
+  linkedin_id: string;
+
   @Column({ type: DataType.BOOLEAN, defaultValue: false })
   linkedin_sso_connected: boolean;
 

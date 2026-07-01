@@ -129,11 +129,13 @@ export class ClientService {
     for(const consultant of consultants){
       let modules = {core:'',others:''};
       for(const mod of consultant.modules){
-        if(mod.module.is_core) 
+        if(mod.is_primary) 
           modules.core += mod.module.name + ', ';
         else 
-          modules.others += mod.module.name + ' ';
+          modules.others += mod.module.name + ', ';
       }
+      modules.core = modules.core.replace(/, $/, '');
+      modules.others = modules.others.replace(/, $/, '');
       consultantList.push({
         id: consultant.id,
         name: consultant.username,

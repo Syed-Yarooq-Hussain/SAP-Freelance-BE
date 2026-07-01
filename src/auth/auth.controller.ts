@@ -37,9 +37,12 @@ export class AuthController {
     }
     const result = await this.authService.loginWithLinkedIn(req.user);
     console.log('🔵 LinkedIn login result:', result);
-    return res.redirect(
-      `${process.env.FE_URL}/auth/linkedin?token=${result.token}`,
-    );
+    const params = new URLSearchParams({ token: result.token });
+    if (result.user?.linkedin_url) {
+      params.set('linkedinUrl', result.user.linkedin_url);
+    }
+
+    return res.redirect(`${process.env.FE_URL}/auth/linkedin?${params.toString()}`);
   }
 
 

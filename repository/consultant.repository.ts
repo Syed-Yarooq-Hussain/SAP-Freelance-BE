@@ -41,6 +41,7 @@ async createDetail(dto: any) {
           'phone',
           'avatar',
           'linkedin_url',
+          'linkedin_id',
           'linkedin_sso_connected',
           'created_at',
         ],
@@ -71,6 +72,7 @@ async createDetail(dto: any) {
           'phone',
           'avatar',
           'linkedin_url',
+          'linkedin_id',
           'linkedin_sso_connected',
         ],
         include: [{
