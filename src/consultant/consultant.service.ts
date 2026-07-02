@@ -40,6 +40,18 @@ export class ConsultantService {
     return Math.round(Number(value) || 0);
   }
 
+  private normalizeLinkedInProfileUrl(url: string): string {
+    const normalized = url.trim().replace(/\/+$/, '');
+    const isValidLinkedInProfile =
+      /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-_%]+$/i.test(normalized);
+
+    if (!isValidLinkedInProfile) {
+      throw new CustomError(400, 'Please provide a valid LinkedIn profile URL');
+    }
+
+    return normalized;
+  }
+
     
   async getProjectByConsultantId(id: number) {
     let consultantProjectsList = await this.projectConsultantRepo.findByConsultantId(id);
@@ -295,8 +307,10 @@ export class ConsultantService {
     if (updateDto.user?.city) userFields.city = updateDto.user.city;
     if (updateDto.user?.country) userFields.country = updateDto.user.country;
     if (updateDto.user?.currency) userFields.currency = updateDto.user.currency;
-    if (updateDto.user?.linkedin_url && !user.linkedin_sso_connected) {
-      userFields.linkedin_url = updateDto.user.linkedin_url;
+    if (updateDto.user?.linkedin_url) {
+      userFields.linkedin_url = this.normalizeLinkedInProfileUrl(
+        updateDto.user.linkedin_url,
+      );
     }
   
     if (updateDto.user && Object.prototype.hasOwnProperty.call(updateDto.user, 'avatar')) { 
