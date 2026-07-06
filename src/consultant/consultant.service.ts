@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateConsultantDto } from './dto/create-consultant.dto';
 import { UpdateConsultantDto } from './dto/update-consultant.dto';
 import { GetConsultantDto } from './dto/get-consultant.dto';
@@ -22,6 +22,8 @@ import { create } from 'domain';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 import { groupBillsByMonth } from './transformer/monthly-bill.transformer';
 import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
+import { LogConsultantHoursDto } from './dto/log-consultant-hours.dto';
+import { ProjectMilestoneRepository } from 'repository/project-milestone.repository';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -32,6 +34,7 @@ export class ConsultantService {
       private readonly userRepo: UserRepository,
       private readonly chatRepo: ChatRepository,
       private readonly projectTaskRepo: ProjectTaskRepository,
+      private readonly milestoneRepo: ProjectMilestoneRepository,
       private readonly monthlyBillRepo: ConsultantMonthlyBillRepository,
       private readonly commonService: CommonService
     ) {}
@@ -72,12 +75,79 @@ export class ConsultantService {
   
   async getConsultantPayments(id: number) {
 
-    return [];
+    return this.getConsultantMonthlyBills(id);
   }
 
   async getConsultantMonthlyBills(id: number) {
     const bills = await this.monthlyBillRepo.findByConsultant(id);
     return groupBillsByMonth(bills);
+  }
+
+  async logHours(userId: number, dto: LogConsultantHoursDto) {
+    const projectId = Number(dto.project_id);
+    const milestoneId = Number(dto.milestone_id);
+    const taskId = dto.task_id ? Number(dto.task_id) : null;
+    const hours = Number(dto.hours);
+    console.log('Logging hours with data:', { userId, projectId, milestoneId, taskId, hours });
+    if (!projectId || !milestoneId) {
+      throw new BadRequestException('project_id and milestone_id are required');
+    }
+
+    if (!hours || hours <= 0) {
+      throw new BadRequestException('hours must be greater than 0');
+    }
+
+    const assignment =
+      await this.projectConsultantRepo.findByProjectIdConsultantId(
+        projectId,
+        userId,
+      );
+
+    if (!assignment) {
+      throw new BadRequestException('Consultant is not assigned to this project');
+    }
+
+    const milestone = await this.milestoneRepo.findById(milestoneId);
+    if (!milestone || milestone.project_id != projectId) {
+      throw new BadRequestException('Milestone does not belong to this project');
+    }
+
+    if (taskId) {
+      const task = await this.projectTaskRepo.findById(taskId);
+      if (!task || task.project_id != projectId || task.project_milestone_id != milestoneId) {
+        throw new BadRequestException('Task does not belong to this project milestone');
+      }
+    }
+
+    const consultant = await this.consultantRepository.findByUserId(userId);
+    const rate = Number(assignment.decided_rate || consultant?.rate || 0);
+    const logDate = dto.log_date ? new Date(dto.log_date) : new Date();
+    const month = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
+    const amount = parseFloat((hours * rate).toFixed(2));
+
+    const bill = await this.monthlyBillRepo.create({
+      project_id: projectId,
+      user_id: userId,
+      milestone_id: milestoneId,
+      task_id: taskId,
+      log_date: logDate as any,
+      description: dto.description?.trim() || null,
+      bill_type: 'logged',
+      month,
+      hours,
+      amount,
+      is_paid: false,
+      pdf_url: null,
+    });
+
+    return {
+      message: 'Hours logged successfully',
+      data: bill,
+    };
+  }
+
+  async getHourLogs(userId: number) {
+    return this.monthlyBillRepo.findHourLogsByConsultant(userId);
   }
 
   async getConsultantDetail(id: number) {

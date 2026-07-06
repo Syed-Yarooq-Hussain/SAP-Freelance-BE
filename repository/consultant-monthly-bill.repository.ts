@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { Project } from 'models/project.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
+import { ProjectTask } from 'models/project-task.model';
 import { User } from 'models/user.model';
 
 @Injectable()
@@ -14,7 +15,7 @@ export class ConsultantMonthlyBillRepository {
 
   async deleteUnpaidByMilestoneId(milestoneId: number): Promise<void> {
     await this.model.destroy({
-      where: { milestone_id: milestoneId, is_paid: false },
+      where: { milestone_id: milestoneId, is_paid: false, bill_type: 'auto' },
     });
   }
 
@@ -27,8 +28,12 @@ export class ConsultantMonthlyBillRepository {
     userId: number,
   ): Promise<ConsultantMonthlyBill[]> {
     return this.model.findAll({
+      include: [
+        { model: ProjectMilestone, required: false },
+        { model: ProjectTask, required: false },
+      ],
       where: { project_id: projectId, user_id: userId },
-      order: [['month', 'ASC']],
+      order: [['month', 'ASC'], ['id', 'ASC']],
     });
   }
   
@@ -39,10 +44,43 @@ export class ConsultantMonthlyBillRepository {
       include: [
         {
           model:Project,
-        }
+        },
+        {
+          model: ProjectMilestone,
+          required: false,
+        },
+        {
+          model: ProjectTask,
+          required: false,
+        },
       ],
       where: {  user_id: userId },
-      order: [['month', 'ASC']],
+      order: [['month', 'ASC'], ['id', 'ASC']],
+    });
+  }
+
+  async findById(id: number): Promise<ConsultantMonthlyBill | null> {
+    return this.model.findByPk(id, {
+      include: [
+        { model: Project, required: false },
+        { model: ProjectMilestone, required: false },
+        { model: ProjectTask, required: false },
+        { model: User, required: false, attributes: ['id', 'username', 'email', 'status'] },
+      ],
+    });
+  }
+
+  async findHourLogsByConsultant(
+    userId: number,
+  ): Promise<ConsultantMonthlyBill[]> {
+    return this.model.findAll({
+      include: [
+        { model: Project, required: false },
+        { model: ProjectMilestone, required: false },
+        { model: ProjectTask, required: false },
+      ],
+      where: { user_id: userId, bill_type: 'logged' },
+      order: [['log_date', 'DESC'], ['id', 'DESC']],
     });
   }
 
@@ -69,6 +107,10 @@ export class ConsultantMonthlyBillRepository {
         },
         {
           model: ProjectMilestone,
+          required: false,
+        },
+        {
+          model: ProjectTask,
           required: false,
         },
         {

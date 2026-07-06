@@ -7,6 +7,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UpdateConsultantDetailDto } from 'src/auth/dto/register-consultant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CONSULTANT_LEVEL_ARRAY } from 'constant/enums';
+import { LogConsultantHoursDto } from './dto/log-consultant-hours.dto';
 
 @ApiTags('Consultants') 
 @Controller('consultants')
@@ -62,6 +63,22 @@ export class ConsultantController {
   @ApiResponse({ status: 200, description: 'Get consultant monthly bill entries' })
   getConsultantMonthlyBills(@Req() req: any) {
     return this.consultantService.getConsultantMonthlyBills(+req.user.id);
+  }
+
+  @Post('hour-logs')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Log consultant hours against project milestone and optional task' })
+  @ApiResponse({ status: 201, description: 'Consultant hours logged successfully' })
+  logConsultantHours(@Req() req: any, @Body() body: LogConsultantHoursDto) {
+    return this.consultantService.logHours(+req.user.id, body);
+  }
+
+  @Get('hour-logs')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get consultant logged hours' })
+  @ApiResponse({ status: 200, description: 'Get consultant logged hours' })
+  getConsultantHourLogs(@Req() req: any) {
+    return this.consultantService.getHourLogs(+req.user.id);
   }
   
   @Get('me')

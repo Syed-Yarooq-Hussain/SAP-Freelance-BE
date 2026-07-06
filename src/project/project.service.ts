@@ -32,6 +32,10 @@ import { GetConsultantsQueryDto } from './dto/get-query.dto';
 import { ConsultantRepository } from 'repository/consultant.repository';
 import { formatDate } from 'src/common/utils/date.filter';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
+import { ProjectDocumentRepository } from 'repository/project-document.repository';
+import { CommonService } from 'src/utility/common.service';
+import { UploadProjectDocumentDto } from './dto/upload-project-document.dto';
+import { UserRepository } from 'repository/user.repository';
 
 @Injectable()
 export class ProjectService {
@@ -45,6 +49,9 @@ export class ProjectService {
     private readonly projectTaskRepo: ProjectTaskRepository,
     private readonly consultantRepo: ConsultantRepository,
     private readonly monthlyBillRepo: ConsultantMonthlyBillRepository,
+    private readonly projectDocumentRepo: ProjectDocumentRepository,
+    private readonly commonService: CommonService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   async createProject(user: any) {
@@ -385,6 +392,7 @@ private async calculateAndSyncPayments(
           month: mb.month,
           hours: mb.hours,
           amount: parseFloat(monthlyAmount.toFixed(2)),
+          bill_type: 'auto',
           is_paid: false,
           pdf_url: null,
         });
@@ -475,6 +483,58 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   async getConsultantMonthlyBills(projectId: number, userId: number) {
   return this.monthlyBillRepo.findByProjectAndConsultant(projectId, userId);
 }
+
+  async uploadProjectDocument(
+    body: UploadProjectDocumentDto,
+    file: Express.Multer.File,
+  ) {
+    const projectId = Number(body.project_id);
+    const consultantId = Number(body.user_id);
+
+    if (!projectId || Number.isNaN(projectId)) {
+      throw new BadRequestException('project_id is required');
+    }
+
+    if (!consultantId || Number.isNaN(consultantId)) {
+      throw new BadRequestException('user_id is required');
+    }
+
+    if (!body.type?.trim()) {
+      throw new BadRequestException('type is required');
+    }
+
+    const [project, consultant] = await Promise.all([
+      this.projectRepo.findById(projectId),
+      this.userRepository.findById(consultantId),
+    ]);
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    if (!consultant) {
+      throw new NotFoundException(`User with ID ${consultantId} not found`);
+    }
+
+    const url = await this.commonService.uploadToS3({
+      file: file.buffer,
+      folder: 'project-documents',
+      filename: file.originalname,
+      mimetype: file.mimetype,
+    });
+
+    const document = await this.projectDocumentRepo.create({
+      project_id: projectId,
+      consultant_id: consultantId,
+      type: body.type,
+      url,
+    });
+
+    return {
+      message: 'Project document uploaded successfully',
+      data: document,
+    };
+  }
 
   async getMilestonesByProject(id: number) {
     let isMMilestoneExist = await this.milestoneRepo.findAll({

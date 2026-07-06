@@ -9,7 +9,7 @@ import { Project } from 'models/project.model';
 import { ProjectDetail } from 'models/project-detail.model';
 import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { Meeting } from 'models/meeting.model';
-import { Op } from 'sequelize';
+import { fn, col, Op } from 'sequelize';
 
 @Injectable()
 export class ProjectConsultantRepository {
@@ -180,6 +180,44 @@ async findByProjectId(projectId: number) {
       project_id: projectId,
       deleted_at: null,
     },
+  });
+}
+
+async getBookedHoursByConsultantIds(consultantIds: number[]) {
+  if (!consultantIds.length) return [];
+
+  return this.projectConsultantModel.findAll({
+    where: {
+      consultant_id: { [Op.in]: consultantIds },
+      status: { [Op.in]: ['hired', 'Hired'] },
+      deleted_at: null,
+    },
+    attributes: [
+      'consultant_id',
+      [fn('SUM', col('requested_hours')), 'booked_hours'],
+    ],
+    include: [
+      {
+        model: Project,
+        required: true,
+        attributes: [],
+        where: {
+          status: {
+            [Op.in]: [
+              'initiated',
+              'Initiated',
+              'completed',
+              'Completed',
+              'complete',
+              'Complete',
+            ],
+          },
+          deleted_at: null,
+        },
+      },
+    ],
+    group: ['ProjectConsultant.consultant_id'],
+    raw: true,
   });
 }
 

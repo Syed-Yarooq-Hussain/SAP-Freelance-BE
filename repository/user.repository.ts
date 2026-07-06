@@ -1,12 +1,13 @@
 import { Consultant } from 'models/consultant.model';
 import { User } from '../models/user.model';
-import { Op, Sequelize } from 'sequelize';
+import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { UserRole } from 'constant/enums';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
 
 export interface ConsultantSearchFilters {
+  user_ids?: number[];
   module_ids?: number[];
   experience?: number;
   available_hours?: number;
@@ -129,6 +130,10 @@ class UserRepository {
     const moduleWhere: any = {};
     const moduleEntityWhere: any = {};
 
+    if (filters.user_ids && filters.user_ids.length > 0) {
+      userWhere.id = { [Op.in]: filters.user_ids };
+    }
+
     if (filters.country) {
       userWhere.country = { [Op.iLike]: `%${filters.country}%` };
     }
@@ -184,6 +189,120 @@ class UserRepository {
       ],
       raw: false,
     });
+  }
+
+  async findPaginatedConsultantIdsWithAvailability(
+    filters: ConsultantSearchFilters = {},
+    page = 1,
+    limit = 10,
+  ): Promise<{
+    rows: { id: number; booked_hours: number; available_hours: number }[];
+    total: number;
+  }> {
+    const consultantWhere: any = {};
+    const userWhere: any = {
+      role: UserRole.CONSULTANT,
+    };
+
+    if (filters.country) {
+      userWhere.country = { [Op.iLike]: `%${filters.country}%` };
+    }
+
+    if (filters.experience !== undefined) {
+      consultantWhere.experience = { [Op.gte]: filters.experience };
+    }
+
+    if (filters.min_rate !== undefined || filters.max_rate !== undefined) {
+      consultantWhere.rate = {
+        ...(filters.min_rate !== undefined ? { [Op.gte]: filters.min_rate } : {}),
+        ...(filters.max_rate !== undefined ? { [Op.lte]: filters.max_rate } : {}),
+      };
+    }
+
+    const moduleIds = filters.module_ids || [];
+    const consultants = await this.userModel.findAll({
+      where: userWhere,
+      attributes: ['id'],
+      include: [
+        {
+          model: Consultant,
+          required: true,
+          where: consultantWhere,
+          attributes: ['weekly_available_hours'],
+        },
+        {
+          model: ConsultantModule,
+          required: moduleIds.length > 0,
+          ...(moduleIds.length > 0
+            ? { where: { module_id: { [Op.in]: moduleIds } } }
+            : {}),
+          attributes: ['module_id'],
+        },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    const matchingConsultants = moduleIds.length
+      ? consultants.filter((consultant: any) => {
+          const selectedModuleIds = (consultant.modules || []).map((module: any) =>
+            Number(module.module_id),
+          );
+
+          return moduleIds.every((moduleId) => selectedModuleIds.includes(Number(moduleId)));
+        })
+      : consultants;
+
+    const consultantIds = matchingConsultants.map((consultant) => Number(consultant.id));
+    const bookedRows = consultantIds.length
+      ? await this.sequelize.query<{ consultant_id: number; booked_hours: string | number }>(
+          `
+          SELECT pc.consultant_id, COALESCE(SUM(pc.requested_hours), 0) AS booked_hours
+          FROM project_consultant pc
+          INNER JOIN project p ON p.id = pc.project_id
+          WHERE pc.consultant_id IN (:consultantIds)
+            AND pc.deleted_at IS NULL
+            AND LOWER(COALESCE(pc.status, '')) = 'hired'
+            AND p.deleted_at IS NULL
+            AND LOWER(COALESCE(p.status, '')) NOT IN ('cancelled', 'completed')
+          GROUP BY pc.consultant_id
+          `,
+          {
+            replacements: { consultantIds },
+            type: QueryTypes.SELECT,
+          },
+        )
+      : [];
+
+    const bookedHoursByConsultantId = new Map(
+      bookedRows.map((row) => [Number(row.consultant_id), Number(row.booked_hours || 0)]),
+    );
+
+    const rows = matchingConsultants
+      .map((consultant: any) => {
+        const weeklyAvailableHours = Number(
+          consultant.consultants?.weekly_available_hours || 0,
+        );
+        const bookedHours = bookedHoursByConsultantId.get(Number(consultant.id)) || 0;
+        const availableHours = Math.max(weeklyAvailableHours - bookedHours, 0);
+
+        return {
+          id: Number(consultant.id),
+          booked_hours: bookedHours,
+          available_hours: availableHours,
+        };
+      })
+      .filter((consultant) =>
+        filters.available_hours === undefined
+          ? true
+          : consultant.available_hours >= filters.available_hours,
+      );
+
+    const offset = (page - 1) * limit;
+
+    return {
+      rows: rows.slice(offset, offset + limit),
+      total: rows.length,
+    };
   }
 
 

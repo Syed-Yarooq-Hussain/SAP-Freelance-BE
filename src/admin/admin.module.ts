@@ -11,6 +11,7 @@ import { IndustriesRepository } from 'repository/indutries.repository';
 import { ProjectPayment } from 'models/project-payment.model';
 import { ProjectPaymentRepository } from 'repository/project-payment.repository';
 import { ProjectMilestone } from 'models/project-milestone.model';
+import { ProjectTask } from 'models/project-task.model';
 import { Document } from 'models/document.model';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';

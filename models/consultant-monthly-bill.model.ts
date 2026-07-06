@@ -2,6 +2,7 @@ import { Table, Column, Model, DataType, ForeignKey, BelongsTo } from 'sequelize
 import { User } from './user.model';
 import { ProjectMilestone } from './project-milestone.model';
 import { Project } from './project.model';
+import { ProjectTask } from './project-task.model';
 
 @Table({ tableName: 'consultant_monthly_bills', timestamps: false })
 export class ConsultantMonthlyBill extends Model<ConsultantMonthlyBill> {
@@ -19,6 +20,19 @@ export class ConsultantMonthlyBill extends Model<ConsultantMonthlyBill> {
   @ForeignKey(() => ProjectMilestone)
   @Column({ type: DataType.INTEGER, allowNull: false })
   milestone_id: number;
+
+  @ForeignKey(() => ProjectTask)
+  @Column({ type: DataType.INTEGER, allowNull: true, defaultValue: null })
+  task_id: number | null;
+
+  @Column({ type: DataType.DATEONLY, allowNull: true, defaultValue: null })
+  log_date: Date | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true, defaultValue: null })
+  description: string | null;
+
+  @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'auto' })
+  bill_type: string;
 
   // Format: "2025-06" — easy filtering ke liye
   @Column({ type: DataType.STRING(7), allowNull: false })
@@ -45,4 +59,7 @@ export class ConsultantMonthlyBill extends Model<ConsultantMonthlyBill> {
 
   @BelongsTo(() => ProjectMilestone)
   milestone: ProjectMilestone;
+
+  @BelongsTo(() => ProjectTask)
+  task: ProjectTask;
 }

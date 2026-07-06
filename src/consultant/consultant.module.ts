@@ -20,10 +20,12 @@ import { ProjectTask } from 'models/project-task.model';
 import { CommonModule } from 'src/utility/common.module';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
+import { ProjectMilestone } from 'models/project-milestone.model';
+import { ProjectMilestoneRepository } from 'repository/project-milestone.repository';
 
 @Module({
-  imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm, Chat, ProjectTask, ConsultantMonthlyBill])],
-  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository, ChatRepository, ProjectTaskRepository, ConsultantMonthlyBillRepository],
+  imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm, Chat, ProjectTask, ProjectMilestone, ConsultantMonthlyBill])],
+  providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository, ChatRepository, ProjectTaskRepository, ProjectMilestoneRepository, ConsultantMonthlyBillRepository],
   controllers: [ConsultantController],
   exports: [ConsultantRepository, ProjectConsultantRepository, UserRepository],
 })

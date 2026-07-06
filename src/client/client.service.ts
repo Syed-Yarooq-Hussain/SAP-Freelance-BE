@@ -104,29 +104,81 @@ export class ClientService {
 
   // ✅ Get All Consultants
   private toNumber(value?: string | number) {
-    return value === undefined || value === null || value === '' ? undefined : Number(value);
+    if (value === undefined || value === null || value === '') return undefined;
+    const numberValue = Number(value);
+    return Number.isNaN(numberValue) ? undefined : numberValue;
+  }
+
+  private toPositiveNumber(value?: string | number, fallback = 1) {
+    const numberValue = this.toNumber(value);
+    return numberValue && numberValue > 0 ? Math.floor(numberValue) : fallback;
+  }
+
+  private toNumberArray(value: any) {
+    if (value === undefined || value === null || value === '') return [];
+    const values = Array.isArray(value) ? value : String(value).split(',');
+
+    return values
+      .map((item) => Number(item))
+      .filter((item) => !Number.isNaN(item));
   }
 
   async getAllConsultants(query: GetClientConsultantsQueryDto) {
-    let consultants = await this.userRepository.findAllUsersWithConsultants(undefined, {
-      module_ids: query.modules,
+    const normalizedQuery: any = query;
+    const page = this.toPositiveNumber(query.page, 1);
+    const limit = this.toPositiveNumber(query.limit, 10);
+    const filters = {
+      module_ids: this.toNumberArray(
+        normalizedQuery.modules ?? normalizedQuery['modules[]'],
+      ),
       experience: this.toNumber(query.experience),
       available_hours: this.toNumber(query.availability),
       min_rate: this.toNumber(query.budgetMin),
       max_rate: this.toNumber(query.budgetMax),
       country: query.country,
-    });
+    };
+    const paginatedConsultants =
+      await this.userRepository.findPaginatedConsultantIdsWithAvailability(
+        filters,
+        page,
+        limit,
+      );
+    const consultantIds = paginatedConsultants.rows.map((consultant) => consultant.id);
+    const bookedHoursByConsultantId = new Map<number, number>(
+      paginatedConsultants.rows.map((consultant) => [
+        consultant.id,
+        Number(consultant.booked_hours || 0),
+      ]),
+    );
+    const availableHoursByConsultantId = new Map<number, number>(
+      paginatedConsultants.rows.map((consultant) => [
+        consultant.id,
+        Number(consultant.available_hours || 0),
+      ]),
+    );
 
-    // Filter for AND condition on modules: consultant must have ALL specified modules
-    if (query.modules && query.modules.length > 0) {
-      consultants = consultants.filter(consultant => {
-        const userModuleIds = consultant.modules.map(m => m.module_id);
-        return query.modules.every(modId => userModuleIds.includes(modId));
-      });
-    }
+    let consultants = consultantIds.length
+      ? await this.userRepository.findAllUsersWithConsultants(undefined, {
+          user_ids: consultantIds,
+        })
+      : [];
+    const consultantOrder = new Map(
+      consultantIds.map((consultantId, index) => [consultantId, index]),
+    );
+    consultants = consultants.sort(
+      (a, b) => (consultantOrder.get(a.id) ?? 0) - (consultantOrder.get(b.id) ?? 0),
+    );
 
     let consultantList = [];
     for(const consultant of consultants){
+      const weeklyAvailableHours = this.toAmount(
+        consultant.consultants?.weekly_available_hours,
+      );
+      const bookedHours = Number(bookedHoursByConsultantId.get(consultant.id) || 0);
+      const availableHours =
+        availableHoursByConsultantId.get(consultant.id) ??
+        weeklyAvailableHours - bookedHours;
+
       let modules = {core:'',others:''};
       for(const mod of consultant.modules){
         if(mod.is_primary) 
@@ -144,14 +196,32 @@ export class ClientService {
         country: consultant.country,
         experience: consultant.consultants.experience,
         rate: consultant.consultants.rate,
-        weekly_available_hours: consultant.consultants.weekly_available_hours,
+        weekly_available_hours: weeklyAvailableHours,
+        booked_hours: bookedHours,
+        available_hours: availableHours,
         working_schedule: consultant.consultants.working_schedule,
         modules,
-        project_name: consultant?.projects[0]?.id ?? 'N/A',
-        project_id: consultant?.projects[0]?.name ?? 'N/A',
+        project_name: consultant?.projects?.[0]?.name ?? 'N/A',
+        project_id: consultant?.projects?.[0]?.id ?? 'N/A',
       });
     }
-    return consultantList;
+
+    const total = paginatedConsultants.total;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: consultantList,
+      pagination: {
+        total,
+        current_page: page,
+        limit,
+        total_pages: totalPages,
+        next_page: page < totalPages ? page + 1 : null,
+        previous_page: page > 1 ? page - 1 : null,
+        has_next_page: page < totalPages,
+        has_previous_page: page > 1,
+      },
+    };
   }
 
   
