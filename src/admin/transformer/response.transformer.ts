@@ -28,6 +28,8 @@ export function getAdminsClientResponse(list: any[]) {
     clients.push({
       id: client.id,
       username: client.username,
+      email: client.email,
+      phone: client.phone,
       status: client.status,
       draft_count,
       active_count,
@@ -52,6 +54,8 @@ export function getAdminsConsultantResponse(list: any[]) {
     consultants.push({
       id: consuntant.id,
       username: consuntant.username,
+      email: consuntant.email,
+      phone: consuntant.phone,
       status: consuntant.status,
       experience: consuntant.consultants?.experience ?? null,
       rate: consuntant.consultants?.rate ?? null,

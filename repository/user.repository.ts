@@ -30,8 +30,8 @@ class UserRepository {
   // 🟢 Get all Clients for Admin Screen
   async getAllClientsWithProjectstatus(status?: string): Promise<User[]> {
     return this.userModel.findAll({
-      where: { role: UserRole.CLIENT , ...(status ? { status } : {}), },
-      attributes: ['id', 'username', 'status'],
+      where: { role: UserRole.CLIENT },
+      attributes: ['id', 'username', 'email', 'phone', 'status'],
       include: [
         {
           model: Project,
@@ -154,7 +154,7 @@ class UserRepository {
 
     return await this.userModel.findAll({
       where: userWhere,
-      attributes: ['id', 'username', 'status', 'country'],
+      attributes: ['id', 'username', 'email', 'phone', 'status', 'country'],
       include: [
         {
           model: Consultant,

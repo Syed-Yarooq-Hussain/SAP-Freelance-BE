@@ -609,7 +609,8 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   }
 
   async updatePayment(paymentId: number, data: UpdateProjectPaymentDto) {
-    const payment = await this.paymentRepo.findById(paymentId);
+    try{
+const payment = await this.paymentRepo.findById(paymentId);
 
     if (!payment) {
       throw new NotFoundException(`Payment with ID ${paymentId} not found`);
@@ -637,6 +638,10 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
     }
 
     return updatedPayment;
+    } catch(e) {
+      console.log(e)
+    }
+    
   }
 
 }

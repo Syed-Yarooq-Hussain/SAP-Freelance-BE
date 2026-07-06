@@ -139,6 +139,8 @@ export class ClientService {
       consultantList.push({
         id: consultant.id,
         name: consultant.username,
+        email: consultant.email,
+        phone: consultant.phone,
         country: consultant.country,
         experience: consultant.consultants.experience,
         rate: consultant.consultants.rate,
