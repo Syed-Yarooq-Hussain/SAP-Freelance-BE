@@ -12,7 +12,7 @@ module.exports = {
       },
       username: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       role: {
         type: Sequelize.INTEGER,
@@ -25,7 +25,7 @@ module.exports = {
       },
       phone: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       password: {
         type: Sequelize.STRING,
@@ -33,7 +33,7 @@ module.exports = {
       },
       currency: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       city: {
         type: Sequelize.STRING,
@@ -44,8 +44,9 @@ module.exports = {
         allowNull: true,
       },
       status: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
+        type: Sequelize.STRING,
+        allowNull: true,
+        defaultValue: 'active',
       },
       created_at: {
         allowNull: false,

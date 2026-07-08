@@ -27,7 +27,7 @@ module.exports = {
     // 4️⃣ CCONSULTANT MODULE TABLE
     await queryInterface.createTable('consultant_module', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
-      consultant_id: { type: Sequelize.BIGINT, references: { model: 'consultants', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
+      user_id: { type: Sequelize.BIGINT, references: { model: 'users', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       module_id: { type: Sequelize.BIGINT, references: { model: 'modules', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       is_primary: { type: Sequelize.BOOLEAN }
     });
@@ -57,7 +57,7 @@ module.exports = {
     // 8️⃣ PROJECT CONSULTANT TABLE
     await queryInterface.createTable('project_consultant', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
-      consultant_id: { type: Sequelize.BIGINT, references: { model: 'consultants', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
+      consultant_id: { type: Sequelize.BIGINT, references: { model: 'users', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       status: { type: Sequelize.STRING },
       decided_rate: { type: Sequelize.INTEGER },
@@ -81,7 +81,7 @@ module.exports = {
     await queryInterface.createTable('project_milestone', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
       name: { type: Sequelize.STRING },
-      end_date: { type: Sequelize.DATE },
+      due_date: { type: Sequelize.DATE },
       description: { type: Sequelize.TEXT },
       status: { type: Sequelize.STRING },
       project_id: { type: Sequelize.BIGINT, references: { model: 'project', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
@@ -109,8 +109,10 @@ module.exports = {
     // 1️⃣3️⃣ MILESTONE DOCS TABLE
     await queryInterface.createTable('milestone_docs', {
       id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
-      doc_id: { type: Sequelize.BIGINT, references: { model: 'documents', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
-      project_milestone_id: { type: Sequelize.BIGINT, references: { model: 'project_milestone', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
+      doc_name: { type: Sequelize.STRING(255), allowNull: false },
+      file_url: { type: Sequelize.STRING(500), allowNull: false },
+      uploaded_at: { type: Sequelize.DATE, defaultValue: Sequelize.fn('NOW') },
+      milestone_id: { type: Sequelize.BIGINT, references: { model: 'project_milestone', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
     });
 
     // 1️⃣4️⃣ PROJECT PAYMENT TABLE

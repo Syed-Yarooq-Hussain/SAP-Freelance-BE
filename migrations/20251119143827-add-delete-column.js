@@ -23,11 +23,19 @@ module.exports = {
     ];
 
     for (const table of tables) {
-      await queryInterface.addColumn(table, "deleted_at", {
-        type: Sequelize.DATE,
-        allowNull: true,
-        defaultValue: null,
-      });
+      try {
+        const columns = await queryInterface.describeTable(table);
+        if (!columns.deleted_at) {
+          await queryInterface.addColumn(table, "deleted_at", {
+            type: Sequelize.DATE,
+            allowNull: true,
+            defaultValue: null,
+          });
+        }
+      } catch (error) {
+        // Some legacy environments may not have every historical table.
+        continue;
+      }
     }
   },
 
@@ -53,7 +61,14 @@ module.exports = {
     ];
 
     for (const table of tables) {
-      await queryInterface.removeColumn(table, "deleted_at");
+      try {
+        const columns = await queryInterface.describeTable(table);
+        if (columns.deleted_at) {
+          await queryInterface.removeColumn(table, "deleted_at");
+        }
+      } catch (error) {
+        continue;
+      }
     }
   },
 };
