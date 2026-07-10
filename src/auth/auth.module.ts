@@ -22,7 +22,7 @@ import { SessionSerializer } from './session.serializer';
       session: true,
     }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
+      secret: process.env.JWT_SECRET || 'mysecret',
       signOptions: { expiresIn: '1d' },
     }), 
     ConsultantModuleImport
