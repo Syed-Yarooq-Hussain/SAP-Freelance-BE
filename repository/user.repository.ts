@@ -129,7 +129,6 @@ class UserRepository {
     const consultantWhere: any = {};
     const userWhere: any = {
       role: UserRole.CONSULTANT,
-      ...(status ? { status } : {}),
     };
     const moduleWhere: any = {};
     const moduleEntityWhere: any = {};
@@ -173,13 +172,13 @@ class UserRepository {
         },
         {
           model: ConsultantModule,
-          required: filters.module_ids && filters.module_ids.length > 0,
+          required: false,
           where: moduleWhere,
           attributes: ['id', 'module_id', 'is_primary'],
           include: [
             {
               model: ModuleEntity,
-              required: true,
+              required: false,
               where: moduleEntityWhere,
               attributes: ['id', 'name', 'is_core'],
             },
@@ -236,7 +235,7 @@ class UserRepository {
         },
         {
           model: ConsultantModule,
-          required: moduleIds.length > 0,
+          required: false,
           ...(moduleIds.length > 0
             ? { where: { module_id: { [Op.in]: moduleIds } } }
             : {}),
