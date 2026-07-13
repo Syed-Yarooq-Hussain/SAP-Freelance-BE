@@ -1,6 +1,9 @@
 import { Consultant } from 'models/consultant.model';
 import { User } from '../models/user.model';
-import { Op, QueryTypes, Sequelize } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
+import { Injectable } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/sequelize';
+import { Sequelize } from 'sequelize-typescript';
 import { UserRole } from 'constant/enums';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
@@ -16,10 +19,11 @@ export interface ConsultantSearchFilters {
   country?: string;
 }
 
+@Injectable()
 class UserRepository {
   private readonly userModel: typeof User;
 
-  constructor(private readonly sequelize: Sequelize) {
+  constructor(@InjectConnection() private readonly sequelize: Sequelize) {
     this.userModel = User;
   }
 
