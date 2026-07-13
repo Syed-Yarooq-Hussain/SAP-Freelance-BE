@@ -2,6 +2,7 @@ import {
   Catch,
   ExceptionFilter,
   ArgumentsHost,
+  HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -22,9 +23,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof CustomError) {
       errorBody.message = exception.message;
       errorBody.code = exception.getStatus();
+    } else if (exception instanceof HttpException) {
+      const exceptionResponse = exception.getResponse();
+      errorBody.message =
+        typeof exceptionResponse === 'object'
+          ? (exceptionResponse as any).message || exception.message
+          : exceptionResponse;
+      errorBody.code = exception.getStatus();
     }
 
-    if (exception instanceof Error) {
+    if (!(exception instanceof HttpException) && exception instanceof Error) {
       errorBody.message = exception.message;
     }
 
