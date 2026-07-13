@@ -123,19 +123,19 @@ export class ClientService {
       .filter((item) => !Number.isNaN(item));
   }
 
-  async getAllConsultants(query: GetClientConsultantsQueryDto) {
-    const normalizedQuery: any = query;
-    const page = this.toPositiveNumber(query.page, 1);
-    const limit = this.toPositiveNumber(query.limit, 10);
+  async getAllConsultants(query: GetClientConsultantsQueryDto = {}) {
+    const normalizedQuery: any = query || {};
+    const page = this.toPositiveNumber(normalizedQuery.page, 1);
+    const limit = this.toPositiveNumber(normalizedQuery.limit, 10);
     const filters = {
       module_ids: this.toNumberArray(
         normalizedQuery.modules ?? normalizedQuery['modules[]'],
       ),
-      experience: this.toNumber(query.experience),
-      available_hours: this.toNumber(query.availability),
-      min_rate: this.toNumber(query.budgetMin),
-      max_rate: this.toNumber(query.budgetMax),
-      country: query.country,
+      experience: this.toNumber(normalizedQuery.experience),
+      available_hours: this.toNumber(normalizedQuery.availability),
+      min_rate: this.toNumber(normalizedQuery.budgetMin),
+      max_rate: this.toNumber(normalizedQuery.budgetMax),
+      country: normalizedQuery.country,
     };
     const paginatedConsultants =
       await this.userRepository.findPaginatedConsultantIdsWithAvailability(
@@ -180,7 +180,8 @@ export class ClientService {
         weeklyAvailableHours - bookedHours;
 
       let modules = {core:'',others:''};
-      for(const mod of consultant.modules){
+      for(const mod of consultant.modules || []){
+        if (!mod?.module) continue;
         if(mod.is_primary) 
           modules.core += mod.module.name + ', ';
         else 

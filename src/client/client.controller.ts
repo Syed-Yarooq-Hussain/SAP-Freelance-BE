@@ -16,7 +16,7 @@ export class ClientController {
   @ApiOperation({ summary: 'Get all consultants' })
   getAllConsultants(@Query() query: GetClientConsultantsQueryDto) {
     console.log('Fetching all consultants');
-    return this.clientService.getAllConsultants(query);
+    return this.clientService.getAllConsultants(query || {});
   }
   // ✅ Create Client
   @Post()
