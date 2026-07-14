@@ -15,8 +15,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { LinkedInAuthGuard } from './linkedin-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -26,11 +26,11 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
   
   @Get('linkedin')
-  @UseGuards(AuthGuard('linkedin'))
+  @UseGuards(LinkedInAuthGuard)
   loginWithLinkedIn() {}
 
   @Get('linkedin/callback')
-  @UseGuards(AuthGuard('linkedin'))
+  @UseGuards(LinkedInAuthGuard)
   async linkedinCallback(@Req() req, @Res() res: Response) {
     if (!req.user) {
       return res.status(401).json({ error: 'LinkedIn auth failed' });

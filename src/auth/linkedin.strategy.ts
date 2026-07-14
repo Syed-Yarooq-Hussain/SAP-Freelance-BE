@@ -5,9 +5,17 @@ import { Strategy } from 'passport-openidconnect';
 @Injectable()
 export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
   constructor() {
+    const configuredCallbackUrl = process.env.LINKEDIN_CALLBACK_URL;
+    const callbackURL =
+      process.env.NODE_ENV === 'production' &&
+      configuredCallbackUrl?.includes('localhost')
+        ? 'https://api.theconsultcrew.com/auth/linkedin/callback'
+        : configuredCallbackUrl ||
+          'https://api.theconsultcrew.com/auth/linkedin/callback';
+
     console.log('LinkedIn Strategy Init');
     console.log('CLIENT ID:', process.env.LINKEDIN_CLIENT_ID);
-    console.log('CALLBACK:', process.env.LINKEDIN_CALLBACK_URL);
+    console.log('CALLBACK:', callbackURL);
     super({
       issuer: 'https://www.linkedin.com/oauth',
       authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
@@ -16,8 +24,7 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
 
       clientID: process.env.LINKEDIN_CLIENT_ID,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-      callbackURL: 'https://api.theconsultcrew.com/auth/linkedin/callback',
-      // callbackURL: process.env.LINKEDIN_CALLBACK_URL,
+      callbackURL,
 
       scope: ['openid', 'profile', 'email'],
     });
