@@ -16,7 +16,7 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
 
       clientID: process.env.LINKEDIN_CLIENT_ID,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-      callbackURL: 'https://sap-freelance-be-production.up.railway.app/auth/linkedin/callback',
+      callbackURL: 'https://api.theconsultcrew.com/auth/linkedin/callback',
       // callbackURL: process.env.LINKEDIN_CALLBACK_URL,
 
       scope: ['openid', 'profile', 'email'],
