@@ -509,5 +509,4 @@ export class CommonService {
       type: document.type,
     };
   }
-
 }
