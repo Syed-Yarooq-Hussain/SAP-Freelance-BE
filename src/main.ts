@@ -1,57 +1,68 @@
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AllExceptionsFilter } from './config/allexceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+
 import * as express from 'express';
 import * as path from 'path';
-import session from 'express-session';
 import * as passport from 'passport';
-import { RedisStore } from 'connect-redis';
-import { createClient } from 'redis';
+import session from 'express-session';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config();
+
   const app = await NestFactory.create(AppModule);
 
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  /**
+   * Required when running behind Nginx, Cloudflare,
+   * Railway, Hetzner reverse proxy, or any HTTPS proxy.
+   */
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
 
   app.enableCors({
     origin: process.env.FE_URL,
     credentials: true,
   });
 
-  const redisClient = createClient({
-    url: process.env.REDIS_URL,
-  });
-
-  redisClient.on('error', (error) => {
-    console.error('Redis error:', error);
-  });
-
-  await redisClient.connect();
-
   app.use(
     session({
       name: 'sap.sid',
 
-      store: new RedisStore({
-        client: redisClient,
-        prefix: 'sap:sess:',
-      }),
+      secret:
+        process.env.SESSION_SECRET ||
+        'replace-this-with-a-secure-session-secret',
 
-      secret: process.env.SESSION_SECRET!,
       resave: false,
       saveUninitialized: false,
 
       cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite:
-          process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: isProduction,
+        sameSite: 'lax',
       },
     }),
   );
+
+  app.use((req, _res, next) => {
+    if (req.path.includes('/auth/linkedin')) {
+      console.log('LinkedIn OAuth session debug:', {
+        path: req.path,
+        sessionID: req.sessionID,
+        hasCookie: Boolean(req.headers.cookie),
+        cookie: req.headers.cookie,
+        session: req.session,
+      });
+    }
+
+    next();
+  });
 
   app.use(passport.initialize());
   app.use(passport.session());
@@ -69,13 +80,23 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
+
   SwaggerModule.setup('api', app, document);
 
   const port = Number(process.env.PORT) || 3000;
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`App running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`Frontend URL: ${process.env.FE_URL}`);
+  console.log(
+    `LinkedIn callback: ${process.env.LINKEDIN_CALLBACK_URL}`,
+  );
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('Application failed to start:', error);
+  process.exit(1);
+});
+
