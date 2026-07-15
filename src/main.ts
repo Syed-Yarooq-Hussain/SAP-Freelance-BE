@@ -6,7 +6,7 @@ import { AllExceptionsFilter } from './config/allexceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import * as express from 'express';
 import * as path from 'path';
-import * as session from 'express-session';
+import session from 'express-session';
 import * as passport from 'passport';
 
 async function bootstrap() {
