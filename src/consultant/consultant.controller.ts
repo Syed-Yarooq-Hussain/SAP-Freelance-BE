@@ -102,7 +102,11 @@ export class ConsultantController {
   @ApiOperation({ summary: 'Get Consulatant Schedule ' })
   @ApiResponse({ status: 201, description: 'Get Consulatant Schedule' })
   getConsultantSchedule(@Req() req: any, @Query() query: any) {
-    return this.consultantService.getConsultantSchedule(+req.user.id, +query.month, +query.year);
+    return this.consultantService.getConsultantSchedule(
+      +req.user.id,
+      Number(query?.month),
+      Number(query?.year),
+    );
   }
 
   @Put('')

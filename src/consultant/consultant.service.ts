@@ -55,6 +55,92 @@ export class ConsultantService {
     return normalized;
   }
 
+  private normalizeTime(value: any): string | null {
+    if (typeof value !== 'string') return null;
+
+    const trimmed = value.trim();
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!match) return null;
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  private normalizeScheduleSlot(slot: any) {
+    const start = this.normalizeTime(slot?.start ?? slot?.start_time);
+    const end = this.normalizeTime(slot?.end ?? slot?.end_time);
+
+    if (!start || !end) return null;
+
+    return { start, end };
+  }
+
+  private normalizeScheduleSlots(value: any) {
+    const rawSlots = Array.isArray(value?.slot)
+      ? value.slot
+      : Array.isArray(value?.slots)
+        ? value.slots
+        : value?.start || value?.start_time || value?.end || value?.end_time
+          ? [value]
+          : [];
+
+    return rawSlots
+      .map((slot: any) => this.normalizeScheduleSlot(slot))
+      .filter(Boolean);
+  }
+
+  private normalizeScheduleDay(value: any) {
+    const day = value?.day || value?.day_name;
+    if (!day) return null;
+
+    const slots = this.normalizeScheduleSlots(value);
+    const active =
+      typeof value?.active === 'boolean'
+        ? value.active
+        : typeof value?.available === 'boolean'
+          ? value.available
+          : slots.length > 0;
+
+    return {
+      ...value,
+      day,
+      active,
+      slot: active ? slots : [],
+    };
+  }
+
+  private normalizeCustomSchedule(value: any) {
+    const date = value?.date;
+    if (!date) return null;
+
+    const slots = this.normalizeScheduleSlots(value);
+    const active =
+      typeof value?.active === 'boolean'
+        ? value.active
+        : typeof value?.available === 'boolean'
+          ? value.available
+          : slots.length > 0;
+
+    return {
+      ...value,
+      date,
+      active,
+      slot: active ? slots : [],
+    };
+  }
+
+  private getScheduleDayName(date: string): string | null {
+    if (!date) return null;
+
+    const parsedDate = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+
+    return parsedDate.toLocaleDateString('en-US', { weekday: 'long' });
+  }
+
     
   async getProjectByConsultantId(id: number) {
     let consultantProjectsList = await this.projectConsultantRepo.findByConsultantId(id);
@@ -242,14 +328,28 @@ export class ConsultantService {
 
   private normalizeSchedulePayload(body: any) {
     const payload = body?.working_schedule || body?.schedule || body || {};
-
-    return {
-      weekly: Array.isArray(payload.weekly) ? payload.weekly : [],
-      custom: Array.isArray(payload.custom)
-        ? payload.custom
+    const weeklySource = Array.isArray(payload.weekly)
+      ? payload.weekly
+      : Array.isArray(payload.days)
+        ? payload.days
+        : payload.day || payload.day_name
+          ? [payload]
+          : [];
+    const customSource = Array.isArray(payload.custom)
+      ? payload.custom
+      : Array.isArray(payload.dates)
+        ? payload.dates
         : payload.date
           ? [payload]
-          : [],
+          : [];
+
+    return {
+      weekly: weeklySource
+        .map((item: any) => this.normalizeScheduleDay(item))
+        .filter(Boolean),
+      custom: customSource
+        .map((item: any) => this.normalizeCustomSchedule(item))
+        .filter(Boolean),
       effective_from: payload.effective_from,
       effective_to: payload.effective_to,
     };
@@ -275,8 +375,24 @@ export class ConsultantService {
     for (const item of existing.custom) {
       if (item?.date) customByDate.set(item.date, item);
     }
+
+    const explicitCustomDates = new Set<string>();
     for (const item of update.custom) {
-      if (item?.date) customByDate.set(item.date, item);
+      if (item?.date) {
+        explicitCustomDates.add(item.date);
+        customByDate.set(item.date, item);
+      }
+    }
+
+    for (const item of update.weekly) {
+      if (item?.active !== false || !item?.day) continue;
+
+      for (const [date] of customByDate) {
+        if (explicitCustomDates.has(date)) continue;
+        if (this.getScheduleDayName(date) === item.day) {
+          customByDate.delete(date);
+        }
+      }
     }
 
     return {
@@ -337,6 +453,12 @@ export class ConsultantService {
     const mergedSchedule = this.mergeSchedule(consultant?.working_schedule, body);
     const update = this.normalizeSchedulePayload(body);
 
+    if (!update.weekly.length && !update.custom.length) {
+      throw new BadRequestException(
+        'Schedule must include weekly days or custom dated availability',
+      );
+    }
+
     if (update.weekly.length && !update.effective_from && !update.effective_to) {
       Object.assign(mergedSchedule, createThreeMonthScheduleWindow());
     }
@@ -349,12 +471,19 @@ export class ConsultantService {
   }
 
   async getConsultantSchedule(id: number, month: number, year: number) {
+  const now = new Date();
+  const selectedMonth = Number.isFinite(month) && month >= 1 && month <= 12
+    ? month
+    : now.getMonth() + 1;
+  const selectedYear = Number.isFinite(year) && year > 1900
+    ? year
+    : now.getFullYear();
   const consultant = await this.consultantRepository.getSchedulesByUserId(id);
 
   const meetings =
     await this.meetingRepo.getMeetingWithDetails(id);
 
-  const monthlySchedule = await buildMonthlySchedule(year, month, consultant?.working_schedule || { weekly: [], custom: [] });
+  const monthlySchedule = await buildMonthlySchedule(selectedYear, selectedMonth, consultant?.working_schedule || { weekly: [], custom: [] });
 
   const eventsByDate = groupEventsByDate(meetings);
 
@@ -820,13 +949,13 @@ export class ConsultantService {
             fields.core_modules,
             fields.other_modules,
           ]),
-          professional_information_completed: this.isProfileSectionComplete([
-            fields.industry_focus,
-            fields.work_experience,
-            fields.education,
-            fields.certifications,
-            fields.projects,
-          ]),
+          professional_information_completed: (
+            fields.industry_focus ||
+            fields.work_experience ||
+            fields.education ||
+            fields.certifications ||
+            fields.projects
+          ),
         };
       }
 

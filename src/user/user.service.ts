@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { User } from 'models/user.model';
@@ -135,14 +140,47 @@ export class UserService {
   }
 
   async changePassword(userId: number, changePasswordDto: any) {
-    const user = await this.findOne(userId);
+    const user = await this.userModel.findByPk(userId, {
+      attributes: { include: ['password'] },
+    });
     if (!user) throw new NotFoundException('User not found');
-    const isPasswordValid = await bcrypt.compare(changePasswordDto.oldPassword, user.password);
-    console.log('🔵 changePasswordDto', changePasswordDto,user.username,isPasswordValid);
 
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid old password');
-    user.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    const oldPassword = changePasswordDto?.oldPassword;
+    const newPassword = changePasswordDto?.newPassword;
+    const confirmPassword = changePasswordDto?.confirmPassword;
+
+    if (!newPassword) {
+      throw new BadRequestException('newPassword is required');
+    }
+
+    if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    if (oldPassword) {
+      if (!user.password) {
+        throw new BadRequestException(
+          'Password is not set for this account. Please use forgot password to set a password.',
+        );
+      }
+
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+      if (!isPasswordValid) throw new UnauthorizedException('Invalid old password');
+    }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      throw new BadRequestException(
+        'Password must be at least 8 characters long, contain 1 uppercase letter and 1 number',
+      );
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
-    return user;
+
+    return {
+      message: 'Password changed successfully',
+    };
   }
 }
