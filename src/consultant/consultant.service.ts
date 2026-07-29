@@ -907,12 +907,13 @@ export class ConsultantService {
         const otherModules = modules.filter((module: any) => !module?.is_primary);
 
         return {
-          photo: this.hasProfileValue(consultant?.user?.avatar),
+          full_name: this.hasProfileValue(consultant?.user?.username),
           email: this.hasProfileValue(consultant?.user?.email),
-          phone: this.hasProfileValue(consultant?.user?.phone),
+          city: this.hasProfileValue(consultant?.user?.city),
           professional_headline: this.hasProfileValue(consultant?.professional_headline),
           linkedin_url: this.hasProfileValue(consultant?.user?.linkedin_url),
           experience: this.hasProfileValue(consultant?.experience),
+          expertise_level: this.hasProfileValue(consultant?.expertise_level),
           hourly_rate: this.hasProfileValue(consultant?.rate),
           weekly_availability: this.hasProfileValue(consultant?.weekly_available_hours),
           core_modules: coreModules.length > 0,
@@ -936,26 +937,27 @@ export class ConsultantService {
 
         return {
           profile_essentials_completed: this.isProfileSectionComplete([
-            fields.photo,
-            fields.email,
-            fields.phone,
-            fields.professional_headline,
-            fields.linkedin_url,
-          ]),
-          basic_information_completed: this.isProfileSectionComplete([
-            fields.experience,
             fields.hourly_rate,
             fields.weekly_availability,
             fields.core_modules,
+            fields.city,
+            fields.email,
+            fields.industry_focus,
+          ]),
+          basic_information_completed: this.isProfileSectionComplete([
+            fields.full_name,
+            fields.linkedin_url,
+            fields.experience,
+            fields.expertise_level,
+            fields.professional_headline,
+          ]),
+          professional_information_completed: this.isProfileSectionComplete([
+            fields.work_experience,
+            fields.education,
+            fields.certifications,
+            fields.projects,
             fields.other_modules,
           ]),
-          professional_information_completed: (
-            fields.industry_focus ||
-            fields.work_experience ||
-            fields.education ||
-            fields.certifications ||
-            fields.projects
-          ),
         };
       }
 
