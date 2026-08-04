@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
@@ -15,6 +15,24 @@ import { ModuleEntity } from 'models/module.model';
 @Controller('common')
 export class CommonController {
   constructor(private readonly commonService: CommonService) {}  
+
+  @Get('countries')
+  @ApiOperation({ summary: 'Get all countries for location selection' })
+  @ApiResponse({ status: 200, description: 'List of countries with id, name, code, and slug' })
+  getCountries() {
+    return this.commonService.getCountries();
+  }
+
+  @Get('cities/:country')
+  @ApiOperation({ summary: 'Get cities by country name or slug' })
+  @ApiParam({
+    name: 'country',
+    description: 'Country name or slug, for example United States or united-states',
+  })
+  @ApiResponse({ status: 200, description: 'List of cities for the selected country' })
+  getCitiesByCountry(@Param('country') country: string) {
+    return this.commonService.getCitiesByCountry(country);
+  }
 
   @Post("industry")
   @ApiOperation({ summary: 'Create a new industry entry' })

@@ -23,6 +23,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { DocumentRepository } from 'repository/document.repository';
+import { City, Country } from 'country-state-city';
 
 @Injectable()
 export class CommonService {
@@ -49,6 +50,72 @@ export class CommonService {
 
   private get bucket() {
     return process.env.AWS_S3_BUCKET!;
+  }
+
+  private toLocationSlug(value: string): string {
+    return String(value || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private getSortedCountries() {
+    return Country.getAllCountries().slice().sort((a, b) =>
+      a.name.localeCompare(b.name, 'en'),
+    );
+  }
+
+  getCountries() {
+    const countries = this.getSortedCountries().map((country, index) => ({
+      id: index + 1,
+      name: country.name,
+      code: country.isoCode,
+      slug: this.toLocationSlug(country.name),
+    }));
+
+    return {
+      message: 'Countries fetched successfully',
+      data: countries,
+    };
+  }
+
+  getCitiesByCountry(countryIdentifier: string) {
+    const normalizedIdentifier = this.toLocationSlug(
+      String(countryIdentifier || '').slice(0, 100),
+    );
+
+    const country = this.getSortedCountries().find((item) =>
+      this.toLocationSlug(item.name) === normalizedIdentifier ||
+      item.isoCode.toLowerCase() === normalizedIdentifier,
+    );
+
+    if (!country) {
+      return {
+        message: 'Country not found',
+        data: [],
+      };
+    }
+
+    const cities = (City.getCitiesOfCountry(country.isoCode) || [])
+      .slice()
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, 'en') ||
+        a.stateCode.localeCompare(b.stateCode, 'en'),
+      )
+      .map((city, index) => ({
+        id: index + 1,
+        name: city.name,
+        country: country.name,
+        country_code: country.isoCode,
+      }));
+
+    return {
+      message: 'Cities fetched successfully',
+      data: cities,
+    };
   }
 
   async uploadToS3({

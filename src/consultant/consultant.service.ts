@@ -43,6 +43,59 @@ export class ConsultantService {
     return Math.round(Number(value) || 0);
   }
 
+  private getSlotDurationInHours(startTime: string, endTime: string): number {
+    const toMinutes = (time: string) => {
+      const [hours, minutes] = String(time).split(':').map(Number);
+      if (
+        !Number.isInteger(hours) ||
+        !Number.isInteger(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+      ) {
+        return null;
+      }
+
+      return hours * 60 + minutes;
+    };
+
+    const start = toMinutes(startTime);
+    const end = toMinutes(endTime);
+    if (start === null || end === null || end <= start) return 0;
+
+    return (end - start) / 60;
+  }
+
+  private async calculateCurrentMonthProjectedEarning(
+    workingSchedule: any,
+    hourlyRate: number,
+    now: Date,
+  ): Promise<number> {
+    if (!workingSchedule || !Number(hourlyRate)) return 0;
+
+    const monthlySchedule = await buildMonthlySchedule(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      workingSchedule,
+    );
+
+    const availableHours = monthlySchedule.days.reduce((monthTotal, day) => {
+      if (!day.availability.available) return monthTotal;
+
+      const dailyHours = day.availability.slots.reduce((dayTotal, slot) => {
+        return dayTotal + this.getSlotDurationInHours(
+          slot.start_time,
+          slot.end_time,
+        );
+      }, 0);
+
+      return monthTotal + dailyHours;
+    }, 0);
+
+    return this.roundAmount(availableHours * Number(hourlyRate));
+  }
+
   private normalizeLinkedInProfileUrl(url: string): string {
     const normalized = url.trim().replace(/\/+$/, '');
     const isValidLinkedInProfile =
@@ -814,9 +867,11 @@ export class ConsultantService {
         ========================= */
 
         const projectedEarning =
-          consultant?.weekly_available_hours && consultant?.rate
-            ? this.roundAmount(consultant.weekly_available_hours * consultant.rate * 12)
-            : 0;
+          await this.calculateCurrentMonthProjectedEarning(
+            consultant?.working_schedule,
+            consultant?.rate,
+            now,
+          );
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills
@@ -1023,9 +1078,11 @@ export class ConsultantService {
         ========================= */
 
         const projectedEarning =
-          consultant?.weekly_available_hours && consultant?.rate
-            ? this.roundAmount((consultant.weekly_available_hours / 5) * consultant.rate * 66)
-            : 0;
+          await this.calculateCurrentMonthProjectedEarning(
+            consultant?.working_schedule,
+            consultant?.rate,
+            now,
+          );
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills

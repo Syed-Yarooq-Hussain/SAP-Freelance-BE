@@ -13,6 +13,9 @@ import { ProjectPayment } from 'models/project-payment.model';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { Op } from 'sequelize';
 import { MeetingStatus, MeetingType, ProjectStatus, UserRole, UserStatus } from 'constant/enums';
+import { Consultant } from 'models/consultant.model';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
 
 @Injectable()
 export class AdminService {
@@ -51,6 +54,153 @@ export class AdminService {
 
   private toAmount(value: unknown): number {
     return Number(value || 0);
+  }
+
+  private toChartData(values: Map<string, number>) {
+    return Array.from(values.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+  }
+
+  private incrementBreakdown(values: Map<string, number>, label: unknown) {
+    const normalizedLabel = String(label || '').trim() || 'Unspecified';
+    values.set(normalizedLabel, (values.get(normalizedLabel) || 0) + 1);
+  }
+
+  private getExperienceLevel(consultant: Consultant): string {
+    const configuredLevel = consultant.expertise_level || consultant.level;
+    if (configuredLevel) return configuredLevel;
+
+    const experience = Number(consultant.experience);
+    if (!Number.isFinite(experience)) return 'Unspecified';
+    if (experience < 1) return 'Junior';
+    if (experience < 3) return 'Associate';
+    if (experience < 6) return 'Mid-Level';
+    if (experience < 9) return 'Senior';
+    if (experience < 12) return 'Principal';
+    return 'Solution Architect';
+  }
+
+  async getConsultantsSummary() {
+    const consultants = await this.userModel.findAll({
+      where: {
+        role: UserRole.CONSULTANT,
+        deleted_at: null,
+      },
+      attributes: [
+        'id',
+        'country',
+        'status',
+        'email_verified',
+        'phone_verified',
+        'linkedin_sso_connected',
+      ],
+      include: [
+        {
+          model: Consultant,
+          required: true,
+          where: { deleted_at: null },
+          attributes: [
+            'rate',
+            'weekly_available_hours',
+            'experience',
+            'level',
+            'expertise_level',
+            'is_certified',
+          ],
+        },
+        {
+          model: ConsultantModule,
+          required: false,
+          where: { deleted_at: null },
+          attributes: ['module_id'],
+          include: [
+            {
+              model: ModuleEntity,
+              required: false,
+              where: { deleted_at: null },
+              attributes: ['name'],
+            },
+          ],
+        },
+      ],
+    });
+
+    const modules = new Map<string, number>();
+    const experienceLevels = new Map<string, number>();
+    const countries = new Map<string, number>();
+    const profileStatuses = new Map<string, number>();
+    let rateTotal = 0;
+    let rateCount = 0;
+    let availabilityTotal = 0;
+    let availabilityCount = 0;
+    let verifiedProfiles = 0;
+    let certifiedProfiles = 0;
+    let pendingProfiles = 0;
+
+    for (const user of consultants) {
+      const consultant = user.consultants;
+      const rate = Number(consultant?.rate);
+      const availability = Number(consultant?.weekly_available_hours);
+
+      if (Number.isFinite(rate) && rate >= 0) {
+        rateTotal += rate;
+        rateCount += 1;
+      }
+      if (Number.isFinite(availability) && availability >= 0) {
+        availabilityTotal += availability;
+        availabilityCount += 1;
+      }
+
+      const isVerified = Boolean(
+        user.email_verified ||
+        user.phone_verified ||
+        user.linkedin_sso_connected
+      );
+
+      if (isVerified) {
+        verifiedProfiles += 1;
+      }
+      if (consultant?.is_certified) certifiedProfiles += 1;
+
+      const status = String(user.status || 'Unspecified').toLowerCase();
+      if (status === UserStatus.PENDING) pendingProfiles += 1;
+
+      this.incrementBreakdown(experienceLevels, this.getExperienceLevel(consultant));
+      this.incrementBreakdown(countries, user.country);
+      this.incrementBreakdown(
+        profileStatuses,
+        isVerified ? 'Verified' : 'Unverified',
+      );
+
+      for (const consultantModule of user.modules || []) {
+        if (consultantModule.module?.name) {
+          this.incrementBreakdown(modules, consultantModule.module.name);
+        }
+      }
+    }
+
+    const roundAverage = (total: number, count: number) =>
+      count ? Math.round((total / count) * 100) / 100 : 0;
+
+    return {
+      message: 'Consultant summary fetched successfully',
+      data: {
+        total_resources: consultants.length,
+        avg_hourly_rate: roundAverage(rateTotal, rateCount),
+        avg_weekly_availability_hours: roundAverage(
+          availabilityTotal,
+          availabilityCount,
+        ),
+        verified_profiles: verifiedProfiles,
+        certified_profiles: certifiedProfiles,
+        pending_profiles: pendingProfiles,
+        modules_breakdown: this.toChartData(modules),
+        experience_level_breakdown: this.toChartData(experienceLevels),
+        countries_breakdown: this.toChartData(countries),
+        profile_status_breakdown: this.toChartData(profileStatuses),
+      },
+    };
   }
 
   async dashboardStatistic() {

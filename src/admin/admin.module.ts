@@ -16,9 +16,12 @@ import { Document } from 'models/document.model';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 import { Meeting } from 'models/meeting.model';
+import { Consultant } from 'models/consultant.model';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { ModuleEntity } from 'models/module.model';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
+  imports: [SequelizeModule.forFeature([User, Consultant, ConsultantModule, ModuleEntity, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
   controllers: [AdminController],
   providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository],
   exports: [AdminService],

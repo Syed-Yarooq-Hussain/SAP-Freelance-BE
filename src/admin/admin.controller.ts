@@ -1,6 +1,9 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -8,6 +11,14 @@ export class AdminController {
   @Get('stats')
   getDashboardstats() {
     return this.adminService.dashboardStatistic();
+  }
+
+  @Get('dashboard/consultants-summary')
+  @ApiOperation({ summary: 'Get consultant overview and chart-ready breakdowns' })
+  @ApiResponse({ status: 200, description: 'Consultant summary fetched successfully' })
+  @ApiResponse({ status: 401, description: 'Authentication required' })
+  getConsultantsSummary() {
+    return this.adminService.getConsultantsSummary();
   }
   
   @Get('consultants/all')
