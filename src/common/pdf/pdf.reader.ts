@@ -154,8 +154,29 @@ Dates format: YYYY-MM or YYYY-MM-DD
 CLIENT SUMMARY (keep as before)
 -------------------------------------
 
-Include concise SAP consultant summary with:
-Name, Role, Experience, Modules, Industries, Projects, Location, SAP Versions
+
+Generate EXACTLY 5 lines (or 4 if no extra modules).
+
+Line 1:
+<Experience Level> SAP <Core Module(s)> Consultant with <X+ years> of experience in <core modules>.
+
+Line 2:
+Experienced in <project types> with strong expertise in <key capabilities>.
+
+Line 3 (ONLY if applicable):
+Also skilled in <Other Modules> supporting cross-functional process design and governance.
+
+Line 4:
+Has worked across industries including <industry1>, <industry2>, <industry3>.
+
+Line 5:
+Delivered <X+ SAP projects> including <implementation/rollout/support types>.
+
+Rules:
+- No headings
+- No bullets
+- No extra text
+- Strict professional tone
 
 -------------------------------------
 IMPORTANT RULES

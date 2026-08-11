@@ -198,12 +198,26 @@ export class AuthService {
   }
 
   // 🔵 Login Service
-  async login(email: string, password: string): Promise<any> {
+  async login(email: string, password: string, timezone?: string): Promise<any> {
+    const normalizedEmail = String(email || '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .trim()
+      .toLowerCase();
+    if (!normalizedEmail) throw new CustomError(400, 'Email is required');
+
     const user = await User.findOne({
-      where: { email },
+      where: { email: { [Op.iLike]: normalizedEmail } },
       attributes: { include: ['password'] },
       raw: true,
     });
+    if (this.DEBUG) {
+      console.log('[AuthService][DEBUG] Login lookup', {
+        email: normalizedEmail,
+        emailLength: normalizedEmail.length,
+        database: User.sequelize?.getDatabaseName(),
+        userId: user?.id || null,
+      });
+    }
 
     if (!user) throw new CustomError(404, 'User not found');
 
@@ -213,6 +227,23 @@ export class AuthService {
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) throw new CustomError(401, 'Invalid credentials');
+
+    if (timezone) {
+      const normalizedTimezone = String(timezone).trim();
+      try {
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: normalizedTimezone,
+        }).format();
+      } catch {
+        throw new CustomError(
+          400,
+          'Timezone must be a valid IANA timezone, e.g. Europe/Berlin',
+        );
+      }
+
+      await this.userRepo.updateUser(user.id, { timezone: normalizedTimezone });
+      user.timezone = normalizedTimezone;
+    }
 
     const payload = { sub: user.id, role: user.role, email: user.email };
     const token = await this.jwtService.signAsync(payload);
@@ -294,7 +325,7 @@ export class AuthService {
     );
   }
 
-  async loginWithLinkedIn(linkedinUser: any) {
+  async loginWithLinkedIn(linkedinUser: any, timezone?: string) {
     try {
       console.log(`[AuthService][DEBUG] loginWithLinkedIn called: ${JSON.stringify({ id: linkedinUser?.id || linkedinUser?.linkedin_id, email: linkedinUser?.email })}`);
 
@@ -339,6 +370,7 @@ export class AuthService {
           linkedin_id: linkedinId,
           linkedin_url: linkedinUrl,
           linkedin_sso_connected: true,
+          ...(timezone ? { timezone } : {}),
         });
 
         const schedule = this.generateWeekSchedule(0);
@@ -371,6 +403,7 @@ export class AuthService {
         const userFields: Partial<User> = {
           linkedin_id: linkedinId,
           linkedin_sso_connected: true,
+          ...(timezone ? { timezone } : {}),
         };
 
         if (linkedinUrl) {

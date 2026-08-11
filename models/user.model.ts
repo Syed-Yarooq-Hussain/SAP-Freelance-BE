@@ -43,6 +43,13 @@ export class User extends Model<User> {
   currency: string;
 
   @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: 'Asia/Karachi',
+  })
+  timezone: string;
+
+  @Column({
     type: DataType.INTEGER,
     allowNull: true,
   })

@@ -43,6 +43,7 @@ async createDetail(dto: any) {
           'linkedin_url',
           'linkedin_id',
           'linkedin_sso_connected',
+          'timezone',
           'created_at',
         ],
         include: [{
@@ -50,7 +51,7 @@ async createDetail(dto: any) {
           attributes: ['id', 'is_primary'],
           include: [{
             model: ModuleEntity,
-            attributes: ['id', 'name'],
+            attributes: ['id', 'name', 'abbreviation'],
           }]
         }]
       },
@@ -74,13 +75,14 @@ async createDetail(dto: any) {
           'linkedin_url',
           'linkedin_id',
           'linkedin_sso_connected',
+          'timezone',
         ],
         include: [{
           model: ConsultantModule,
           attributes: ['id', 'is_primary'],
           include: [{
             model: ModuleEntity,
-            attributes: ['id', 'name'],
+            attributes: ['id', 'name', 'abbreviation'],
           }]
         }]
       },

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {IsEmail,IsNotEmpty,IsOptional,IsString,MinLength,IsNumber,} from 'class-validator';
+import {IsEmail,IsNotEmpty,IsOptional,IsString,MinLength,IsNumber,IsTimeZone,} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateUserDto {
@@ -46,4 +46,15 @@ export class CreateUserDto {
   @IsNumber({}, { message: 'Role must be a number' })
   @Type(() => Number)
   role?: number;
+
+  @ApiProperty({
+    description: 'IANA timezone used to enter and display dates and times',
+    example: 'Asia/Karachi',
+    default: 'Asia/Karachi',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @IsTimeZone({ message: 'Timezone must be a valid IANA timezone, e.g. Asia/Karachi' })
+  timezone?: string;
 }

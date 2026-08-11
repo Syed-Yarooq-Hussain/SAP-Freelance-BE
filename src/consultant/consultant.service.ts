@@ -24,6 +24,7 @@ import { groupBillsByMonth } from './transformer/monthly-bill.transformer';
 import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
 import { LogConsultantHoursDto } from './dto/log-consultant-hours.dto';
 import { ProjectMilestoneRepository } from 'repository/project-milestone.repository';
+import { convertMonthlyScheduleTimezone } from 'src/common/calender/timezone.util';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -103,6 +104,21 @@ export class ConsultantService {
 
     if (!isValidLinkedInProfile) {
       throw new CustomError(400, 'Please provide a valid LinkedIn profile URL');
+    }
+
+    return normalized;
+  }
+
+  private normalizeTimeZone(timezone: string): string {
+    const normalized = timezone.trim();
+
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: normalized }).format();
+    } catch {
+      throw new CustomError(
+        400,
+        'Timezone must be a valid IANA timezone, e.g. Asia/Karachi',
+      );
     }
 
     return normalized;
@@ -503,7 +519,8 @@ export class ConsultantService {
 
   async setConsultantSchedule(id: number, body: any) {
     const consultant = await this.consultantRepository.getSchedulesByUserId(id);
-    const mergedSchedule = this.mergeSchedule(consultant?.working_schedule, body);
+    const mergedSchedule: any = this.mergeSchedule(consultant?.working_schedule, body);
+    const user = await this.userRepo.findById(id);
     const update = this.normalizeSchedulePayload(body);
 
     if (!update.weekly.length && !update.custom.length) {
@@ -515,6 +532,8 @@ export class ConsultantService {
     if (update.weekly.length && !update.effective_from && !update.effective_to) {
       Object.assign(mergedSchedule, createThreeMonthScheduleWindow());
     }
+
+    mergedSchedule.timezone = user?.timezone || 'Asia/Karachi';
 
     await this.consultantRepository.updateByUserId(id, {
       working_schedule: mergedSchedule,
@@ -532,15 +551,22 @@ export class ConsultantService {
     ? year
     : now.getFullYear();
   const consultant = await this.consultantRepository.getSchedulesByUserId(id);
+  const user = await this.userRepo.findById(id);
 
   const meetings =
     await this.meetingRepo.getMeetingWithDetails(id);
 
-  const monthlySchedule = await buildMonthlySchedule(selectedYear, selectedMonth, consultant?.working_schedule || { weekly: [], custom: [] });
+  const workingSchedule: any = consultant?.working_schedule || { weekly: [], custom: [] };
+  const monthlySchedule = await buildMonthlySchedule(selectedYear, selectedMonth, workingSchedule);
+  const localizedSchedule = convertMonthlyScheduleTimezone(
+    monthlySchedule,
+    workingSchedule.timezone || 'Asia/Karachi',
+    user?.timezone || 'Asia/Karachi',
+  );
 
   const eventsByDate = groupEventsByDate(meetings);
 
-  return mergeEventsIntoSchedule(monthlySchedule, eventsByDate);
+  return mergeEventsIntoSchedule(localizedSchedule, eventsByDate);
   }
 
   // update consultant 
@@ -559,6 +585,9 @@ export class ConsultantService {
     if (updateDto.user?.city) userFields.city = updateDto.user.city;
     if (updateDto.user?.country) userFields.country = updateDto.user.country;
     if (updateDto.user?.currency) userFields.currency = updateDto.user.currency;
+    if (updateDto.user?.timezone) {
+      userFields.timezone = this.normalizeTimeZone(updateDto.user.timezone);
+    }
     if (updateDto.user?.linkedin_url) {
       userFields.linkedin_url = this.normalizeLinkedInProfileUrl(
         updateDto.user.linkedin_url,
@@ -965,7 +994,7 @@ export class ConsultantService {
           photo: this.hasProfileValue(consultant?.user?.avatar),
           email: this.hasProfileValue(consultant?.user?.email),
           phone: this.hasProfileValue(consultant?.user?.phone),
-          professional_headline: this.hasProfileValue(consultant?.professional_headline),
+          professional_headline: this.hasProfileValue(consultant?.professional_headline || consultant?.clients_summary),
           linkedin_url: this.hasProfileValue(consultant?.user?.linkedin_url),
           experience: this.hasProfileValue(consultant?.experience),
           hourly_rate: this.hasProfileValue(consultant?.rate),

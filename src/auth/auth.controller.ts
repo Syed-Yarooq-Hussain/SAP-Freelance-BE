@@ -35,7 +35,9 @@ export class AuthController {
     if (!req.user) {
       return res.status(401).json({ error: 'LinkedIn auth failed' });
     }
-    const result = await this.authService.loginWithLinkedIn(req.user);
+    const timezone = req.session?.linkedinTimezone;
+    if (req.session) delete req.session.linkedinTimezone;
+    const result = await this.authService.loginWithLinkedIn(req.user, timezone);
     console.log('🔵 LinkedIn login result:', result);
     const params = new URLSearchParams({ token: result.token });
     if (result.user?.linkedin_url) {
@@ -74,6 +76,7 @@ export class AuthController {
     const result = await this.authService.login(
       loginDto.email,
       loginDto.password,
+      loginDto.timezone,
     );
     return CustomResponse.success<any>(res, {
       data: result,
