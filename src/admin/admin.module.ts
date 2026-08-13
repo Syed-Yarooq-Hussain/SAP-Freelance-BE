@@ -19,11 +19,14 @@ import { Meeting } from 'models/meeting.model';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
+import { ModuleRequest } from 'models/module-request.model';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { EmailDispatch } from 'models/email-dispatch.model';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Consultant, ConsultantModule, ModuleEntity, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
+  imports: [SequelizeModule.forFeature([User, Consultant, ConsultantModule, ModuleEntity, ModuleRequest, EmailDispatch, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
   controllers: [AdminController],
-  providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository],
+  providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository, RolesGuard],
   exports: [AdminService],
 })
 export class AdminModule {}

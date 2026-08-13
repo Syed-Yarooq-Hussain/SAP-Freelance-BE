@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
 import { CreateMeetingDto, UpdateMeetingStatusDto } from './dto/meeting-invite.dto';
@@ -24,6 +24,10 @@ import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { DocumentRepository } from 'repository/document.repository';
 import { City, Country } from 'country-state-city';
+import { ModuleRequest } from 'models/module-request.model';
+import { CreateModuleRequestDto } from './dto/create-module-request.dto';
+import { UserRole } from 'constant/enums';
+import { col, fn, Op, UniqueConstraintError, where } from 'sequelize';
 
 @Injectable()
 export class CommonService {
@@ -36,7 +40,64 @@ export class CommonService {
     private readonly documentRepo: DocumentRepository,
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(Consultant) private readonly consultantModel: typeof Consultant,
+    @InjectModel(ModuleRequest) private readonly moduleRequestModel: typeof ModuleRequest,
   ) { }
+
+  async createModuleRequest(authUser: any, body: CreateModuleRequestDto) {
+    const allowedFields = new Set(['name', 'user_id']);
+    if (!body || Object.keys(body).some(key => !allowedFields.has(key))) {
+      throw new BadRequestException('Unsupported fields in module request');
+    }
+    if (Number(authUser?.role) !== UserRole.CONSULTANT) {
+      throw new ForbiddenException('Only consultants can create module requests');
+    }
+    if (typeof body.name !== 'string' || !body.name.trim()) {
+      throw new BadRequestException('name is required and must be a non-empty string');
+    }
+    if (typeof body.user_id !== 'number' || !Number.isInteger(body.user_id)) {
+      throw new BadRequestException('user_id must be an integer');
+    }
+    if (body.user_id !== Number(authUser.id)) {
+      throw new ForbiddenException('You cannot submit a request for another user');
+    }
+
+    const name = body.name.trim();
+    const normalizedName = name.toLowerCase();
+    const existingModule = await ModuleEntity.findOne({
+      where: {
+        deleted_at: null,
+        [Op.and]: [where(fn('lower', col('name')), normalizedName)],
+      },
+    });
+    if (existingModule) {
+      throw new ConflictException('Module already exists');
+    }
+
+    const pendingRequest = await this.moduleRequestModel.findOne({
+      where: {
+        user_id: authUser.id,
+        is_accepted: null,
+        [Op.and]: [where(fn('lower', col('name')), normalizedName)],
+      },
+    });
+    if (pendingRequest) {
+      throw new ConflictException('An identical module request is already pending');
+    }
+
+    try {
+      const request = await this.moduleRequestModel.create({
+        name,
+        user_id: authUser.id,
+        is_accepted: null,
+      });
+      return { message: 'Module request submitted', data: request };
+    } catch (error) {
+      if (error instanceof UniqueConstraintError) {
+        throw new ConflictException('An identical module request is already pending');
+      }
+      throw error;
+    }
+  }
 
   private get s3() {
     return new S3Client({

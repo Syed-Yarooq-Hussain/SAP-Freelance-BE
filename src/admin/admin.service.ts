@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { UserRepository } from 'repository/user.repository';
 import { getAdminsClientResponse, getAdminsConsultantResponse, getAdminsProjectResponse } from './transformer/response.transformer';
 import { ProjectRepository } from 'repository/project.repository';
@@ -12,10 +12,17 @@ import { Meeting } from 'models/meeting.model';
 import { ProjectPayment } from 'models/project-payment.model';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { Op } from 'sequelize';
-import { MeetingStatus, MeetingType, ProjectStatus, UserRole, UserStatus } from 'constant/enums';
+import { EmailType, MeetingStatus, MeetingType, ProjectStatus, UserRole, UserStatus } from 'constant/enums';
 import { Consultant } from 'models/consultant.model';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
+import { ModuleRequest } from 'models/module-request.model';
+import { Sequelize } from 'sequelize-typescript';
+import { col, fn, where } from 'sequelize';
+import { DecideModuleRequestDto } from './dto/decide-module-request.dto';
+import { EmailDispatch } from 'models/email-dispatch.model';
+import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
+import { sendConsultantInvitationEmail } from 'src/common/emails/email.util';
 
 @Injectable()
 export class AdminService {
@@ -35,7 +42,164 @@ export class AdminService {
     private projectPaymentModel: typeof ProjectPayment,
     @InjectModel(ConsultantMonthlyBill)
     private consultantMonthlyBillModel: typeof ConsultantMonthlyBill,
+    @InjectModel(ModuleRequest)
+    private moduleRequestModel: typeof ModuleRequest,
+    @InjectModel(ModuleEntity)
+    private moduleModel: typeof ModuleEntity,
+    @InjectConnection()
+    private sequelize: Sequelize,
+    @InjectModel(EmailDispatch)
+    private emailDispatchModel: typeof EmailDispatch,
   ) {}
+
+  private assertAdmin(authUser: any) {
+    if (Number(authUser?.role) !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admins can manage module requests');
+    }
+  }
+
+  async getModuleRequests(authUser: any) {
+    this.assertAdmin(authUser);
+    const requests = await this.moduleRequestModel.findAll({
+      include: [{
+        model: User,
+        attributes: ['id', 'username', 'email'],
+      }],
+      order: [['created_at', 'DESC']],
+    });
+    return { message: 'Module requests fetched', data: requests };
+  }
+
+  async decideModuleRequest(
+    authUser: any,
+    requestId: string,
+    body: DecideModuleRequestDto,
+  ) {
+    this.assertAdmin(authUser);
+    if (!/^\d+$/.test(String(requestId)) || Number(requestId) < 1) {
+      throw new BadRequestException('Module request id must be a positive integer');
+    }
+    if (
+      !body ||
+      Object.keys(body).length !== 1 ||
+      !Object.prototype.hasOwnProperty.call(body, 'is_accepted') ||
+      typeof body.is_accepted !== 'boolean'
+    ) {
+      throw new BadRequestException('is_accepted must be either true or false');
+    }
+
+    const accepted = body.is_accepted;
+    const request = await this.sequelize.transaction(async transaction => {
+      const pendingRequest = await this.moduleRequestModel.findByPk(Number(requestId), {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!pendingRequest) throw new NotFoundException('Module request not found');
+      if (pendingRequest.is_accepted !== null) {
+        throw new ConflictException('Module request has already been processed');
+      }
+
+      if (accepted) {
+        const normalizedName = pendingRequest.name.trim().toLowerCase();
+        await this.sequelize.query(
+          'SELECT pg_advisory_xact_lock(hashtext(:moduleName))',
+          { replacements: { moduleName: normalizedName }, transaction },
+        );
+        const existingModule = await this.moduleModel.findOne({
+          where: {
+            deleted_at: null,
+            [Op.and]: [where(fn('lower', col('name')), normalizedName)],
+          },
+          transaction,
+        });
+        if (existingModule) {
+          throw new ConflictException('Module already exists');
+        }
+
+        await this.moduleModel.create({
+          name: pendingRequest.name.trim(),
+          abbreviation: null,
+          is_core: false,
+          parent_id: null,
+        }, { transaction });
+      }
+
+      pendingRequest.is_accepted = accepted;
+      await pendingRequest.save({ transaction });
+      return pendingRequest;
+    });
+
+    return {
+      message: accepted ? 'Module request accepted' : 'Module request rejected',
+      data: request,
+    };
+  }
+
+  async sendInviteEmails(authUser: any, body: SendInviteEmailsDto) {
+    this.assertAdmin(authUser);
+    if (
+      !body ||
+      Object.keys(body).length !== 1 ||
+      !Object.prototype.hasOwnProperty.call(body, 'emails') ||
+      typeof body.emails !== 'string'
+    ) {
+      throw new BadRequestException('emails must be a comma-separated string');
+    }
+
+    const emails = Array.from(new Set(
+      body.emails
+        .split(',')
+        .map(email => email.trim().toLowerCase())
+        .filter(Boolean),
+    ));
+    if (!emails.length) {
+      throw new BadRequestException('At least one email address is required');
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = emails.filter(email => !emailPattern.test(email));
+    if (invalidEmails.length) {
+      throw new BadRequestException(
+        `Invalid email address${invalidEmails.length > 1 ? 'es' : ''}: ${invalidEmails.join(', ')}`,
+      );
+    }
+
+    const sent: EmailDispatch[] = [];
+    const failed: { email: string; error: string }[] = [];
+
+    // Deliberately sequential to avoid bursting the mail provider.
+    for (const email of emails) {
+      try {
+        const providerMessageId = await sendConsultantInvitationEmail(email);
+        const record = await this.emailDispatchModel.create({
+          email,
+          email_type: EmailType.INVITE,
+          provider_message_id: providerMessageId,
+          sent_by: Number(authUser.id),
+          sent_at: new Date(),
+        });
+        sent.push(record);
+      } catch (error) {
+        failed.push({
+          email,
+          error: error instanceof Error ? error.message : 'Email delivery failed',
+        });
+      }
+    }
+
+    return {
+      message: failed.length
+        ? 'Invite email processing completed with some failures'
+        : 'Invite emails sent successfully',
+      data: {
+        total: emails.length,
+        sent_count: sent.length,
+        failed_count: failed.length,
+        sent,
+        failed,
+      },
+    };
+  }
 
   private getCurrentWeekRange() {
     const now = new Date();

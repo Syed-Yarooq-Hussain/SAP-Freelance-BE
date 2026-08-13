@@ -7,6 +7,7 @@ import { MeetingInvitee } from './meeting-invitee.model';
 import { ModuleEntity } from './module.model';
 import { ConsultantModule } from './consultant-module.model';
 import { ProjectDocument } from './project-document.model';
+import { ModuleRequest } from './module-request.model';
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -141,4 +142,7 @@ export class User extends Model<User> {
 
   @HasMany(() => ProjectDocument)
   projectDocuments: ProjectDocument[];
+
+  @HasMany(() => ModuleRequest)
+  moduleRequests: ModuleRequest[];
 }

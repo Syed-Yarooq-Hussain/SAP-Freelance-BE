@@ -1,9 +1,28 @@
 import * as nodemailer from 'nodemailer';
-import { generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
+import { consultantInvitationTemplate, generalTemplate, resetPasswordTemplate, verifyEmailTemplate } from './email.template';
 import { EmailType } from 'constant/enums';
 import { Resend } from "resend";
 
-const resend = new Resend('re_disroJ34_NJedanEEfxJVYRSBRy15i6Sd');
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+
+  return new Resend(apiKey);
+}
+
+export async function sendConsultantInvitationEmail(to: string) {
+  const result = await getResendClient().emails.send({
+    from: 'The Consult Crew <no-reply@safeedposhkarachi.xyz>',
+    to,
+    subject: 'You’re Invited to Join The Consult Crew',
+    html: consultantInvitationTemplate(),
+  });
+
+  if (result.error) throw new Error(result.error.message);
+  return result.data?.id || null;
+}
 
 export async function sendEmail(
   to: string,
@@ -71,7 +90,7 @@ export async function sendEmail(
     // 🔹 Email Send
     try {
       if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
-        info = await resend.emails.send({
+        info = await getResendClient().emails.send({
           from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `Consultcrew: Verify your Email`,
@@ -80,14 +99,14 @@ export async function sendEmail(
 
       } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
         console.log("Sending reset password email to:", to);
-        info = await resend.emails.send({
+        info = await getResendClient().emails.send({
           from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `Consultcrew: Password Reset Request`,
           html: resetPasswordTemplate(verifyLink),
         });
       } else {
-        info = await resend.emails.send({
+        info = await getResendClient().emails.send({
           from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
           to,
           subject: `Consultcrew: Notification`,

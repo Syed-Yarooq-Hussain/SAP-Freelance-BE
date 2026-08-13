@@ -10,11 +10,23 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ModuleEntity } from 'models/module.model';
+import { UserRole } from 'constant/enums';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { CreateModuleRequestDto } from './dto/create-module-request.dto';
 
 @ApiTags('Common')
 @Controller('common')
 export class CommonController {
   constructor(private readonly commonService: CommonService) {}  
+
+  @Post('module/requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CONSULTANT)
+  @ApiOperation({ summary: 'Submit a new SAP module request' })
+  createModuleRequest(@Req() req: any, @Body() body: CreateModuleRequestDto) {
+    return this.commonService.createModuleRequest(req.user, body);
+  }
 
   @Get('countries')
   @ApiOperation({ summary: 'Get all countries for location selection' })

@@ -1,12 +1,45 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put, UseGuards, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { UserRole } from 'constant/enums';
+import { DecideModuleRequestDto } from './dto/decide-module-request.dto';
+import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  @Get('module-requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'List module requests newest first' })
+  getModuleRequests(@Req() req: any) {
+    return this.adminService.getModuleRequests(req.user);
+  }
+
+  @Patch('module-requests/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Accept or reject a pending module request' })
+  decideModuleRequest(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: DecideModuleRequestDto,
+  ) {
+    return this.adminService.decideModuleRequest(req.user, id, body);
+  }
+
+  @Post('invite-emails')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Send consultant invitation emails sequentially' })
+  sendInviteEmails(@Req() req: any, @Body() body: SendInviteEmailsDto) {
+    return this.adminService.sendInviteEmails(req.user, body);
+  }
 
   @Get('stats')
   getDashboardstats() {

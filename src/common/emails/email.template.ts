@@ -108,3 +108,40 @@ export const resetPasswordTemplate = (
     </div>
   </div>
 `;
+
+export const consultantInvitationTemplate = () => `
+  <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #f4f6f8;">
+    <div style="max-width: 640px; margin: auto; background: #ffffff; padding: 28px; border-radius: 8px;">
+      <p>Hi,</p>
+
+      <p style="color:#444; line-height:1.6;">I hope you're doing well.</p>
+
+      <p style="color:#444; line-height:1.6;">
+        A while ago, you expressed interest in SAP consulting opportunities by submitting your details to our Google Sheet.
+        We'd like to invite you to join <strong>The Consult Crew</strong>, our platform that connects experienced SAP consultants
+        with exciting projects and career opportunities.
+      </p>
+
+      <p style="color:#444; line-height:1.6;">By joining our talent network, you'll:</p>
+      <ul style="color:#444; line-height:1.8;">
+        <li>Get access to new SAP consulting opportunities.</li>
+        <li>Be considered for projects that match your skills and experience.</li>
+        <li>Become part of a growing community of SAP professionals.</li>
+      </ul>
+
+      <p style="color:#444; line-height:1.6;">You can create your profile here:</p>
+      <div style="margin: 24px 0;">
+        <a href="https://theconsultcrew.com/"
+          style="background:#007bff; color:#fff; padding:12px 20px; text-decoration:none; border-radius:4px; display:inline-block;">
+          Create Your Profile
+        </a>
+      </div>
+
+      <p style="color:#444; line-height:1.6;">
+        We look forward to welcoming you to our consultant community and helping you find your next opportunity.
+      </p>
+
+      <p>Best regards,<br/><strong>The Consult Crew Team</strong></p>
+    </div>
+  </div>
+`;
