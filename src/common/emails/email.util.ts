@@ -12,9 +12,14 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
+function getSender() {
+  return process.env.EMAIL_FROM?.trim() ||
+    'The Consult Crew <no-reply@theconsultcrew.com>';
+}
+
 export async function sendConsultantInvitationEmail(to: string) {
   const result = await getResendClient().emails.send({
-    from: 'The Consult Crew <no-reply@safeedposhkarachi.xyz>',
+    from: getSender(),
     to,
     subject: 'You’re Invited to Join The Consult Crew',
     html: consultantInvitationTemplate(),
@@ -91,7 +96,7 @@ export async function sendEmail(
     try {
       if (type === EmailType.SIGNUP_VERIFICATION && verifyLink) {
         info = await getResendClient().emails.send({
-          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
+          from: getSender(),
           to,
           subject: `Consultcrew: Verify your Email`,
           html: verifyEmailTemplate(receiverName, verifyLink),
@@ -100,14 +105,14 @@ export async function sendEmail(
       } else if (type === EmailType.RESET_PASSWORD && verifyLink) {
         console.log("Sending reset password email to:", to);
         info = await getResendClient().emails.send({
-          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
+          from: getSender(),
           to,
           subject: `Consultcrew: Password Reset Request`,
           html: resetPasswordTemplate(verifyLink),
         });
       } else {
         info = await getResendClient().emails.send({
-          from: `Consultcrew <no-reply@safeedposhkarachi.xyz>`,
+          from: getSender(),
           to,
           subject: `Consultcrew: Notification`,
           html: generalTemplate(receiverName, message, senderName),

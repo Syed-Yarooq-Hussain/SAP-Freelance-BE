@@ -312,7 +312,8 @@ export class CommonService {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     resend.emails.send({
-      from: "P9 System <no-reply@safeedposhkarachi.xyz>",
+      from: process.env.EMAIL_FROM?.trim() ||
+        "The Consult Crew <no-reply@theconsultcrew.com>",
       to: "syed.yarooq1701@gmail.com",
       subject: "Test Email",
       html: "<p>Hello from Railways!</p>",

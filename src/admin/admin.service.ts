@@ -167,6 +167,11 @@ export class AdminService {
     const sent: EmailDispatch[] = [];
     const failed: { email: string; error: string }[] = [];
 
+    console.log('[AdminService] Starting consultant invite email batch', {
+      adminId: authUser.id,
+      recipientCount: emails.length,
+    });
+
     // Deliberately sequential to avoid bursting the mail provider.
     for (const email of emails) {
       try {
@@ -179,13 +184,30 @@ export class AdminService {
           sent_at: new Date(),
         });
         sent.push(record);
+        console.log('[AdminService] Consultant invite email sent', {
+          email,
+          providerMessageId,
+        });
       } catch (error) {
+        const errorMessage = error instanceof Error
+          ? error.message
+          : 'Email delivery failed';
+        console.error('[AdminService] Consultant invite email failed', {
+          email,
+          error: errorMessage,
+        });
         failed.push({
           email,
-          error: error instanceof Error ? error.message : 'Email delivery failed',
+          error: errorMessage,
         });
       }
     }
+
+    console.log('[AdminService] Consultant invite email batch completed', {
+      total: emails.length,
+      sent: sent.length,
+      failed: failed.length,
+    });
 
     return {
       message: failed.length
