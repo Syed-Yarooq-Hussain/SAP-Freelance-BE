@@ -443,7 +443,7 @@ export class CommonService {
   async exportExcelWithDriveProfiles(file: Express.Multer.File) {
     const normalizePhone = (value: any) => String(value ?? '').replace(/\D/g, '');
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(file.buffer);
+    await workbook.xlsx.load(Buffer.from(file.buffer) as any);
     const worksheet = workbook.worksheets[0];
     if (!worksheet) throw new BadRequestException('Excel workbook does not contain a worksheet');
 
@@ -775,7 +775,7 @@ export class CommonService {
 
   async readExcelWithDriveProfiles(file: any) {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(file.buffer);
+    await workbook.xlsx.load(Buffer.from(file.buffer) as any);
     const worksheet = workbook.worksheets[0];
 
     const rows: any[] = [];
