@@ -19,10 +19,11 @@ import { DocumentRepository } from 'repository/document.repository';
 import { Document } from 'models/document.model';
 import { ModuleRequest } from 'models/module-request.model';
 import { RolesGuard } from 'src/auth/roles.guard';
+import { ConsultantModule } from 'models/consultant-module.model';
 
 
 @Module({
-  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity, Consultant, Industries, User, Document, ModuleRequest])],
+  imports: [SequelizeModule.forFeature([Meeting, MeetingInvitee, ProjectConsultant, ModuleEntity, Consultant, ConsultantModule, Industries, User, Document, ModuleRequest])],
   controllers: [CommonController],
   providers: [CommonService, MeetingRepository, ProjectConsultantRepository, ModuleRepository, ConsultantRepository, IndustriesRepository, UserRepository, DocumentRepository, RolesGuard],
   exports: [CommonService],

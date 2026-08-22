@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Res, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
@@ -208,9 +209,25 @@ export class CommonController {
   @UseInterceptors(FileInterceptor('file'))
   async readExcelProfiles(
     @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
   ) {
     if (!file) throw new BadRequestException('Excel file required');
-    return this.commonService.readExcelWithDriveProfiles(file);
+    const result = await this.commonService.exportExcelWithDriveProfiles(file);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    return res.send(result.buffer);
+  }
+
+  @Post('import-excel-profiles')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  async importExcelProfiles(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) throw new BadRequestException('Reviewed Excel file required');
+    return this.commonService.importReviewedExcelProfiles(file, req.user);
   }
 
   @Post('upload')

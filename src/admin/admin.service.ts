@@ -23,6 +23,7 @@ import { DecideModuleRequestDto } from './dto/decide-module-request.dto';
 import { EmailDispatch } from 'models/email-dispatch.model';
 import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
 import { sendConsultantInvitationEmail } from 'src/common/emails/email.util';
+import { ConsultantService } from 'src/consultant/consultant.service';
 
 @Injectable()
 export class AdminService {
@@ -50,7 +51,20 @@ export class AdminService {
     private sequelize: Sequelize,
     @InjectModel(EmailDispatch)
     private emailDispatchModel: typeof EmailDispatch,
+    private consultantService: ConsultantService,
   ) {}
+
+  async getConsultantProfileByUserId(userId: number) {
+    if (!Number.isInteger(userId) || userId < 1) {
+      throw new BadRequestException('Consultant user ID must be a positive integer');
+    }
+    const profile = await this.consultantService.getConsultantDetail(userId);
+    if (!profile) throw new NotFoundException('Consultant profile not found');
+    return {
+      message: 'Consultant profile fetched successfully',
+      data: profile,
+    };
+  }
 
   private assertAdmin(authUser: any) {
     if (Number(authUser?.role) !== UserRole.ADMIN) {

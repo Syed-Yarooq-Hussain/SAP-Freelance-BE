@@ -22,9 +22,10 @@ import { ModuleEntity } from 'models/module.model';
 import { ModuleRequest } from 'models/module-request.model';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { EmailDispatch } from 'models/email-dispatch.model';
+import { ConsultantModule as ConsultantFeatureModule } from 'src/consultant/consultant.module';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Consultant, ConsultantModule, ModuleEntity, ModuleRequest, EmailDispatch, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
+  imports: [ConsultantFeatureModule, SequelizeModule.forFeature([User, Consultant, ConsultantModule, ModuleEntity, ModuleRequest, EmailDispatch, Project, Industries, ProjectPayment, ProjectMilestone, Document, ConsultantMonthlyBill, Meeting])],
   controllers: [AdminController],
   providers: [AdminService, UserRepository, ProjectRepository, IndustriesRepository, ProjectPaymentRepository, ConsultantMonthlyBillRepository, RolesGuard],
   exports: [AdminService],

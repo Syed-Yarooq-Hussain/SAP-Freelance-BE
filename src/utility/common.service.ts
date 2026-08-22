@@ -17,9 +17,10 @@ import { IndustriesRepository } from 'repository/indutries.repository';
 import { Resend } from 'resend';
 import { ModuleEntity } from 'models/module.model';
 import * as ExcelJS from 'exceljs';
-import axios from 'axios';
+import * as XLSX from 'xlsx';
 import * as bcrypt from 'bcrypt';
-import { InjectModel } from '@nestjs/sequelize';
+import axios from 'axios';
+import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { User } from 'models/user.model';
 import { Consultant } from 'models/consultant.model';
 import { DocumentRepository } from 'repository/document.repository';
@@ -28,6 +29,9 @@ import { ModuleRequest } from 'models/module-request.model';
 import { CreateModuleRequestDto } from './dto/create-module-request.dto';
 import { UserRole } from 'constant/enums';
 import { col, fn, Op, UniqueConstraintError, where } from 'sequelize';
+import { ConsultantModule } from 'models/consultant-module.model';
+import { Sequelize } from 'sequelize-typescript';
+import { PRODUCTION_SAP_MODULES } from 'constant/production-sap-modules';
 
 @Injectable()
 export class CommonService {
@@ -41,6 +45,8 @@ export class CommonService {
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectModel(Consultant) private readonly consultantModel: typeof Consultant,
     @InjectModel(ModuleRequest) private readonly moduleRequestModel: typeof ModuleRequest,
+    @InjectModel(ConsultantModule) private readonly consultantModuleModel: typeof ConsultantModule,
+    @InjectConnection() private readonly sequelize: Sequelize,
   ) { }
 
   async createModuleRequest(authUser: any, body: CreateModuleRequestDto) {
@@ -433,6 +439,339 @@ export class CommonService {
   // ============================================================
   // 📊 Excel + Google Drive — Consultant Bulk Import
   // ============================================================
+
+  async exportExcelWithDriveProfiles(file: Express.Multer.File) {
+    const normalizePhone = (value: any) => String(value ?? '').replace(/\D/g, '');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(file.buffer);
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) throw new BadRequestException('Excel workbook does not contain a worksheet');
+
+    let headers: string[] = [];
+    const rows: any[] = [];
+    worksheet.eachRow((row, rowIndex) => {
+      if (rowIndex === 1) {
+        headers = (row.values as any[]).slice(1).map(value => String(value).trim().toLowerCase());
+        return;
+      }
+      const rowObject: any = {};
+      (row.values as any[]).slice(1).forEach((value, index) => {
+        rowObject[headers[index]] = value;
+      });
+      if (Object.values(rowObject).some(value => value != null && String(value).trim())) rows.push(rowObject);
+    });
+    if (!headers.length) throw new BadRequestException('Excel header row is required');
+    if (rows.length > 20) {
+      throw new BadRequestException('Maximum 20 CV rows are allowed per batch');
+    }
+
+    const moduleCatalog = PRODUCTION_SAP_MODULES;
+    const moduleLookup = new Map<string, number>();
+    for (const module of moduleCatalog) {
+      const name = module.name.trim().toLowerCase();
+      // Duplicate production names exist (e.g. Materials Management 38/172).
+      // Keep the first/lowest production ID for name-only matches.
+      if (name && !moduleLookup.has(name)) moduleLookup.set(name, module.id);
+      moduleLookup.set(String(module.id), module.id);
+    }
+
+    const resolveModules = (value: any) => {
+      const cell = value && typeof value === 'object' ? value.text ?? value.result ?? '' : value ?? '';
+      const entries = String(cell).split(/[,;|\n]+/).map(item => item.trim()).filter(Boolean);
+      const ids: number[] = [];
+      const unresolved: string[] = [];
+      for (const entry of entries) {
+        const plainName = entry.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase();
+        const id = moduleLookup.get(entry.toLowerCase()) ?? moduleLookup.get(plainName);
+        if (id) ids.push(id); else unresolved.push(entry);
+      }
+      return { ids: Array.from(new Set(ids)), unresolved };
+    };
+
+    const results: any[] = [];
+    for (const row of rows) {
+      const rawUrl = row.url;
+      const driveUrl = typeof rawUrl === 'object' && rawUrl !== null
+        ? String(rawUrl.hyperlink ?? rawUrl.text ?? rawUrl.result ?? '')
+        : String(rawUrl ?? '');
+      let profile: any = {};
+      let processingError = '';
+      let cvText = '';
+      if (driveUrl) {
+        try {
+          const fileId = this.extractDriveFileId(driveUrl);
+          const pdf = await this.downloadFromGoogleDrive(fileId);
+          cvText = await extractTextFromBuffer(pdf);
+          const retryDelays = [0, 2000, 5000, 10000];
+          let lastError: any;
+          for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+            if (retryDelays[attempt]) {
+              await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+            }
+            try {
+              profile = await parseWithOpenAI(cvText);
+              lastError = null;
+              break;
+            } catch (error) {
+              lastError = error;
+              const message = error instanceof Error ? error.message : String(error);
+              const isRateLimit = /429|rate.?limit|quota|too many requests/i.test(message);
+              if (!isRateLimit) break;
+            }
+          }
+          if (lastError) throw lastError;
+        } catch (error) {
+          processingError = error instanceof Error ? error.message : String(error || 'Unknown error');
+        }
+      }
+      const sheetCore = resolveModules(row.core_module_ids ?? row.core_module);
+      const sheetOther = resolveModules(row.other_module_ids ?? row.other_module);
+      const detectedCore = resolveModules(
+        `${profile.profile_summary || ''},${profile.clients_summary || ''}`,
+      ).ids;
+      const normalizedCvText = cvText.toLowerCase();
+      const detectedAll = moduleCatalog
+        .filter(module => normalizedCvText.includes(module.name.toLowerCase()))
+        .map(module => module.id);
+      const core = {
+        ids: Array.from(new Set([...sheetCore.ids, ...detectedCore])),
+        unresolved: sheetCore.unresolved,
+      };
+      const other = {
+        ids: Array.from(new Set([...sheetOther.ids, ...detectedAll]))
+          .filter(id => !core.ids.includes(id)),
+        unresolved: sheetOther.unresolved,
+      };
+      results.push({
+        ...row,
+        username: profile.username ?? '',
+        email: profile.email ?? '',
+        phone: normalizePhone(profile.phone),
+        city: profile.city ?? '',
+        country: profile.country ?? row.country ?? '',
+        experience: profile.total_experience_years ?? '',
+        professional_headline: profile.professional_headline ?? '',
+        profile_summary: profile.profile_summary ?? '',
+        clients_summary: profile.clients_summary ?? profile.profile_summary ?? '',
+        industries: JSON.stringify(profile.industries ?? []),
+        skills: JSON.stringify(profile.skills ?? []),
+        projects: JSON.stringify(profile.projects ?? []),
+        work_experiences: JSON.stringify(profile.work_experiences ?? []),
+        education: JSON.stringify(profile.education ?? []),
+        certifications: JSON.stringify(profile.certifications ?? []),
+        languages: JSON.stringify(profile.languages ?? []),
+        cv_url: driveUrl,
+        extracted_name: profile.username ?? '',
+        extracted_email: profile.email ?? '',
+        extracted_phone: normalizePhone(profile.phone),
+        extracted_city: profile.city ?? '',
+        extracted_linkedin_url: profile.linkedin_url ?? '',
+        core_module_ids: core.ids.join(','),
+        other_module_ids: other.ids.join(','),
+        unresolved_core_modules: core.unresolved.join(','),
+        unresolved_other_modules: other.unresolved.join(','),
+        processing_error: processingError,
+      });
+    }
+
+    const addedHeaders = [
+      'username', 'email', 'phone', 'city', 'country', 'experience',
+      'professional_headline', 'profile_summary', 'clients_summary', 'industries',
+      'skills', 'projects', 'work_experiences', 'education', 'certifications',
+      'languages', 'cv_url',
+      'extracted_name', 'extracted_email', 'extracted_phone', 'extracted_city',
+      'extracted_linkedin_url', 'core_module_ids', 'other_module_ids',
+      'unresolved_core_modules', 'unresolved_other_modules', 'processing_error',
+    ];
+    const outputHeaders = [...headers, ...addedHeaders.filter(header => !headers.includes(header))];
+    const outputWorkbook = new ExcelJS.Workbook();
+    const outputSheet = outputWorkbook.addWorksheet('Processed Profiles');
+    outputSheet.columns = outputHeaders.map(header => ({ header, key: header, width: 24 }));
+    results.forEach(result => outputSheet.addRow(result));
+    outputSheet.getRow(1).font = { bold: true };
+    outputSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    outputSheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: outputHeaders.length } };
+
+    const sourceName = String(file.originalname || 'consultant-profiles')
+      .replace(/\.xlsx?$/i, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '-');
+    return {
+      filename: `${sourceName}-processed.xlsx`,
+      buffer: Buffer.from(await outputWorkbook.xlsx.writeBuffer()),
+    };
+  }
+
+  async importReviewedExcelProfiles(file: Express.Multer.File, authUser: any) {
+    if (Number(authUser?.role) !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admins can import consultant profiles');
+    }
+
+    if (!file.buffer?.length) throw new BadRequestException('Uploaded Excel file is empty');
+
+    let headers: string[] = [];
+    const rows: { rowNumber: number; data: any }[] = [];
+    try {
+      const workbook = XLSX.read(file.buffer, { type: 'buffer', raw: false });
+      const firstSheetName = workbook.SheetNames?.[0];
+      if (!firstSheetName || !workbook.Sheets[firstSheetName]) {
+        throw new Error('Workbook does not contain a worksheet');
+      }
+
+      const matrix = XLSX.utils.sheet_to_json<any[]>(workbook.Sheets[firstSheetName], {
+        header: 1,
+        defval: '',
+        raw: false,
+      });
+      if (!matrix.length) throw new Error('Worksheet is empty');
+
+      headers = matrix[0].map(value => String(value).trim().toLowerCase());
+      matrix.slice(1).forEach((values, index) => {
+        const data: any = {};
+        headers.forEach((header, columnIndex) => data[header] = values[columnIndex] ?? '');
+        if (Object.values(data).some(value => String(value ?? '').trim())) {
+          rows.push({ rowNumber: index + 2, data });
+        }
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Unreadable workbook';
+      throw new BadRequestException(`Invalid Excel file: ${reason}`);
+    }
+
+    for (const required of ['email', 'username', 'core_module_ids', 'other_module_ids']) {
+      if (!headers.includes(required)) {
+        throw new BadRequestException(`Required Excel column is missing: ${required}`);
+      }
+    }
+
+    const validModuleIds = new Set(PRODUCTION_SAP_MODULES.map(module => module.id));
+    const parseJson = (value: any, field: string, rowNumber: number, fallback: any) => {
+      if (value == null || String(value).trim() === '') return fallback;
+      if (typeof value !== 'string') return value;
+      try { return JSON.parse(value); }
+      catch { throw new Error(`Row ${rowNumber}: ${field} must contain valid JSON`); }
+    };
+    const parseLanguages = (value: any) => {
+      if (value == null || String(value).trim() === '') return [];
+      if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+      const text = String(value).trim();
+      if (text.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(text);
+          return Array.isArray(parsed)
+            ? parsed.map(item => String(item).trim()).filter(Boolean)
+            : [String(parsed).trim()].filter(Boolean);
+        } catch {
+          // Fall through and preserve a malformed JSON-looking value as one language.
+        }
+      }
+      return text.split(/[,;|]+/).map(item => item.trim()).filter(Boolean);
+    };
+    const parseIds = (value: any) => Array.from(new Set(
+      String(value ?? '').split(/[,;|\s]+/).map(Number).filter(Number.isInteger),
+    ));
+    const normalizePhone = (value: any) => String(value ?? '').replace(/\D/g, '');
+
+    const created: { row: number; user_id: number; email: string }[] = [];
+    const skipped: { row: number; email: string; reason: string }[] = [];
+    const failed: { row: number; email: string; error: string }[] = [];
+
+    for (const item of rows) {
+      const row = item.data;
+      const email = String(row.email || '').trim().toLowerCase();
+      try {
+        if (String(row.processing_error || '').trim()) {
+          throw new Error('Row still contains a CV processing error');
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          throw new Error('Valid email is required');
+        }
+        if (!String(row.username || '').trim()) throw new Error('username is required');
+
+        const existing = await this.userModel.findOne({
+          where: { email: { [Op.iLike]: email } },
+        });
+        if (existing) {
+          skipped.push({ row: item.rowNumber, email, reason: 'email_already_exists' });
+          continue;
+        }
+
+        const coreModuleIds = parseIds(row.core_module_ids);
+        const otherModuleIds = parseIds(row.other_module_ids)
+          .filter(id => !coreModuleIds.includes(id));
+        const invalidIds = [...coreModuleIds, ...otherModuleIds]
+          .filter(id => !validModuleIds.has(id));
+        if (invalidIds.length) throw new Error(`Invalid module IDs: ${invalidIds.join(',')}`);
+
+        const passwordHash = await bcrypt.hash('123456', 10);
+        const user = await this.sequelize.transaction(async transaction => {
+          const newUser = await this.userModel.create({
+            username: String(row.username).trim(),
+            email,
+            password: passwordHash,
+            phone: normalizePhone(row.phone) || null,
+            city: String(row.city || '').trim() || null,
+            country: String(row.country || '').trim() || null,
+            linkedin_url: String(row.extracted_linkedin_url || row.linkedin_url || '').trim() || null,
+            role: UserRole.CONSULTANT,
+            currency: String(row.currency || 'PKR').trim(),
+            status: 'active',
+            email_verified: true,
+            phone_verified: false,
+            linkedin_sso_connected: false,
+            timezone: String(row.timezone || 'Asia/Karachi').trim(),
+          }, { transaction });
+
+          await this.consultantModel.create({
+            user_id: newUser.id,
+            experience: row.experience === '' ? null : Number(row.experience) || 0,
+            rate: row.rate === '' || row.rate == null ? null : Number(row.rate) || 0,
+            weekly_available_hours: row.availability === '' || row.availability == null
+              ? null : Number(row.availability) || 0,
+            working_schedule: null,
+            cv_url: String(row.cv_url || row.url || '').trim() || null,
+            clients_summary: String(row.clients_summary || row.profile_summary || '').trim() || null,
+            professional_headline: String(row.professional_headline || '').trim() || null,
+            industries: JSON.stringify(parseJson(row.industries, 'industries', item.rowNumber, [])),
+            skills: parseJson(row.skills, 'skills', item.rowNumber, []),
+            projects: parseJson(row.projects, 'projects', item.rowNumber, []),
+            work_experiences: parseJson(row.work_experiences, 'work_experiences', item.rowNumber, []),
+            education: parseJson(row.education, 'education', item.rowNumber, []),
+            certification: parseJson(row.certifications, 'certifications', item.rowNumber, []),
+            languages: parseLanguages(row.languages),
+          }, { transaction });
+
+          const moduleRows = [
+            ...coreModuleIds.map(module_id => ({ user_id: newUser.id, module_id, is_primary: true })),
+            ...otherModuleIds.map(module_id => ({ user_id: newUser.id, module_id, is_primary: false })),
+          ];
+          if (moduleRows.length) {
+            await this.consultantModuleModel.bulkCreate(moduleRows, { transaction });
+          }
+          return newUser;
+        });
+        created.push({ row: item.rowNumber, user_id: user.id, email });
+      } catch (error) {
+        failed.push({
+          row: item.rowNumber,
+          email,
+          error: error instanceof Error ? error.message : 'Profile import failed',
+        });
+      }
+    }
+
+    return {
+      message: 'Reviewed consultant profiles import completed',
+      data: {
+        total: rows.length,
+        created_count: created.length,
+        skipped_count: skipped.length,
+        failed_count: failed.length,
+        created,
+        skipped,
+        failed,
+      },
+    };
+  }
 
   async readExcelWithDriveProfiles(file: any) {
     const workbook = new ExcelJS.Workbook();

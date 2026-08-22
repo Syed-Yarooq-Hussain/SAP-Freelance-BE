@@ -59,6 +59,14 @@ export class AdminController {
     console.log("Status Filter:", status);  
     return this.adminService.getAllConsultant(status);
   }
+
+  @Get('consultants/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get complete consultant profile by user ID' })
+  getConsultantProfile(@Param('id') id: string) {
+    return this.adminService.getConsultantProfileByUserId(Number(id));
+  }
   
   @Post('consultants/:id')
   accpetRejectConsultant(@Param('id') id: string, @Body() body: any) {

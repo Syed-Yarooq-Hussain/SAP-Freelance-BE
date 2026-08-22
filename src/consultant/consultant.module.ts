@@ -27,6 +27,6 @@ import { ProjectMilestoneRepository } from 'repository/project-milestone.reposit
   imports: [CommonModule, SequelizeModule.forFeature([Consultant, ProjectConsultant, User, Meeting, MeetingInvitee, cm, Chat, ProjectTask, ProjectMilestone, ConsultantMonthlyBill])],
   providers: [ConsultantRepository, ConsultantService, ProjectConsultantRepository, UserRepository, MeetingRepository, ConsultantModuleRepository, ChatRepository, ProjectTaskRepository, ProjectMilestoneRepository, ConsultantMonthlyBillRepository],
   controllers: [ConsultantController],
-  exports: [ConsultantRepository, ProjectConsultantRepository, UserRepository],
+  exports: [ConsultantService, ConsultantRepository, ProjectConsultantRepository, UserRepository],
 })
 export class ConsultantModule {}
