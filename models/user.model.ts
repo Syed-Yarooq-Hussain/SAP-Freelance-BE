@@ -136,6 +136,40 @@ export class User extends Model<User> {
   })
   deleted_at: Date | null;
 
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: 'not_started',
+  })
+  onboarding_status: string;
+  
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_step: string | null;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_started_at: Date | null;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_completed_at: Date | null;
+  
+  @Column({
+    type: DataType.JSON,
+    allowNull: false,
+    defaultValue: {},
+  })
+  feature_tours: Record<string, { status: string; completed_at?: string }>;
 
   @HasMany(() => ConsultantModule)
   modules: ConsultantModule[];
