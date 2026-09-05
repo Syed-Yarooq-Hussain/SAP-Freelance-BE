@@ -8,10 +8,12 @@ import { UserRole } from 'constant/enums';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { ModuleEntity } from 'models/module.model';
 import { Project } from 'models/project.model';
+import { matchesConsultantModuleFilters } from 'src/common/utils/consultant-module-filter.util';
 
 export interface ConsultantSearchFilters {
   user_ids?: number[];
   module_ids?: number[];
+  other_module_ids?: number[];
   experience?: number;
   available_hours?: number;
   min_rate?: number;
@@ -34,17 +36,26 @@ class UserRepository {
   
   // 🟢 Get all Clients for Admin Screen
   async getAllClientsWithProjectstatus(status?: string): Promise<User[]> {
+    const where: any = { role: UserRole.CLIENT, deleted_at: null };
+    if (status?.trim()) where.status = { [Op.iLike]: status.trim() };
     return this.userModel.findAll({
-      where: { role: UserRole.CLIENT },
-      attributes: ['id', 'username', 'email', 'phone', 'status'],
+      where,
+      attributes: ['id', 'username', 'email', 'phone', 'status', 'profit_margin_percentage'],
       include: [
         {
           model: Project,
-          required: true,
+          as: 'projects',
+          required: false,
           attributes: [ 'id', 'name', 'status'],
         },
       ],
       raw: false,
+    });
+  }
+
+  async findClientCandidateById(id: number): Promise<User | null> {
+    return this.userModel.findByPk(id, {
+      attributes: ['id', 'username', 'role', 'status', 'deleted_at', 'profit_margin_percentage'],
     });
   }
 
@@ -75,7 +86,10 @@ class UserRepository {
   // ➕ Create User
   async createUser(userAttributes: Partial<User>): Promise<User> {
     try {
-      const user = await this.userModel.create(userAttributes);
+      const user = await this.userModel.create({
+        ...userAttributes,
+        currency: userAttributes.currency || 'USD',
+      });
       return user;
     } catch (error) {
       console.error('❌ Error creating user:', error);
@@ -186,6 +200,7 @@ class UserRepository {
         },
         {
           model: Project,
+          as: 'projects',
           required: false,
           attributes: ['id', 'name', 'status'],
         },
@@ -222,7 +237,8 @@ class UserRepository {
       };
     }
 
-    const moduleIds = filters.module_ids || [];
+    const coreModuleIds = filters.module_ids || [];
+    const otherModuleIds = filters.other_module_ids || [];
     const consultants = await this.userModel.findAll({
       where: userWhere,
       attributes: ['id'],
@@ -236,24 +252,19 @@ class UserRepository {
         {
           model: ConsultantModule,
           required: false,
-          ...(moduleIds.length > 0
-            ? { where: { module_id: { [Op.in]: moduleIds } } }
-            : {}),
-          attributes: ['module_id'],
+          attributes: ['module_id', 'is_primary'],
         },
       ],
       order: [['id', 'ASC']],
     });
 
-    const matchingConsultants = moduleIds.length
-      ? consultants.filter((consultant: any) => {
-          const selectedModuleIds = (consultant.modules || []).map((module: any) =>
-            Number(module.module_id),
-          );
-
-          return moduleIds.every((moduleId) => selectedModuleIds.includes(Number(moduleId)));
-        })
-      : consultants;
+    const matchingConsultants = consultants.filter((consultant: any) =>
+      matchesConsultantModuleFilters(
+        consultant.modules || [],
+        coreModuleIds,
+        otherModuleIds,
+      ),
+    );
 
     const consultantIds = matchingConsultants.map((consultant) => Number(consultant.id));
     const bookedRows = consultantIds.length

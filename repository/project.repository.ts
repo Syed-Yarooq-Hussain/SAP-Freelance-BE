@@ -37,6 +37,7 @@ export class ProjectRepository {
         
       },{
         association: 'client',
+        attributes: ['id', 'username', 'email', 'status', 'profit_margin_percentage'],
       }], 
       raw: false
     });
@@ -81,6 +82,7 @@ export class ProjectRepository {
         'projectDetails',
         {
           model: User,
+          as: 'client',
           attributes: ['username'],
         }
       ],

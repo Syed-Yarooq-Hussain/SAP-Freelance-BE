@@ -7,9 +7,13 @@ import { Roles } from 'src/auth/roles.decorator';
 import { UserRole } from 'constant/enums';
 import { DecideModuleRequestDto } from './dto/decide-module-request.dto';
 import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
+import { CreateManagedClientDto } from './dto/create-managed-client.dto';
+import { UpdateClientProfitMarginDto } from './dto/update-client-profit-margin.dto';
 
 @ApiTags('Admin')
 @Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -76,6 +80,21 @@ export class AdminController {
   @Get('clients/all')
   getAllClients(@Query('status') status: string) {
     return this.adminService.getAllClients(status);
+  }
+
+  @Post('clients')
+  @ApiOperation({ summary: 'Create an active, email-verified client' })
+  createClient(@Body() body: CreateManagedClientDto) {
+    return this.adminService.createVerifiedClient(body);
+  }
+
+  @Put('clients/:id/profit-margin')
+  @ApiOperation({ summary: 'Set a client hourly-rate profit margin' })
+  updateClientProfitMargin(
+    @Param('id') id: string,
+    @Body() body: UpdateClientProfitMarginDto,
+  ) {
+    return this.adminService.updateClientProfitMargin(+id, body);
   }
 
   @Post('clients/:id')

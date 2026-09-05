@@ -3,6 +3,13 @@ import { IsNumberString, IsOptional, IsString, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class GetClientConsultantsQueryDto {
+  @ApiPropertyOptional({
+    description: 'Selected client ID when an admin is operating on behalf of a client',
+  })
+  @IsOptional()
+  @IsNumberString()
+  client_id?: number;
+
   @ApiPropertyOptional({ description: 'Core module IDs for filtering consultants', type: [Number] })
   @IsOptional()
   @IsArray()
@@ -25,6 +32,29 @@ export class GetClientConsultantsQueryDto {
     return values.map(Number).filter((id) => !Number.isNaN(id));
   })
   'modules[]'?: number[];
+
+  @ApiPropertyOptional({ description: 'Other/non-primary module IDs', type: [Number] })
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (!value) return [];
+    const values = Array.isArray(value) ? value : String(value).split(',');
+    return values.map(Number).filter((id) => !Number.isNaN(id));
+  })
+  other_modules?: number[];
+
+  @ApiPropertyOptional({
+    name: 'other_modules[]',
+    description: 'Other/non-primary module IDs',
+    type: [Number],
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (!value) return [];
+    const values = Array.isArray(value) ? value : String(value).split(',');
+    return values.map(Number).filter((id) => !Number.isNaN(id));
+  })
+  'other_modules[]'?: number[];
 
   @ApiPropertyOptional({ description: 'Minimum consultant experience' })
   @IsOptional()

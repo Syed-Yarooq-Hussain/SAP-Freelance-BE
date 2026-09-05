@@ -39,7 +39,8 @@ export class User extends Model<User> {
 
   @Column({
     type: DataType.STRING,
-    allowNull: true,
+    allowNull: false,
+    defaultValue: 'USD',
   })
   currency: string;
 
@@ -86,6 +87,13 @@ export class User extends Model<User> {
     defaultValue: 1 || 'active',
   })
   status: string | number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  })
+  profit_margin_percentage: number;
   
   @Column({
     type: DataType.DATE,
@@ -118,7 +126,7 @@ export class User extends Model<User> {
   @HasOne(() => Consultant)
   consultants: Consultant;
 
-  @HasMany(() => Project)
+  @HasMany(() => Project, 'client_id')
   projects: Project[];
 
   @HasMany(() => Meeting, 'sender_id')

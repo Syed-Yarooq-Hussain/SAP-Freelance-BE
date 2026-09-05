@@ -9,7 +9,7 @@ import { getAllMeetingResponse } from './transformer/meeting.transformer';
 import { sendEmail } from 'src/common/emails/email.util';
 import { generatePdf } from 'src/common/pdf/pdf.util';
 import { ModuleRepository } from 'repository/module.repository';
-import { extractText, extractTextFromBuffer, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
+import { extractText, extractResumeTextFromBuffer, extractTextFromBuffer, parseWithOpenAI } from 'src/common/pdf/pdf.reader';
 import { consultantRegistertObjectTransformer } from './transformer/consultant-profile.transformer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConsultantRepository } from 'repository/consultant.repository';
@@ -32,6 +32,7 @@ import { col, fn, Op, UniqueConstraintError, where } from 'sequelize';
 import { ConsultantModule } from 'models/consultant-module.model';
 import { Sequelize } from 'sequelize-typescript';
 import { PRODUCTION_SAP_MODULES } from 'constant/production-sap-modules';
+import { Project } from 'models/project.model';
 
 @Injectable()
 export class CommonService {
@@ -43,11 +44,39 @@ export class CommonService {
     private readonly industriesRepo: IndustriesRepository,
     private readonly documentRepo: DocumentRepository,
     @InjectModel(User) private readonly userModel: typeof User,
+    @InjectModel(Project) private readonly projectModel: typeof Project,
     @InjectModel(Consultant) private readonly consultantModel: typeof Consultant,
     @InjectModel(ModuleRequest) private readonly moduleRequestModel: typeof ModuleRequest,
     @InjectModel(ConsultantModule) private readonly consultantModuleModel: typeof ConsultantModule,
     @InjectConnection() private readonly sequelize: Sequelize,
   ) { }
+
+  private async assertProjectAccess(projectId: number | string, authUser: any) {
+    const normalizedProjectId = Number(projectId);
+    if (!Number.isInteger(normalizedProjectId) || normalizedProjectId < 1) {
+      throw new BadRequestException('Project ID must be a positive integer');
+    }
+
+    const project = await this.projectModel.findByPk(normalizedProjectId);
+    if (!project || project.deleted_at) {
+      throw new NotFoundException(`Project with ID ${normalizedProjectId} not found`);
+    }
+
+    const role = Number(authUser?.role);
+    if (role === UserRole.ADMIN) return project;
+    if (role === UserRole.CLIENT && Number(project.client_id) === Number(authUser?.id)) {
+      return project;
+    }
+    if (role === UserRole.CONSULTANT) {
+      const assignment = await this.projectConsultantRepo.findByProjectIdConsultantId(
+        normalizedProjectId,
+        Number(authUser?.id),
+      );
+      if (assignment && !assignment.deleted_at) return project;
+    }
+
+    throw new ForbiddenException('You are not allowed to manage this project');
+  }
 
   async createModuleRequest(authUser: any, body: CreateModuleRequestDto) {
     const allowedFields = new Set(['name', 'user_id']);
@@ -258,23 +287,35 @@ export class CommonService {
     };
   }
 
-  async sendInvite(dto: CreateMeetingDto, sender_id: number) {
+  async sendInvite(dto: CreateMeetingDto, authUser: any) {
+    const projectId = Number(dto.project_id);
+    if (dto.event_type?.toLowerCase() === MeetingType.INTERVIEW && !projectId) {
+      throw new BadRequestException('project_id is required for an interview');
+    }
+    if (projectId) await this.assertProjectAccess(projectId, authUser);
 
     if (dto.event_type.toLowerCase() === MeetingType.INTERVIEW) {
       for (const userId of dto.invitees_id) {
-        const where = { project_id: dto.project_id, consultant_id: userId };
+        const assignment = await this.projectConsultantRepo.findByProjectIdConsultantId(
+          projectId,
+          Number(userId),
+        );
+        if (!assignment || assignment.deleted_at) {
+          throw new BadRequestException(`Consultant ${userId} is not assigned to this project`);
+        }
+        const where = { project_id: projectId, consultant_id: userId };
         await this.projectConsultantRepo.update(where, { status: ConsultantStatus.INTERVIEW_SCHEDULED });
       }
     }
 
     const meeting = await this.meetingRepo.createMeeting({
-      sender_id,
+      sender_id: Number(authUser.id),
       url: `https://meet.com/${Date.now()}`,
       date_time: new Date(dto.date_time),
       duration: dto.duration ?? 20,
       status: 'Pending',
       event_type: dto.event_type,
-      project_id: +dto.project_id
+      project_id: projectId || null,
     });
 
     const invitees = await Promise.all(
@@ -294,10 +335,23 @@ export class CommonService {
   }
 
   // 🔹 Update Meeting Status
-  async updateMeetingStatus(meetingId: number, dto: UpdateMeetingStatusDto) {
+  async updateMeetingStatus(meetingId: number, dto: UpdateMeetingStatusDto, authUser: any) {
     const meeting = await this.meetingRepo.findMeetingById(meetingId);
     if (!meeting) {
-      throw new Error('Meeting not found');
+      throw new NotFoundException('Meeting not found');
+    }
+
+    if (meeting.project_id) {
+      await this.assertProjectAccess(Number(meeting.project_id), authUser);
+    } else {
+      const isParticipant =
+        Number(meeting.sender_id) === Number(authUser?.id) ||
+        (meeting.invitees || []).some(
+          invitee => Number(invitee.user_id) === Number(authUser?.id),
+        );
+      if (Number(authUser?.role) !== UserRole.ADMIN && !isParticipant) {
+        throw new ForbiddenException('You are not allowed to update this meeting');
+      }
     }
 
     meeting.status = dto.status;
@@ -342,6 +396,20 @@ export class CommonService {
 
   async readerPdf(userId: any, file: Express.Multer.File) {
 
+    let text: string;
+    try {
+      text = await extractResumeTextFromBuffer(
+        file.buffer,
+        file.mimetype,
+        file.originalname,
+      );
+    } catch (error) {
+      throw new BadRequestException(error?.message || 'Unable to read resume file');
+    }
+    if (!text?.trim()) {
+      throw new BadRequestException('No readable text was found in the resume');
+    }
+
     const url = await this.uploadToS3({
       file: file.buffer,
       folder: 'cvs',
@@ -349,7 +417,6 @@ export class CommonService {
       mimetype: file.mimetype,
     });
 
-    const text = await extractTextFromBuffer(file.buffer);
     const userInfo = await parseWithOpenAI(text);
     const transormedUser = await consultantRegistertObjectTransformer(userInfo);
 

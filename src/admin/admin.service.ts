@@ -24,6 +24,9 @@ import { EmailDispatch } from 'models/email-dispatch.model';
 import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
 import { sendConsultantInvitationEmail } from 'src/common/emails/email.util';
 import { ConsultantService } from 'src/consultant/consultant.service';
+import * as bcrypt from 'bcrypt';
+import { CreateManagedClientDto } from './dto/create-managed-client.dto';
+import { UpdateClientProfitMarginDto } from './dto/update-client-profit-margin.dto';
 
 @Injectable()
 export class AdminService {
@@ -514,6 +517,83 @@ export class AdminService {
   async getAllClients(status: string) {
     let clientsResponse = await this.userRepo.getAllClientsWithProjectstatus(status);
     return getAdminsClientResponse(clientsResponse);
+  }
+
+  async createVerifiedClient(body: CreateManagedClientDto) {
+    const email = String(body?.email || '').trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new BadRequestException('A valid email is required');
+    }
+    if (typeof body?.password !== 'string' || body.password.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters long');
+    }
+
+    const existing = await this.userModel.findOne({
+      where: { email: { [Op.iLike]: email } },
+    });
+    if (existing) throw new ConflictException('User with this email already exists');
+
+    const password = await bcrypt.hash(body.password, 10);
+    const client = await this.userRepo.createUser({
+      username: email.split('@')[0],
+      email,
+      password,
+      role: UserRole.CLIENT,
+      status: UserStatus.ACTIVE,
+      currency: 'USD',
+      timezone: 'Asia/Karachi',
+      phone: null,
+      city: null,
+      country: null,
+      email_verified: true,
+      phone_verified: false,
+      linkedin_sso_connected: false,
+      profit_margin_percentage: 0,
+    });
+
+    return {
+      message: 'Verified client created successfully',
+      data: {
+        id: client.id,
+        username: client.username,
+        email: client.email,
+        role: client.role,
+        status: client.status,
+        email_verified: client.email_verified,
+        profit_margin_percentage: client.profit_margin_percentage,
+      },
+    };
+  }
+
+  async updateClientProfitMargin(
+    clientId: number,
+    body: UpdateClientProfitMarginDto,
+  ) {
+    if (!Number.isInteger(clientId) || clientId < 1) {
+      throw new BadRequestException('Client ID must be a positive integer');
+    }
+    const percentage = Number(body?.profit_margin_percentage);
+    if (!Number.isInteger(percentage) || percentage < 0) {
+      throw new BadRequestException(
+        'profit_margin_percentage must be a non-negative whole number',
+      );
+    }
+
+    const client = await this.userRepo.findClientCandidateById(clientId);
+    if (!client || client.deleted_at || Number(client.role) !== UserRole.CLIENT) {
+      throw new NotFoundException('Client not found');
+    }
+
+    const [, updated] = await this.userRepo.updateUser(clientId, {
+      profit_margin_percentage: percentage,
+    });
+    return {
+      message: 'Client profit margin updated successfully',
+      data: {
+        id: clientId,
+        profit_margin_percentage: percentage,
+      },
+    };
   }
   
   async getAllProjects() {

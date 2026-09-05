@@ -31,6 +31,20 @@ export class Project extends Model<Project> {
   })
   client_id: number;
 
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+  })
+  created_by: number | null;
+
+  @Column({
+    type: DataType.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  })
+  created_on_behalf: boolean;
+
   @Column({
     type: DataType.STRING,
     allowNull: true,
@@ -44,8 +58,11 @@ export class Project extends Model<Project> {
   })
   status: string;
 
-  @BelongsTo(() => User)
+  @BelongsTo(() => User, 'client_id')
   client: User;
+
+  @BelongsTo(() => User, 'created_by')
+  creator: User;
 
 
   @HasMany(() => ProjectConsultant)

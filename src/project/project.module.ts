@@ -30,6 +30,7 @@ import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 import { ProjectDocumentRepository } from 'repository/project-document.repository';
 import { CommonModule } from 'src/utility/common.module';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { CommonModule } from 'src/utility/common.module';
     UserRepository,
     ConsultantRepository,
     ConsultantMonthlyBillRepository,
-    ProjectDocumentRepository
+    ProjectDocumentRepository,
+    RolesGuard,
   ],
   exports: [
     ProjectRepository,

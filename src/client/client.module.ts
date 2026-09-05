@@ -16,6 +16,7 @@ import { MeetingInvitee } from 'models/meeting-invitee.model';
 import { MeetingRepository } from 'repository/meeting.repository';
 import { ProjectConsultant } from 'models/project-consultant.model';
 import { ProjectConsultantRepository } from 'repository/project-consultant.repository';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ProjectConsultantRepository } from 'repository/project-consultant.repos
     ProjectPaymentRepository,
     MeetingRepository,
     ProjectConsultantRepository,
+    RolesGuard,
   ],
 })
 export class ClientModule {}

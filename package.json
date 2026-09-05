@@ -41,6 +41,7 @@
     "jsonwebtoken": "^8.5.1",
     "jwa": "^2.0.0",
     "jws": "^4.0.0",
+    "mammoth": "^1.12.2",
     "nodemailer": "^7.0.11",
     "openai": "^6.10.0",
     "passport": "^0.7.0",

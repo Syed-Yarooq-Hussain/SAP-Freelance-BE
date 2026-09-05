@@ -89,7 +89,7 @@ export class CommonController {
   @ApiResponse({ status: 201, description: 'Invitition created successfully.' })
   @ApiBody({ type: CreateMeetingDto })
   sendInvite(@Body() body: CreateMeetingDto, @Req() req: any) {
-    return this.commonService.sendInvite(body, req.user.id);
+    return this.commonService.sendInvite(body, req.user);
   }
 
   @Get("meeting-status")
@@ -100,13 +100,15 @@ export class CommonController {
   }
 
   @Patch('meetings/:id/status')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update Meeting Status' })
   @ApiResponse({ status: 200, description: 'update meeting status by Id ' })
   async changeStatus(
     @Param('id') id: string,
     @Body() dto: UpdateMeetingStatusDto,
+    @Req() req: any,
   ) {
-    return this.commonService.updateMeetingStatus(Number(id), dto);
+    return this.commonService.updateMeetingStatus(Number(id), dto, req.user);
   }
 
   @Get("meetings")
@@ -135,7 +137,7 @@ export class CommonController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('pdf-reader')
+  @Post(['pdf-reader', 'resume-reader'])
   @UseInterceptors(FileInterceptor('file'))
   async readerPdf(
     @UploadedFile() file: Express.Multer.File,

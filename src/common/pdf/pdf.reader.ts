@@ -1,6 +1,7 @@
 const pdfParse = require('pdf-parse'); 
 import * as fs from 'fs';
 import OpenAI from 'openai';
+import * as mammoth from 'mammoth';
 
 let openai: OpenAI;
 
@@ -22,6 +23,29 @@ export async function extractText(filePath: string): Promise<string> {
 export async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
   const data = await pdfParse(buffer);
   return data.text;
+}
+
+export async function extractResumeTextFromBuffer(
+  buffer: Buffer,
+  mimetype?: string,
+  filename?: string,
+): Promise<string> {
+  const normalizedMime = String(mimetype || '').toLowerCase();
+  const normalizedName = String(filename || '').toLowerCase();
+  const isDocx =
+    normalizedMime ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    normalizedName.endsWith('.docx');
+  const isPdf =
+    normalizedMime === 'application/pdf' || normalizedName.endsWith('.pdf');
+
+  if (isDocx) {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value;
+  }
+  if (isPdf) return extractTextFromBuffer(buffer);
+
+  throw new Error('Only PDF and DOCX resume files are supported');
 }
 
 export async function parseWithOpenAI(text: string) {

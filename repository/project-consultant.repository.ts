@@ -28,11 +28,11 @@ export class ProjectConsultantRepository {
   console.log('options', options);
   return this.projectConsultantModel.findAll({
     ...options,
-    attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'id'],
+    attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'requested_hours', 'consultant_id', 'id'],
     include: [
       {
         model: User,
-        attributes: ['id', 'username'],
+        attributes: ['id', 'username', 'email', 'phone'],
           include: [
             {
               model: Consultant,
@@ -42,7 +42,7 @@ export class ProjectConsultantRepository {
             {
               model: ConsultantModule,
               required: false,
-              attributes: ['id'],
+              attributes: ['id', 'module_id', 'is_primary'],
               include: [
                 {
                   model: ModuleEntity,
@@ -171,6 +171,13 @@ async softDeleteNotIn(
         deleted_at: null,
       },
     },
+  );
+}
+
+async softDeleteOne(project_id: number, consultant_id: number) {
+  return this.projectConsultantModel.update(
+    { deleted_at: new Date() },
+    { where: { project_id, consultant_id, deleted_at: null } },
   );
 }
 

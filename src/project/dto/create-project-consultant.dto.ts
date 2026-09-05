@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsEnum, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ConsultantLevel, ConsultantStatus } from 'constant/enums';
 
 export class CreateProjectConsultantDto {
@@ -8,7 +9,9 @@ export class CreateProjectConsultantDto {
     description: 'Consultant ID',
     example: 202,
   })
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   consultant_id: number;
 
   @ApiProperty({
@@ -16,18 +19,23 @@ export class CreateProjectConsultantDto {
     example: 'active',
     required: true,
   })
-  @IsOptional()
-  @IsString()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   requested_hours: number;
 }
 
 export class UpdateProjectConsultantStatusDto {
   @ApiProperty({ description: 'Consultant ID' })
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   consultant_id: number;
 
   @ApiProperty({ description: 'Project ID' })
-  @IsNumber()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   project_id: number;
 
   @ApiProperty({
@@ -35,8 +43,22 @@ export class UpdateProjectConsultantStatusDto {
     example: 'active',
     required: true,
   })
-  @IsString()
-  status: string;
+  @IsEnum(ConsultantStatus)
+  status: ConsultantStatus;
+
+  @ApiProperty({ description: 'Negotiated hourly rate', required: false, example: 120 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  decided_rate?: number;
+
+  @ApiProperty({ description: 'Allocated weekly hours', required: false, example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  requested_hours?: number;
 
   @ApiProperty({
     description: 'Set role for the consultant in the project',
@@ -57,38 +79,29 @@ export class UpdateProjectConsultantStatusDto {
 }
 
 export class UpdateProjectConsultantRoleDto {
-  
-  @ApiProperty({description: 'Consultant ID',  })
-  @IsNumber()
+
+  @ApiProperty({ description: 'Consultant ID' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   consultant_id: number;
 
-  @ApiProperty({description: 'Project ID',  })
-  @IsNumber()
+  @ApiProperty({ description: 'Project ID' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   project_id: number;
 
   @ApiProperty({
-    description: 'Consultant requested hours',
-    example: 'active',
-    required: true,
-  })
-
-  @ApiProperty({
-    description: 'Set status for the consultant in the project',
-    example: 'Accepted',
-    enum: ConsultantStatus 
-  })
-  @IsEnum(ConsultantStatus, { message: `role must be one of: ${Object.values(ConsultantStatus).join(', ')}` })
-  @IsOptional()
-  @IsString()
-  status?: string;
-
-  @ApiProperty({
     description: 'Set role for the consultant in the project',
-    example: 'Junior',
+    example: ConsultantLevel.SENIOR,
     enum: ConsultantLevel 
    })
   @IsEnum(ConsultantLevel, { message: `role must be one of: ${Object.values(ConsultantLevel).join(', ')}` })
   @IsOptional()
-  @IsString()
-  role?: string;
+  role?: ConsultantLevel;
+
+  @ApiProperty({ description: 'Booking schedule', required: false, type: Object })
+  @IsOptional()
+  booking_schedule?: any;
 }
