@@ -65,4 +65,3 @@ export class ProjectDetail extends Model<ProjectDetail> {
   deleted_at: Date | null;
 
 }
- 

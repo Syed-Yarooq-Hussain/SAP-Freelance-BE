@@ -10,8 +10,8 @@ export class ProjectDetailRepository {
   ) {}
 
   // 🆕 Create Project Detail
-  async create(data: Partial<ProjectDetail>): Promise<ProjectDetail> {
-    return this.projectDetailModel.create(data, { raw: true });
+  async create(data: Partial<ProjectDetail>, transaction?: import('sequelize').Transaction): Promise<ProjectDetail> {
+    return this.projectDetailModel.create(data, { raw: true, transaction });
   }
 
   // 📋 Get All Project Details 
@@ -25,16 +25,36 @@ export class ProjectDetailRepository {
   }
 
   // 🔎 Get Project Detail By ProjectId
-  async findByProjectId(project_id: number): Promise<ProjectDetail | null> {
-    return this.projectDetailModel.findOne({ where: { project_id } });
+  async findByProjectId(project_id: number, transaction?: import('sequelize').Transaction): Promise<ProjectDetail | null> {
+    return this.projectDetailModel.findOne({ where: { project_id }, transaction });
+  }
+
+  async reassignOwner(project_id: number, previousClientId: number, clientId: number, transaction: import('sequelize').Transaction) {
+    // Some installations have this legacy column; project.client_id is the
+    // authoritative owner. Do not map the optional column onto normal reads.
+    const queryInterface = this.projectDetailModel.sequelize.getQueryInterface();
+    const table = this.projectDetailModel.getTableName();
+    // Sequelize forwards query options, though describeTable's type omits transaction.
+    const describeOptions = { transaction, logging: false as const };
+    const columns = await queryInterface.describeTable(table, describeOptions);
+    if (!columns.user_id) return;
+
+    return queryInterface.bulkUpdate(
+      table,
+      { user_id: clientId },
+      { project_id, user_id: previousClientId },
+      { transaction },
+    );
   }
 
   // 🧠 Update Project Detail
   async update(
     id: number,
     data: Partial<ProjectDetail>,
+    transaction?: import('sequelize').Transaction,
   ): Promise<[number, ProjectDetail[]]> {
     return this.projectDetailModel.update(data, {
+      transaction,
       where: { id },
       returning: true,
     });

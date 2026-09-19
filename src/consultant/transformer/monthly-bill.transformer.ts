@@ -30,6 +30,7 @@ export function groupBillsByMonth(bills: any[]) {
       bill_type: bill.bill_type || 'auto',
       hours: bill.hours,
       amount: bill.amount,
+      currency: bill.currency || null,
       is_paid: bill.is_paid,
       pdf_url: bill.pdf_url,
     });

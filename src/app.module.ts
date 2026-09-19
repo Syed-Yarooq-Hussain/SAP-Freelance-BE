@@ -28,7 +28,10 @@ import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 import * as pgConnectionString from 'pg-connection-string';
 import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
+import { ModuleRequest } from 'models/module-request.model';
+import { EmailDispatch } from 'models/email-dispatch.model';
 import { ProjectDocument } from 'models/project-document.model';
+import { OnboardingModule } from './onboarding/onboarding.module';
 
 let config:any = null
 if (process.env.NODE_ENV === 'production') {
@@ -73,7 +76,9 @@ if (process.env.NODE_ENV === 'production') {
         Meeting,
         MeetingInvitee,
         ConsultantMonthlyBill,
-        ProjectDocument
+        ProjectDocument,
+        ModuleRequest,
+        EmailDispatch,
       ],
     }),
     CommonModule,
@@ -85,6 +90,7 @@ if (process.env.NODE_ENV === 'production') {
     ConsultantModule,
     AdminModule,
     ChatModule,
+    OnboardingModule,
   ],
 })
 export class AppModule {}

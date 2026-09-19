@@ -1,19 +1,75 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete, Query, Put, UseGuards, Req } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { UserRole } from 'constant/enums';
+import { DecideModuleRequestDto } from './dto/decide-module-request.dto';
+import { SendInviteEmailsDto } from './dto/send-invite-emails.dto';
+import { CreateManagedClientDto } from './dto/create-managed-client.dto';
+import { UpdateClientProfitMarginDto } from './dto/update-client-profit-margin.dto';
 
+@ApiTags('Admin')
 @Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  @Get('module-requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'List module requests newest first' })
+  getModuleRequests(@Req() req: any) {
+    return this.adminService.getModuleRequests(req.user);
+  }
+
+  @Patch('module-requests/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Accept or reject a pending module request' })
+  decideModuleRequest(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: DecideModuleRequestDto,
+  ) {
+    return this.adminService.decideModuleRequest(req.user, id, body);
+  }
+
+  @Post('invite-emails')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Send consultant invitation emails sequentially' })
+  sendInviteEmails(@Req() req: any, @Body() body: SendInviteEmailsDto) {
+    return this.adminService.sendInviteEmails(req.user, body);
+  }
 
   @Get('stats')
   getDashboardstats() {
     return this.adminService.dashboardStatistic();
+  }
+
+  @Get('dashboard/consultants-summary')
+  @ApiOperation({ summary: 'Get consultant overview and chart-ready breakdowns' })
+  @ApiResponse({ status: 200, description: 'Consultant summary fetched successfully' })
+  @ApiResponse({ status: 401, description: 'Authentication required' })
+  getConsultantsSummary() {
+    return this.adminService.getConsultantsSummary();
   }
   
   @Get('consultants/all')
   getAllConsultants(@Query('status') status: string) {
     console.log("Status Filter:", status);  
     return this.adminService.getAllConsultant(status);
+  }
+
+  @Get('consultants/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get complete consultant profile by user ID' })
+  getConsultantProfile(@Param('id') id: string) {
+    return this.adminService.getConsultantProfileByUserId(Number(id));
   }
   
   @Post('consultants/:id')
@@ -24,6 +80,21 @@ export class AdminController {
   @Get('clients/all')
   getAllClients(@Query('status') status: string) {
     return this.adminService.getAllClients(status);
+  }
+
+  @Post('clients')
+  @ApiOperation({ summary: 'Create an active, email-verified client' })
+  createClient(@Body() body: CreateManagedClientDto) {
+    return this.adminService.createVerifiedClient(body);
+  }
+
+  @Put('clients/:id/profit-margin')
+  @ApiOperation({ summary: 'Set a client hourly-rate profit margin' })
+  updateClientProfitMargin(
+    @Param('id') id: string,
+    @Body() body: UpdateClientProfitMarginDto,
+  ) {
+    return this.adminService.updateClientProfitMargin(+id, body);
   }
 
   @Post('clients/:id')

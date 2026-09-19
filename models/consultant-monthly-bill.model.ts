@@ -34,6 +34,9 @@ export class ConsultantMonthlyBill extends Model<ConsultantMonthlyBill> {
   @Column({ type: DataType.STRING(20), allowNull: false, defaultValue: 'auto' })
   bill_type: string;
 
+  @Column({ type: DataType.STRING(3), allowNull: true })
+  currency: string | null;
+
   // Format: "2025-06" — easy filtering ke liye
   @Column({ type: DataType.STRING(7), allowNull: false })
   month: string;

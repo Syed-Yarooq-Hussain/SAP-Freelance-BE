@@ -28,11 +28,11 @@ export class ProjectConsultantRepository {
   console.log('options', options);
   return this.projectConsultantModel.findAll({
     ...options,
-    attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'id'],
+    attributes: ['status', 'role', 'decided_rate', 'is_doc_signed', 'booking_schedule', 'requested_hours', 'consultant_id', 'id'],
     include: [
       {
         model: User,
-        attributes: ['id', 'username'],
+        attributes: ['id', 'username', 'email', 'phone', 'currency'],
           include: [
             {
               model: Consultant,
@@ -42,7 +42,7 @@ export class ProjectConsultantRepository {
             {
               model: ConsultantModule,
               required: false,
-              attributes: ['id'],
+              attributes: ['id', 'module_id', 'is_primary'],
               include: [
                 {
                   model: ModuleEntity,
@@ -75,8 +75,8 @@ export class ProjectConsultantRepository {
   }
 
   // 🔎 Get Consultant By ProjectId
-  async findByProjectIdConsultantId(project_id: number, consultant_id: number): Promise<ProjectConsultant | null> {
-    return this.projectConsultantModel.findOne({ where: { project_id, consultant_id } ,paranoid: false, raw: true });
+  async findByProjectIdConsultantId(project_id: number, consultant_id: number, transaction?: any): Promise<ProjectConsultant | null> {
+    return this.projectConsultantModel.findOne({ transaction, where: { project_id, consultant_id, deleted_at: null } ,paranoid: false, raw: true });
   }
 
   // 🔎 Get Consultant By ConsultantId
@@ -122,9 +122,11 @@ export class ProjectConsultantRepository {
   async update(
     option: any,
     data: Partial<ProjectConsultant>,
+    transaction?: any,
   ): Promise<[number, ProjectConsultant[]]> {
     return this.projectConsultantModel.update(data, {
-      where: option,
+      where: { deleted_at: null, ...option },
+      transaction,
       returning: true,
     });
   }
@@ -136,7 +138,16 @@ export class ProjectConsultantRepository {
 
   // ❌ Delete all project consultant relations for a consultant user
   async deleteByConsultantId(consultantId: number): Promise<number> {
-    return this.projectConsultantModel.destroy({ where: { consultant_id: consultantId } });
+    return this.projectConsultantModel.sequelize.transaction(async transaction => {
+      const memberships = await this.projectConsultantModel.findAll({
+        where: { consultant_id: consultantId }, attributes: ['project_id'], transaction,
+      });
+      // Keep the same parent-before-member lock order as Crew Builder, including
+      // when deleting an account assigned to several projects.
+      await Project.findAll({ where: { id: { [Op.in]: memberships.map(item => item.project_id) } },
+        order: [['id', 'ASC']], transaction, lock: transaction.LOCK.UPDATE });
+      return this.projectConsultantModel.destroy({ where: { consultant_id: consultantId }, transaction });
+    });
   }
 
   // 🔎 Get ALL consultants of project (including soft deleted)
@@ -174,8 +185,16 @@ async softDeleteNotIn(
   );
 }
 
-async findByProjectId(projectId: number) {
+async softDeleteOne(project_id: number, consultant_id: number) {
+  return this.projectConsultantModel.update(
+    { deleted_at: new Date() },
+    { where: { project_id, consultant_id, deleted_at: null } },
+  );
+}
+
+async findByProjectId(projectId: number, transaction?: any) {
   return this.projectConsultantModel.findAll({
+    transaction,
     where: {
       project_id: projectId,
       deleted_at: null,

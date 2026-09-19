@@ -1,3 +1,6 @@
+import { TeamBuilderService } from './team-builder.service';
+import { MilestoneTeamService } from './milestone-team.service';
+import { UsdExchangeRateService } from './usd-exchange-rate.service';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectController } from './project.controller';
@@ -30,6 +33,7 @@ import { ConsultantMonthlyBill } from 'models/consultant-monthly-bill.model';
 import { ConsultantMonthlyBillRepository } from 'repository/consultant-monthly-bill.repository';
 import { ProjectDocumentRepository } from 'repository/project-document.repository';
 import { CommonModule } from 'src/utility/common.module';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Module({
   imports: [
@@ -51,6 +55,9 @@ import { CommonModule } from 'src/utility/common.module';
   controllers: [ProjectController],
   providers: [
     ProjectService,
+    TeamBuilderService,
+    MilestoneTeamService,
+    UsdExchangeRateService,
     ProjectRepository,
     ProjectConsultantRepository,
     ProjectIndustriesRepository,
@@ -61,7 +68,8 @@ import { CommonModule } from 'src/utility/common.module';
     UserRepository,
     ConsultantRepository,
     ConsultantMonthlyBillRepository,
-    ProjectDocumentRepository
+    ProjectDocumentRepository,
+    RolesGuard,
   ],
   exports: [
     ProjectRepository,

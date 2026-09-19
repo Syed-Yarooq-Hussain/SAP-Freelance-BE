@@ -1,9 +1,18 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateProjectDto } from './create-project.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDate, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsOptional, IsString, IsInt, Min } from 'class-validator';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {
+  @ApiPropertyOptional({
+    description: 'Owning client ID. Only admins may change it; the target must be an active client.',
+    example: 5,
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  client_id?: number;
   
   @ApiPropertyOptional({
     description: 'Project name',

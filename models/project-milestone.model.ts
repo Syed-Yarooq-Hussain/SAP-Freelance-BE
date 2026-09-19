@@ -59,6 +59,21 @@ export class ProjectMilestone extends Model<ProjectMilestone> {
   })
   required_hours?: number;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  team_revision: number;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
+  team_configured: boolean;
+
+  @Column({ type: DataType.DECIMAL(18, 2), allowNull: false, defaultValue: 0 })
+  team_estimated_amount: number;
+
+  @Column({ type: DataType.DECIMAL(18, 2), allowNull: false, defaultValue: 0 })
+  team_payable_amount: number;
+
+  @Column({ type: DataType.STRING(3), allowNull: false, defaultValue: 'USD' })
+  team_currency: string;
+
   @ForeignKey(() => Project)
   @Column({
     type: DataType.INTEGER,

@@ -31,6 +31,7 @@ export function getAdminsClientResponse(list: any[]) {
       email: client.email,
       phone: client.phone,
       status: client.status,
+      profit_margin_percentage: client.profit_margin_percentage || 0,
       draft_count,
       active_count,
       completed_count,

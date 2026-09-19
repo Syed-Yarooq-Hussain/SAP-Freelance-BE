@@ -19,16 +19,17 @@ export class MeetingRepository {
     private readonly inviteeModel: typeof MeetingInvitee,
   ) {}
 
-  async createMeeting(meetingData: Partial<Meeting>): Promise<Meeting> {
-    return this.meetingModel.create(meetingData);
+  async createMeeting(meetingData: Partial<Meeting>, transaction?: any): Promise<Meeting> {
+    return this.meetingModel.create(meetingData, { transaction });
   }
 
   async findAllMeetings(): Promise<Meeting[]> {
     return this.meetingModel.findAll({ include: [MeetingInvitee] });
   }
 
-  async findMeetingById(id: number): Promise<Meeting> {
+  async findMeetingById(id: number, transaction?: any): Promise<Meeting> {
     return this.meetingModel.findOne({
+      transaction,
       where: { id },
       include: [MeetingInvitee],
     });
@@ -42,8 +43,8 @@ export class MeetingRepository {
     return this.meetingModel.destroy({ where: { id } });
   }
 
-  async addInvitee(inviteeData: Partial<MeetingInvitee>): Promise<MeetingInvitee> {
-    return this.inviteeModel.create(inviteeData);
+  async addInvitee(inviteeData: Partial<MeetingInvitee>, transaction?: any): Promise<MeetingInvitee> {
+    return this.inviteeModel.create(inviteeData, { transaction });
   }
 
   async getInvitees(meetingId: number): Promise<MeetingInvitee[]> {

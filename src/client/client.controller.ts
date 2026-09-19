@@ -5,6 +5,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { GetClientConsultantsQueryDto } from './dto/get-consultants-query.dto';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { UserRole } from 'constant/enums';
 
 @ApiTags('Clients')
 @Controller('clients')
@@ -13,10 +16,12 @@ export class ClientController {
 
   // ✅ Get All Consultants
   @Get('consultants')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all consultants' })
-  getAllConsultants(@Query() query: GetClientConsultantsQueryDto) {
+  getAllConsultants(@Query() query: GetClientConsultantsQueryDto, @Req() req: any) {
     console.log('Fetching all consultants');
-    return this.clientService.getAllConsultants(query);
+    return this.clientService.getAllConsultants(query || {}, req.user);
   }
   // ✅ Create Client
   @Post()
@@ -49,20 +54,23 @@ export class ClientController {
 
  // ✅ Get Projects
   @Get('projects')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT)
   getAllProjects(@Req() req) {
     return this.clientService.getAllProjectByClientId(req.user.id);
   }
   
   // ✅ Get Payments
   @Get('payments')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT)
   getAllProjectsPayments(@Req() req) {
     return this.clientService.getAllProjectsPaymentsByClientId(req.user.id);
   }
   
   @Get('stats')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.CLIENT)
   getAllStats(@Req() req) {
     return this.clientService.getAllClientStats(req.user.id);
   }

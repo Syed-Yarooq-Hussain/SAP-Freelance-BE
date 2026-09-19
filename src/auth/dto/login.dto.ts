@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsTimeZone } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
@@ -16,4 +16,13 @@ export class LoginDto {
   @IsString({ message: 'Password must be a string' })
   @IsNotEmpty({ message: 'Password cannot be empty' })
   password: string;
+
+  @ApiPropertyOptional({
+    example: 'Europe/Berlin',
+    description: 'Current IANA timezone. When omitted, the saved timezone is unchanged.',
+  })
+  @IsOptional()
+  @IsString()
+  @IsTimeZone({ message: 'Timezone must be a valid IANA timezone, e.g. Europe/Berlin' })
+  timezone?: string;
 }

@@ -5,6 +5,11 @@ import { Project } from 'models/project.model';
 import { ProjectMilestone } from 'models/project-milestone.model';
 import { Document } from 'models/document.model';
 import { User } from 'models/user.model';
+import { literal, ProjectionAlias } from 'sequelize';
+
+const billingAttributes = {
+  include: [[literal('milestone_team_snapshot("ProjectPayment"."project_milestone_id")'), 'milestone_team'] as ProjectionAlias],
+};
 
 @Injectable()
 export class ProjectPaymentRepository {
@@ -14,13 +19,15 @@ export class ProjectPaymentRepository {
   ) {}
 
   // 🆕 Create Payment Record
-  async create(data: Partial<ProjectPayment>): Promise<ProjectPayment> {
-    return this.projectPaymentModel.create(data);
+  async create(data: Partial<ProjectPayment>, transaction?: any): Promise<ProjectPayment> {
+    return this.projectPaymentModel.create(data, { transaction });
   }
 
   // 📋 Get All Payments (With Optional Filter)
   async findAll(options?: any): Promise<any[]> {
     return this.projectPaymentModel.findAll({
+      attributes: billingAttributes,
+      where: { deleted_at: null },
       include: [
         {
           model: Project,
@@ -45,6 +52,8 @@ export class ProjectPaymentRepository {
   // 🔎 Get Payments By Project Id
   async projectPaymentsByClientId(client_id: number): Promise<ProjectPayment[] | null> {
     return this.projectPaymentModel.findAll({
+      attributes: billingAttributes,
+      where: { deleted_at: null },
       include: [
         {
           model: Project,
@@ -69,6 +78,8 @@ export class ProjectPaymentRepository {
   // 🧠 Update Payment Record
   async findAllForAdmin(): Promise<ProjectPayment[]> {
     return this.projectPaymentModel.findAll({
+      attributes: billingAttributes,
+      where: { deleted_at: null },
       include: [
         {
           model: Project,
@@ -124,8 +135,9 @@ export class ProjectPaymentRepository {
   return count > 0;
 }
 
-async hasPaidByMilestoneId(milestoneId: number): Promise<boolean> {
+async hasPaidByMilestoneId(milestoneId: number, transaction?: any): Promise<boolean> {
   const count = await this.projectPaymentModel.count({
+    transaction,
     where: {
       project_milestone_id: milestoneId,
       is_paid: true,
@@ -136,8 +148,9 @@ async hasPaidByMilestoneId(milestoneId: number): Promise<boolean> {
   return count > 0;
 }
 
-async deleteUnpaidByMilestoneId(milestoneId: number): Promise<void> {
+async deleteUnpaidByMilestoneId(milestoneId: number, transaction?: any): Promise<void> {
   await this.projectPaymentModel.destroy({
+    transaction,
     where: {
       project_milestone_id: milestoneId,
       is_paid: false,

@@ -1,6 +1,15 @@
+import { syncMilestoneTeam } from './milestone-team.service';
+import { refreshUsdRates, usdClientRates } from './usd-exchange-rate.service';
+import { ProjectPayment } from 'models/project-payment.model';
+import { TeamBuilderService } from './team-builder.service';
+import { assertProjectAccess, validateProjectId } from './project-access';
+import { SaveTeamBuilderDto } from './dto/team-builder.dto';
+import { Transaction } from 'sequelize';
+import { ProjectConsultant } from 'models/project-consultant.model';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,10 +23,11 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 
 import {
   CreateProjectConsultantDto,
+  UpdateProjectConsultantRoleDto,
   UpdateProjectConsultantStatusDto,
 } from './dto/create-project-consultant.dto';
-import { ConsultantStatus } from 'constant/enums';
-import { Op, Sequelize } from 'sequelize';
+import { ConsultantStatus, UserRole, UserStatus } from 'constant/enums';
+import { Op } from 'sequelize';
 import { ProjectDetailRepository } from 'repository/project-detail.repository';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import {
@@ -36,6 +46,8 @@ import { ProjectDocumentRepository } from 'repository/project-document.repositor
 import { CommonService } from 'src/utility/common.service';
 import { UploadProjectDocumentDto } from './dto/upload-project-document.dto';
 import { UserRepository } from 'repository/user.repository';
+import { InitiateProjectDto } from './dto/initiate-project.dto';
+import { applyClientProfitMargin, normalizeProfitMargin } from 'src/common/utils/client-rate.util';
 
 @Injectable()
 export class ProjectService {
@@ -52,13 +64,70 @@ export class ProjectService {
     private readonly projectDocumentRepo: ProjectDocumentRepository,
     private readonly commonService: CommonService,
     private readonly userRepository: UserRepository,
+    private readonly teamBuilder: TeamBuilderService,
   ) {}
 
-  async createProject(user: any) {
+  private async assertProjectAccess(projectId: number | string, authUser: any, transaction?: Transaction) {
+    const normalizedProjectId = validateProjectId(projectId);
+    const project = await this.projectRepo.findById(normalizedProjectId, transaction);
+    if (!project || project.deleted_at) {
+      throw new NotFoundException(`Project with ID ${normalizedProjectId} not found`);
+    }
+    const role = Number(authUser?.role);
+    if (role === UserRole.CONSULTANT) {
+      const assignment = await this.projectConsultantRepo.findByProjectIdConsultantId(
+        normalizedProjectId,
+        Number(authUser?.id),
+      );
+      if (assignment && !assignment.deleted_at) return project;
+    }
+    assertProjectAccess(project, authUser);
+    return project;
+  }
+
+  async createProject(user: any, dto: InitiateProjectDto = {}) {
+  const role = Number(user?.role);
+  let clientId: number;
+  let clientName = user?.username;
+  let createdOnBehalf = false;
+
+  if (role === UserRole.ADMIN) {
+    clientId = Number(dto?.client_id);
+    if (!Number.isInteger(clientId) || clientId < 1) {
+      throw new BadRequestException('client_id is required for admin project creation');
+    }
+
+    const selectedClient = await this.userRepository.findClientCandidateById(clientId);
+    if (!selectedClient || selectedClient.deleted_at) {
+      throw new NotFoundException(`Client with ID ${clientId} not found`);
+    }
+    if (Number(selectedClient.role) !== UserRole.CLIENT) {
+      throw new BadRequestException(`User with ID ${clientId} is not a client`);
+    }
+    if (String(selectedClient.status).toLowerCase() !== UserStatus.ACTIVE) {
+      throw new BadRequestException('Selected client must be active');
+    }
+
+    clientName = selectedClient.username;
+    createdOnBehalf = true;
+  } else if (role === UserRole.CLIENT) {
+    clientId = Number(user?.id);
+    if (!Number.isInteger(clientId) || clientId < 1) {
+      throw new BadRequestException('Authenticated client ID is invalid');
+    }
+    if (dto?.client_id !== undefined && Number(dto.client_id) !== clientId) {
+      throw new ForbiddenException('Clients cannot create projects for another client');
+    }
+  } else {
+    throw new ForbiddenException('Only clients and admins can create projects');
+  }
+
   // 1. Project create
   const project = await this.projectRepo.create({
-    client_id: user.id,
-    name: `New Project for ${user?.name || 'Client'}`,
+    client_id: clientId,
+    created_by: Number(user.id),
+    created_on_behalf: createdOnBehalf,
+    name: `New Project for ${clientName || 'Client'}`,
     company_name: 'Unknown Company',
     status: 'Initiated',
   });
@@ -82,175 +151,227 @@ export class ProjectService {
   // 3. Milestones create
   await this.milestoneRepo.bulkCreateMilestones(milestones);
 
-  return project;
+  return {
+    message: createdOnBehalf
+      ? 'Project created on behalf of client successfully'
+      : 'Project created successfully',
+    data: project,
+  };
 }
 
 
 
 
-  async getProjectById(id: number) {
-    const project = await this.projectRepo.findById(id);
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-    return project;
+  async getProjectById(id: number, authUser: any) {
+    return this.assertProjectAccess(id, authUser);
   }
 
-  async updateProject(id: number, updateData: UpdateProjectDto) {
-    const project = await this.projectRepo.findById(id);
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-    let payload = {
-      name: updateData.name ?? project.name,
-      company_name: updateData.industry ?? project.company_name,
-      status: updateData.status ?? project.status,
-    };
+  async updateProject(id: number, updateData: UpdateProjectDto, authUser: any) {
+    return this.teamBuilder.locked(id, authUser, async (project, transaction) => {
+      const payload: any = {};
+      if (updateData.client_id !== undefined) {
+        const value: unknown = updateData.client_id;
+        const clientId = Number(value);
+        if ((typeof value !== 'number' && !(typeof value === 'string' && /^[1-9]\d*$/.test(value))) ||
+            !Number.isSafeInteger(clientId) || clientId < 1) {
+          throw new BadRequestException('client_id must be a positive integer');
+        }
+        if (clientId !== Number(project.client_id)) {
+          if (Number(authUser?.role) !== UserRole.ADMIN) {
+            throw new ForbiddenException('Only admins can reassign a project to another client');
+          }
+          const client = await this.userRepository.findClientCandidateById(clientId, transaction);
+          if (!client || client.deleted_at) throw new NotFoundException('Selected client not found');
+          if (Number(client.role) !== UserRole.CLIENT) throw new BadRequestException('Selected user must be a client');
+          if (String(client.status).toLowerCase() !== UserStatus.ACTIVE) throw new BadRequestException('Selected client must be active');
+          payload.client_id = clientId;
+        }
+      }
 
-    await this.projectRepo.update(id, payload);
+      if (updateData.name != null) payload.name = updateData.name;
+      if (updateData.status != null) payload.status = updateData.status;
+      const companyName = updateData.company_name ?? updateData.industry;
+      if (companyName != null) payload.company_name = companyName;
+      if (Object.keys(payload).length) await this.projectRepo.update(id, payload, transaction);
+      if (payload.client_id !== undefined) {
+        await this.projectDetailrepository.reassignOwner(id, Number(project.client_id), payload.client_id, transaction);
+      }
 
-    const existingProjectDetail =
-      await this.projectDetailrepository.findByProjectId(id);
-
-    const projectDetailpayload = {
-      project_id: id,
-      start_date:
-        updateData.start_date ?? existingProjectDetail?.start_date ?? null,
-      end_date: updateData.end_date ?? existingProjectDetail?.end_date ?? null,
-      duration: updateData.duration ?? existingProjectDetail?.duration ?? null,
-      cost: updateData.cost ?? existingProjectDetail?.cost ?? 0,
-      paid_amount:
-        updateData.paid_amount ?? existingProjectDetail?.paid_amount ?? 0,
-    };
-
-    existingProjectDetail
-      ? await this.projectDetailrepository.update(id, projectDetailpayload)
-      : await this.projectDetailrepository.create(projectDetailpayload);
-
-    delete project.projectDetails;
-    // 🔥 Convert Sequelize Model
-    const plainProject = project.toJSON();
-
-    return {
-      ...plainProject,
-    };
+      // Only explicitly supplied editable details are written. Database pricing
+      // triggers recalculate configured unpaid teams after a client change.
+      const details: any = {};
+      if (updateData.start_date != null) details.start_date = updateData.start_date;
+      if (updateData.end_date != null) details.end_date = updateData.end_date;
+      if (updateData.duration != null) details.duration = updateData.duration;
+      if (Object.keys(details).length) {
+        const existing = await this.projectDetailrepository.findByProjectId(id, transaction);
+        if (existing) {
+          await this.projectDetailrepository.update(existing.id, details, transaction);
+        } else {
+          await this.projectDetailrepository.create({ project_id: id, ...details, cost: 0, paid_amount: 0 }, transaction);
+        }
+      }
+      return this.projectRepo.findById(id, transaction);
+    });
   }
 
-  async updateProjectConsultantStatus(body: UpdateProjectConsultantStatusDto) {
-    let IsConsultantExist =
+  async updateProjectConsultantStatus(body: UpdateProjectConsultantStatusDto, authUser: any) {
+    return this.teamBuilder.locked(Number(body.project_id), authUser, async (_project, transaction) => {
+    await this.assertProjectAccess(Number(body.project_id), authUser, transaction);
+    const assignment =
       await this.projectConsultantRepo.findByProjectIdConsultantId(
         body.project_id,
-        body.consultant_id,
+        body.consultant_id, transaction,
       );
-    if (!IsConsultantExist) {
+    if (!assignment || assignment.deleted_at) {
       throw new NotFoundException(
         `Consultant with ID ${body.consultant_id} not found in project ID ${body.project_id}`,
       );
     }
-    let where = {
+    const nextStatus = body.status as ConsultantStatus;
+    if (!Object.values(ConsultantStatus).includes(nextStatus)) {
+      throw new BadRequestException(`Invalid consultant status: ${body.status}`);
+    }
+    const currentStatus = assignment.status as ConsultantStatus;
+    const progression = [
+      ConsultantStatus.SHORTLISTED,
+      ConsultantStatus.INTERVIEW_SCHEDULED,
+      ConsultantStatus.INTERVIEW_DONE,
+      ConsultantStatus.OFFERED,
+      ConsultantStatus.HIRED,
+    ];
+    if (currentStatus === ConsultantStatus.REJECTED && nextStatus !== currentStatus) {
+      throw new ConflictException('Rejected assignment cannot be reopened');
+    }
+    const currentIndex = progression.indexOf(currentStatus);
+    const nextIndex = progression.indexOf(nextStatus);
+    if (nextStatus !== ConsultantStatus.REJECTED && currentStatus !== nextStatus && currentIndex >= 0 && nextIndex <= currentIndex) {
+      throw new ConflictException(`Invalid status transition from ${currentStatus} to ${nextStatus}`);
+    }
+    const where = {
       project_id: body.project_id,
       consultant_id: body.consultant_id,
     };
-    if (body.status == ConsultantStatus.OFFERED) {
-      // 🔏 Todo: Send NDA
-      // 🚀 Todo: Send Email
-      // 👤 Set User Role As Well
-      await this.projectConsultantRepo.update(where, {
-        role: body.role ?? 'consultant',
-        status: body.status,
-        booking_schedule: body.booking_schedule ?? null,
-      });
-    } else if (body.status == ConsultantStatus.REJECTED) {
-      // 📧 Todo: Send Rejection Email
+    const payload: any = { status: nextStatus };
+    if (body.role !== undefined) payload.role = body.role.trim() || null;
+    if (body.booking_schedule !== undefined) payload.booking_schedule = body.booking_schedule;
+    if (body.decided_rate !== undefined) {
+      const rate = Number(body.decided_rate);
+      if (!Number.isFinite(rate) || rate < 0) throw new BadRequestException('decided_rate must be zero or greater');
+      payload.decided_rate = rate;
     }
-    return await this.projectConsultantRepo.update(where, {
-      status: body.status,
+    if (body.requested_hours !== undefined) {
+      const hours = Number(body.requested_hours);
+      if (!Number.isInteger(hours) || hours < 1) throw new BadRequestException('requested_hours must be a positive integer');
+      payload.requested_hours = hours;
+    }
+    const effectiveRate = payload.decided_rate ?? Number(assignment.decided_rate || 0);
+    if ([ConsultantStatus.OFFERED, ConsultantStatus.HIRED].includes(nextStatus) && effectiveRate <= 0) {
+      throw new BadRequestException('A positive decided_rate is required before offering or hiring');
+    }
+    if (nextStatus === ConsultantStatus.OFFERED && payload.role === undefined) {
+      payload.role = assignment.role || 'consultant';
+    }
+    const result = await this.projectConsultantRepo.update(where, payload, transaction);
+    await this.syncProjectMilestonePayments(Number(body.project_id), transaction);
+    return result;
     });
   }
 
-  async updateProjectConsultantRole(body: UpdateProjectConsultantStatusDto) {
-    console.log('service role dto', body);
-    let IsConsultantExist =
+  async updateProjectConsultantRole(body: UpdateProjectConsultantRoleDto, authUser: any) {
+    return this.teamBuilder.locked(Number(body.project_id), authUser, async (_project, transaction) => {
+    await this.assertProjectAccess(Number(body.project_id), authUser, transaction);
+    const assignment =
       await this.projectConsultantRepo.findByProjectIdConsultantId(
         body.project_id,
-        body.consultant_id,
+        body.consultant_id, transaction,
       );
-    if (!IsConsultantExist) {
+    if (!assignment || assignment.deleted_at) {
       throw new NotFoundException(
         `Consultant with ID ${body.consultant_id} not found in project ID ${body.project_id}`,
       );
     }
-    let where = {
+    const where = {
       project_id: body.project_id,
       consultant_id: body.consultant_id,
     };
-    return await this.projectConsultantRepo.update(where, {
-      role: body.role ?? null,
-      booking_schedule: body.booking_schedule ?? null,
+    const payload: any = {};
+    if (body.role !== undefined) payload.role = body.role;
+    if (body.booking_schedule !== undefined) payload.booking_schedule = body.booking_schedule;
+    if (!Object.keys(payload).length) {
+      throw new BadRequestException('role or booking_schedule is required');
+    }
+    return this.projectConsultantRepo.update(where, payload, transaction);
     });
   }
 
-  async deleteProject(id: number) {
-    const project = await this.projectRepo.findById(id);
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
+  async deleteProject(id: number, authUser: any) {
+    await this.assertProjectAccess(id, authUser);
     return this.projectRepo.delete(id);
   }
 
-  async addConsultant(
-  data: CreateProjectConsultantDto[],
-  project_id: number,
-) {
-  const consultantIds = data.map(d => d.consultant_id);
+  getTeamBuilder(projectId: number, user: any) {
+    return this.teamBuilder.get(projectId, user);
+  }
 
-  // 1️⃣ Upsert one by one
-  for (const item of data) {
-    const existing =
-      await this.projectConsultantRepo.findOneByProjectAndConsultant(
-        project_id,
-        item.consultant_id,
-      );
+  saveTeamBuilder(projectId: number, dto: SaveTeamBuilderDto, user: any) {
+    return this.teamBuilder.save(projectId, user, dto, transaction => this.syncProjectMilestonePayments(projectId, transaction));
+  }
 
-    if (existing) {
-      // restore if deleted
-      if (existing.deleted_at) {
-        existing.deleted_at = null;
+  private async replaceLegacyTeam(data: CreateProjectConsultantDto[], projectId: number, user: any, append = false, removeId?: number) {
+    if (!Array.isArray(data)) throw new BadRequestException('Consultants payload must be an array');
+    return this.teamBuilder.locked(projectId, user, async (project, transaction) => {
+      const existing = await ProjectConsultant.findAll({ where: { project_id: projectId }, transaction });
+      const current = existing.filter(item => !item.deleted_at);
+      let consultants = data.map(item => ({ consultant_id: Number(item.consultant_id), requested_hours: Number(item.requested_hours) }));
+      if (append) consultants = [...current.filter(item => item.status !== ConsultantStatus.REJECTED && !consultants.some(next => next.consultant_id === Number(item.consultant_id)))
+        .map(item => ({ consultant_id: Number(item.consultant_id), requested_hours: Number(item.requested_hours) })), ...consultants];
+      if (removeId !== undefined) {
+        const removedMember = current.find(item => Number(item.consultant_id) === removeId);
+        if (!removedMember) throw new NotFoundException('Active project consultant not found');
+        // Rejected records are excluded from the editable snapshot, so replace()
+        // cannot soft-delete them. Honour this explicit legacy removal here.
+        if (removedMember.status?.toLowerCase() === ConsultantStatus.REJECTED) {
+          await removedMember.update({ deleted_at: new Date() }, { transaction });
+        }
+        consultants = current.filter(item => Number(item.consultant_id) !== removeId && item.status !== ConsultantStatus.REJECTED)
+          .map(item => ({ consultant_id: Number(item.consultant_id), requested_hours: Number(item.requested_hours) }));
       }
-
-      existing.requested_hours = item.requested_hours;
-      existing.status = 'shortlisted';
-
-      await existing.save(); // ✅ SAFE (instance)
-      continue;
-    }
-    let existingConsultant = await this.consultantRepo.findByUserId(item.consultant_id);
-    // create new
-    await this.projectConsultantRepo.create({
-      project_id,
-      consultant_id: item.consultant_id,
-      requested_hours: item.requested_hours,
-      status: 'shortlisted',
-      decided_rate: existingConsultant?.rate || 0,
-      booking_schedule: null,
-      is_doc_signed: false,
+      // The legacy shortlist endpoint is the explicit re-shortlisting action.
+      for (const item of existing.filter(item => item.status === ConsultantStatus.REJECTED && consultants.some(next => next.consultant_id === Number(item.consultant_id)))) {
+        if (item.is_doc_signed || item.booking_schedule != null) throw new ConflictException('Contracted consultant cannot be re-shortlisted');
+        await item.update({ status: ConsultantStatus.SHORTLISTED }, { transaction });
+      }
+      const ids = new Set(consultants.map(item => String(item.consultant_id)));
+      return this.teamBuilder.replace(project, transaction, {
+        revision: project.team_builder_revision, consultants,
+        roles: project.team_builder_roles.map(role => ({ ...role, personIds: role.personIds.filter(id => ids.has(id)) })),
+      }, tx => this.syncProjectMilestonePayments(projectId, tx));
     });
   }
 
-  // 2️⃣ Soft delete missing ones (ONE QUERY)
-  await this.projectConsultantRepo.softDeleteNotIn(
-    project_id,
-    consultantIds,
-  );
+  async addConsultant(data: CreateProjectConsultantDto[], projectId: number, user: any) {
+    if (!Array.isArray(data) || !data.length) throw new BadRequestException('At least one consultant is required');
+    await this.replaceLegacyTeam(data, projectId, user, true);
+    return { message: 'Consultants added successfully' };
+  }
 
-  return { message: 'Consultants synced successfully' };
-}
+  async syncConsultants(data: CreateProjectConsultantDto[], projectId: number, user: any) {
+    await this.replaceLegacyTeam(data, projectId, user);
+    return { message: 'Project team synced successfully' };
+  }
 
+  async removeConsultant(projectId: number, consultantId: number, user: any) {
+    await this.replaceLegacyTeam([], projectId, user, false, consultantId);
+    return { message: 'Consultant removed from project' };
+  }
 
   async getProjectConsultants(
     projectId: number,
     query: GetConsultantsQueryDto,
+    authUser: any,
   ) {
+    const project = await this.assertProjectAccess(projectId, authUser);
     const where: any = { project_id: projectId, deleted_at: null };
 
     if (query.status && query.status.length > 0) {
@@ -258,11 +379,56 @@ export class ProjectService {
       where.status = { [Op.in]: statuses };
     }
 
-    let proj_consultants = await this.projectConsultantRepo.findAll({
+    const projectConsultants = await this.projectConsultantRepo.findAll({
       where,
     });
-
-    return transformProjectConsultant(proj_consultants);
+    let data = transformProjectConsultant(projectConsultants);
+    const profitMarginPercentage = normalizeProfitMargin(
+      project?.client?.profit_margin_percentage,
+    );
+    if (query.billing_currency && query.billing_currency !== 'USD')
+      throw new BadRequestException('billing_currency must be USD');
+    let usdRates: Awaited<ReturnType<typeof usdClientRates>>;
+    if (query.billing_currency === 'USD') {
+      if (data.some(item => String(item.currency || 'USD').trim().toUpperCase() !== 'USD'))
+        await refreshUsdRates();
+      usdRates = await usdClientRates(data, profitMarginPercentage);
+    }
+    data = data.map((item, index) => ({
+      ...item,
+      rate: usdRates ? usdRates[index].rate : applyClientProfitMargin(item.rate, profitMarginPercentage),
+      decided_rate: usdRates ? usdRates[index].decided_rate : applyClientProfitMargin(
+        item.decided_rate,
+        profitMarginPercentage,
+      ),
+      ...(usdRates ? { currency: 'USD', source_currency: item.currency, fx_as_of: usdRates[index].fx_as_of, billing_preview: true } : {}),
+      ...(Number(authUser?.role) === UserRole.ADMIN
+        ? { profit_margin_percentage: profitMarginPercentage }
+        : {}),
+    }));
+    if (query.name?.trim()) {
+      const search = query.name.trim().toLowerCase();
+      data = data.filter(item =>
+        [item.name, item.email, item.phone].some(value => String(value || '').toLowerCase().includes(search)),
+      );
+    }
+    if (query.module_id !== undefined && query.module_id !== null) {
+      const moduleId = Number(query.module_id);
+      if (!Number.isInteger(moduleId)) throw new BadRequestException('module_id must be an integer');
+      data = data.filter(item => [...item.core_module_ids, ...item.other_module_ids].includes(moduleId));
+    }
+    const page = Math.max(Number(query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(query.limit) || data.length || 1, 1), 100);
+    const total = data.length;
+    return {
+      data: data.slice((page - 1) * limit, page * limit),
+      pagination: {
+        total,
+        current_page: page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getProjectIndustries(projectId: number) {
@@ -342,143 +508,70 @@ private getMonthlyHoursBreakdown(
 // ============================================================
 private async calculateAndSyncPayments(
   milestone: ProjectMilestone,
+  transaction?: Transaction,
 ): Promise<void> {
-  if (!milestone?.required_hours) return;
-
-  const consultants = await this.projectConsultantRepo.findByProjectId(
-    milestone.project_id,
-  );
-  if (!consultants.length) return;
-
-  const totalRequestedHours = consultants.reduce(
-    (sum, c) => sum + (c.requested_hours || 0),
-    0,
-  );
-  if (!totalRequestedHours) return;
-
-  // Purane unpaid payments aur monthly bills delete karo
-  await this.paymentRepo.deleteUnpaidByMilestoneId(milestone.id);
-  await this.monthlyBillRepo.deleteUnpaidByMilestoneId(milestone.id);
-
-  for (const consultant of consultants) {
-    const ratio = (consultant.requested_hours || 0) / totalRequestedHours;
-    const consultantHours = milestone.required_hours * ratio;
-    const amount = consultantHours * (consultant.decided_rate || 0);
-
-    // 1. Payment record (existing)
-    await this.paymentRepo.create({
-      project_id: milestone.project_id,
-      project_milestone_id: milestone.id,
-      amount,
-      payment_module: 'milestone',
-      is_paid: false,
-    });
-
-    // 2. Monthly bills (NAYA) — sirf agar dates hain
-    if (milestone.start_date && milestone.due_date) {
-      const monthlyBreakdown = this.getMonthlyHoursBreakdown(
-        new Date(milestone.start_date),
-        new Date(milestone.due_date),
-        consultantHours,
-      );
-
-      for (const mb of monthlyBreakdown) {
-        const monthlyAmount = mb.hours * (consultant.decided_rate || 0);
-
-        await this.monthlyBillRepo.create({
-          project_id: milestone.project_id,
-          user_id: consultant.consultant_id, // consultant ki user_id
-          milestone_id: milestone.id,
-          month: mb.month,
-          hours: mb.hours,
-          amount: parseFloat(monthlyAmount.toFixed(2)),
-          bill_type: 'auto',
-          is_paid: false,
-          pdf_url: null,
-        });
-      }
-    }
-  }
+  if (!milestone) return;
+  // Legacy milestones stay unconfigured until an explicit team PUT. The
+  // function never changes paid records or derives hours from project dates.
+  await syncMilestoneTeam(milestone.id, transaction);
 }
 
+
+private async syncProjectMilestonePayments(projectId: number, transaction?: Transaction) {
+  const milestones = await this.milestoneRepo.findByProjectId(projectId, transaction);
+  for (const milestone of milestones.filter(item => !item.deleted_at)) {
+    await this.calculateAndSyncPayments(milestone, transaction);
+  }
+}
 
 // ============================================================
 // ADD MILESTONE
 // ============================================================
 
-async addMilestone(data: CreateProjectMilestoneDto) {
-  // 1. Date range check
-  if (data.start_date && data.due_date) {
-    await this.validateMilestoneDates(
-      data.project_id,
-      new Date(data.start_date),
-      new Date(data.due_date),
-    );
-
-    // 2. Required hours calculate
-    data.required_hours = this.calculateWorkingHours(
-      new Date(data.start_date),
-      new Date(data.due_date),
-    );
-  } else {
-    data.required_hours = 0;
-  }
-
-  // 3. Create milestone
-  const milestone = await this.milestoneRepo.create(data);
-
-  // 4. Payments sync
-  await this.calculateAndSyncPayments(milestone);
-
-  return milestone;
+private milestoneFields(data: CreateProjectMilestoneDto) {
+  const allowed = new Set(['project_id','name','description','start_date','due_date','status','required_hours']);
+  if (Object.keys(data).some(key => !allowed.has(key)))
+    throw new BadRequestException('Unknown milestone field; use the milestone team endpoint for allocations');
+  const payload: any = {};
+  for (const key of allowed) if (key !== 'project_id' && data[key] !== undefined) payload[key] = data[key];
+  return payload;
 }
 
+async addMilestone(data: CreateProjectMilestoneDto, authUser: any) {
+  const payload = this.milestoneFields(data);
+  return this.teamBuilder.locked(Number(data.project_id), authUser, async (project, transaction) => {
+    if (data.start_date && data.due_date) {
+      await this.validateMilestoneDates(project.id, new Date(data.start_date), new Date(data.due_date));
+      payload.required_hours = this.calculateWorkingHours(new Date(data.start_date), new Date(data.due_date));
+    }
+    const milestone = await ProjectMilestone.create({ ...payload, project_id: project.id, team_configured: true }, { transaction });
+    await this.calculateAndSyncPayments(milestone, transaction);
+    return milestone.reload({ transaction });
+  });
+}
 
-// ============================================================
-// UPDATE MILESTONE
-// ============================================================
-
-async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
-  const milestone = await this.milestoneRepo.findById(id);
-
-  if (!milestone) {
-    throw new NotFoundException(`Milestone with ID ${id} not found`);
-  }
-
-  // 1. Paid check — block update, suggest new module
-  const hasPaidPayments = await this.paymentRepo.hasPaidByMilestoneId(id);
-
-  if (hasPaidPayments) {
-    throw new ConflictException(
-      'This milestone has already been paid. Please create a revision instead.',
-    );
-  }
-
-  // 2. Date range check (exclude self)
-  if (data.start_date && data.due_date) {
-    await this.validateMilestoneDates(
-      milestone.project_id,
-      new Date(data.start_date),
-      new Date(data.due_date),
-      id, // exclude current milestone from overlap check
-    );
-
-    // 3. Required hours recalculate
-    data.required_hours = this.calculateWorkingHours(
-      new Date(data.start_date),
-      new Date(data.due_date),
-    );
-  } else {
-    data.required_hours = 0;
-  }
-
-  // 4. Update milestone
-  const updatedMilestone = await this.milestoneRepo.update(id, data);
-
-  // 5. Payments recalculate (unpaid wale delete hokey naye banenge)
-  await this.calculateAndSyncPayments(updatedMilestone);
-
-  return updatedMilestone;
+async updateMilestone(id: number, data: CreateProjectMilestoneDto, authUser: any) {
+  const existing = await this.milestoneRepo.findById(id);
+  if (!existing || existing.deleted_at) throw new NotFoundException('Milestone not found');
+  const payload = this.milestoneFields(data);
+  if (data.project_id !== undefined && Number(data.project_id) !== existing.project_id)
+    throw new BadRequestException('Milestones cannot be moved between projects');
+  return this.teamBuilder.locked(existing.project_id, authUser, async (_project, transaction) => {
+    const milestone = await ProjectMilestone.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!milestone || milestone.deleted_at) throw new NotFoundException('Milestone not found');
+    if (await this.paymentRepo.hasPaidByMilestoneId(id, transaction))
+      throw new ConflictException('Paid milestones are immutable');
+    const start = data.start_date === undefined ? milestone.start_date : data.start_date;
+    const due = data.due_date === undefined ? milestone.due_date : data.due_date;
+    if (start && due) {
+      await this.validateMilestoneDates(milestone.project_id, new Date(start), new Date(due), id);
+      if (data.start_date !== undefined || data.due_date !== undefined)
+        payload.required_hours = this.calculateWorkingHours(new Date(start), new Date(due));
+    }
+    await milestone.update(payload, { transaction });
+    await this.calculateAndSyncPayments(milestone, transaction);
+    return milestone.reload({ transaction });
+  });
 }
   async getConsultantMonthlyBills(projectId: number, userId: number) {
   return this.monthlyBillRepo.findByProjectAndConsultant(projectId, userId);
@@ -487,6 +580,7 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   async uploadProjectDocument(
     body: UploadProjectDocumentDto,
     file: Express.Multer.File,
+    authUser: any,
   ) {
     const projectId = Number(body.project_id);
     const consultantId = Number(body.user_id);
@@ -503,19 +597,28 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
       throw new BadRequestException('type is required');
     }
 
-    const [project, consultant] = await Promise.all([
-      this.projectRepo.findById(projectId),
-      this.userRepository.findById(consultantId),
-    ]);
+    await this.assertProjectAccess(projectId, authUser);
+    const consultant = await this.userRepository.findById(consultantId);
 
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    if (!consultant || Number(consultant.role) !== UserRole.CONSULTANT) {
+      throw new NotFoundException(`Consultant with ID ${consultantId} not found`);
     }
 
-    if (!consultant) {
-      throw new NotFoundException(`User with ID ${consultantId} not found`);
+    const assignment = await this.projectConsultantRepo.findByProjectIdConsultantId(
+      projectId,
+      consultantId,
+    );
+    if (!assignment || assignment.deleted_at) {
+      throw new BadRequestException('Consultant is not assigned to this project');
+    }
+    if (
+      Number(authUser?.role) === UserRole.CONSULTANT &&
+      Number(authUser?.id) !== consultantId
+    ) {
+      throw new ForbiddenException('Consultants can only upload their own project documents');
     }
 
+    /* The actor is authorized above; consultant_id remains the document owner. */
     const url = await this.commonService.uploadToS3({
       file: file.buffer,
       folder: 'project-documents',
@@ -536,11 +639,26 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
     };
   }
 
-  async getMilestonesByProject(id: number) {
+  async getMilestonesByProject(id: number, authUser: any) {
+    await this.assertProjectAccess(id, authUser);
     let isMMilestoneExist = await this.milestoneRepo.findAll({
-      where: { project_id: id }
+      where: { project_id: id, deleted_at: null }
     });
     return isMMilestoneExist;
+  }
+
+  async getMilestoneById(id: number, authUser: any) {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new BadRequestException('Milestone ID must be a positive integer');
+    }
+
+    const milestone = await this.milestoneRepo.findById(id);
+    if (!milestone || milestone.deleted_at) {
+      throw new NotFoundException(`Milestone with ID ${id} not found`);
+    }
+
+    await this.assertProjectAccess(Number(milestone.project_id), authUser);
+    return milestone;
   }
 
   async getProjectMilestones(projectId: number) {
@@ -557,8 +675,8 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   async createTask(
     milestoneId: number,
     dto: CreateProjectTaskDto,
+    authUser: any,
   ): Promise<ProjectTask> {
-    console.log(dto);
     if (!dto.name?.trim()) {
       throw new BadRequestException('Task name is required');
     }
@@ -567,6 +685,7 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
     if (!milestone) {
       throw new NotFoundException('Milestone not found');
     }
+    await this.assertProjectAccess(milestone.project_id, authUser);
 
     const data: Partial<ProjectTask> = {
       ...dto,
@@ -581,9 +700,11 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   async updateTask(
     taskId: number,
     dto: UpdateProjectTaskDto,
+    authUser: any,
   ): Promise<ProjectTask> {
     const task = await this.projectTaskRepo.findById(taskId);
     if (!task) throw new NotFoundException('Task not found');
+    await this.assertProjectAccess(task.project_id, authUser);
 
     // 🧭 Check If Relocating Task To Another Milestone
     if (
@@ -595,6 +716,9 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
       );
       if (!newMilestone) {
         throw new BadRequestException('New milestone does not exist');
+      }
+      if (newMilestone.project_id !== task.project_id) {
+        throw new BadRequestException('A task cannot be moved to another project');
       }
       // 📣 Update Project_Id As Well When Moving Task To New Milestone
       dto.project_id = newMilestone.project_id;
@@ -611,29 +735,44 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   }
 
   // 📋 Get All Tasks Under A Milestone
-  async getTaskByMilestone(milestoneId: number): Promise<ProjectMilestone> {
+  async getTaskByMilestone(milestoneId: number, authUser: any): Promise<ProjectMilestone> {
+    const milestone = await this.milestoneRepo.findById(milestoneId);
+    if (!milestone) throw new NotFoundException('Milestone not found');
+    await this.assertProjectAccess(milestone.project_id, authUser);
     return await this.milestoneRepo.findByIdWithTasks(milestoneId);
   }
 
   // 🔍 Get Task By Id
-  async getTaskById(taskId: number): Promise<ProjectTask> {
+  async getTaskById(taskId: number, authUser: any): Promise<ProjectTask> {
     const task = await this.projectTaskRepo.findById(taskId);
     if (!task) throw new NotFoundException('Task not found');
+    await this.assertProjectAccess(task.project_id, authUser);
     return task;
   }
 
   // ❌ Detete Milestone
-  async deleteMilestone(id: number) {
-    const milestone = await this.milestoneRepo.findById(id);
-    if (!milestone)
-      throw new NotFoundException(`Milestone with ID ${id} not found`);
-    return this.milestoneRepo.update(id, { deleted_at: new Date() });
+  async deleteMilestone(id: number, authUser: any) {
+    const existing = await this.milestoneRepo.findById(id);
+    if (!existing || existing.deleted_at) throw new NotFoundException('Milestone not found');
+    return this.teamBuilder.locked(existing.project_id, authUser, async (_project, transaction) => {
+      const milestone = await ProjectMilestone.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!milestone || milestone.deleted_at) throw new NotFoundException('Milestone not found');
+      if (await this.paymentRepo.hasPaidByMilestoneId(id, transaction))
+        throw new ConflictException('A paid milestone cannot be deleted');
+      await milestone.update({ deleted_at: new Date() }, { transaction });
+      if (milestone.team_configured) await this.calculateAndSyncPayments(milestone, transaction);
+      else await ProjectPayment.update({ deleted_at: new Date() }, {
+        where: { project_milestone_id: id, is_paid: false, deleted_at: null }, transaction,
+      });
+      return milestone.reload({ transaction });
+    });
   }
 
   // ❌ Delete Task
-  async deleteTask(id: number) {
+  async deleteTask(id: number, authUser: any) {
     const task = await this.projectTaskRepo.findById(id);
     if (!task) throw new NotFoundException(`Milestone with ID ${id} not found`);
+    await this.assertProjectAccess(task.project_id, authUser);
     if (task.deleted_at)
       throw new NotFoundException(`Task with ID ${id} is already deleted`);
 
@@ -662,46 +801,47 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto) {
   return hours;
 }
 
-  getPaymentsByProject(projectId: number) {
+  async getPaymentsByProject(projectId: number, authUser: any) {
+    await this.assertProjectAccess(projectId, authUser);
     return this.paymentRepo.findAll({
-      where: { project_id: projectId },
+      where: { project_id: projectId, deleted_at: null },
     });
   }
 
-  async updatePayment(paymentId: number, data: UpdateProjectPaymentDto) {
-    try{
-const payment = await this.paymentRepo.findById(paymentId);
-
-    if (!payment) {
-      throw new NotFoundException(`Payment with ID ${paymentId} not found`);
-    }
-
-    const payload: any = {};
-
-    if (data.project_id !== undefined) payload.project_id = Number(data.project_id);
-    if (data.project_milestone_id !== undefined) {
-      payload.project_milestone_id = Number(data.project_milestone_id);
-    }
-    if (data.doc_id !== undefined) payload.doc_id = Number(data.doc_id);
-    if (data.amount !== undefined) payload.amount = Number(data.amount);
-    if (data.payment_module !== undefined) payload.payment_module = data.payment_module;
-    if (data.is_paid !== undefined) payload.is_paid = data.is_paid;
-
-    if (Object.keys(payload).length === 0) {
-      throw new BadRequestException('At least one payment field is required');
-    }
-
-    const [count, [updatedPayment]] = await this.paymentRepo.update(paymentId, payload);
-
-    if (count === 0) {
-      throw new NotFoundException(`Payment with ID ${paymentId} not found`);
-    }
-
-    return updatedPayment;
-    } catch(e) {
-      console.log(e)
-    }
-    
+  async updatePayment(paymentId: number, data: UpdateProjectPaymentDto, authUser: any) {
+    const existing = await this.paymentRepo.findById(paymentId);
+    if (!existing || existing.deleted_at) throw new NotFoundException('Payment not found');
+    return this.teamBuilder.locked(existing.project_id, authUser, async (_project, transaction) => {
+      const payment = await ProjectPayment.findByPk(paymentId, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!payment || payment.deleted_at) throw new NotFoundException('Payment not found');
+      if (payment.is_paid) throw new ConflictException('Paid payment records are immutable');
+      const allowed = new Set(['project_id', 'project_milestone_id', 'doc_id', 'amount', 'payment_module', 'is_paid']);
+      if (Object.keys(data).some(key => !allowed.has(key))) throw new BadRequestException('Unknown payment field');
+      if (data.project_id !== undefined && Number(data.project_id) !== payment.project_id)
+        throw new BadRequestException('A payment cannot be moved to another project');
+      if (data.project_milestone_id !== undefined && Number(data.project_milestone_id) !== payment.project_milestone_id)
+        throw new BadRequestException('A payment cannot be moved to another milestone');
+      if (data.is_paid !== undefined && typeof data.is_paid !== 'boolean')
+        throw new BadRequestException('is_paid must be boolean');
+      const payload: any = {};
+      if (data.doc_id !== undefined) {
+        if (data.doc_id !== null && (!Number.isSafeInteger(Number(data.doc_id)) || Number(data.doc_id) <= 0))
+          throw new BadRequestException('doc_id must be a positive integer or null');
+        payload.doc_id = data.doc_id === null ? null : Number(data.doc_id);
+      }
+      if (data.amount !== undefined) {
+        if (!Number.isFinite(Number(data.amount)) || Number(data.amount) < 0)
+          throw new BadRequestException('amount must be finite and nonnegative');
+        payload.amount = Number(data.amount);
+      }
+      if (data.payment_module !== undefined) payload.payment_module = data.payment_module;
+      if (data.is_paid !== undefined) payload.is_paid = data.is_paid;
+      if (!Object.keys(payload).length) throw new BadRequestException('At least one payment field is required');
+      // Database guard checks server-calculated amounts and serializes settlement
+      // with allocation saves. Marking paid continues through this existing flow.
+      await payment.update(payload, { transaction });
+      return payment.reload({ transaction });
+    });
   }
 
 }

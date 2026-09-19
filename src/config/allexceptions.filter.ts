@@ -36,6 +36,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       errorBody.message = exception.message;
     }
 
+    // Explicit SQL states from the milestone billing invariants, including
+    // writes made through status, pricing and consultant billing endpoints.
+    const databaseCode = exception?.original?.code;
+    if (databaseCode === 'MT400' || databaseCode === 'MT409' || databaseCode === 'MT503') {
+      errorBody.code = databaseCode === 'MT400' ? HttpStatus.BAD_REQUEST : databaseCode === 'MT503' ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.CONFLICT;
+      errorBody.message = exception.original.message;
+    }
+
     return CustomResponse.error(response, errorBody);
   }
 }

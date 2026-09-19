@@ -34,7 +34,7 @@ export class ProjectPayment extends Model<ProjectPayment> {
   doc_id: number;
 
   @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.DECIMAL(18, 2),
     allowNull: false,
   })
   amount: number;

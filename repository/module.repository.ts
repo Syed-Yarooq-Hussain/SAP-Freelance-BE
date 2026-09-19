@@ -51,23 +51,31 @@ export class ModuleRepository {
   async getTree(): Promise<any[]> {
     const categories = await this.moduleModel.findAll({
       where: { is_core: true, deleted_at: null },
-      attributes: ['id', 'name'],
+      attributes: ['id', 'name', 'abbreviation'],
       include: [
         {
           model: ModuleEntity,
           as: 'children',
           where: { deleted_at: null },
           required: false,
-          attributes: ['id', 'name'],
+          attributes: ['id', 'name', 'abbreviation'],
         },
       ],
     });
 
     return categories.map((cat) => ({
       id: cat.id,
-      name: cat.name,
-      modules: cat.children ?? [],
+      name: this.formatName(cat),
+      abbreviation: cat.abbreviation,
+      modules: (cat.children ?? []).map(child => ({
+        ...child.toJSON(),
+        name: this.formatName(child),
+      })),
     }));
+  }
+
+  private formatName(module: ModuleEntity): string {
+    return module.name;
   }
 
   // 🔍 Get Module By Id

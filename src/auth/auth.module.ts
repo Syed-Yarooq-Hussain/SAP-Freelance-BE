@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -13,6 +13,7 @@ import { ConsultantModule as ConsultantModuleImport } from '../consultant/consul
 import { ConsultantModuleRepository } from 'repository/consultant-module.repository';
 import { LinkedInStrategy } from './linkedin.strategy';
 import { SessionSerializer } from './session.serializer';
+import { LinkedInTimezoneMiddleware } from './linkedin-timezone.middleware';
 
 @Module({
   imports: [
@@ -35,11 +36,19 @@ import { SessionSerializer } from './session.serializer';
     UserRepository, 
     ConsultantModuleRepository,
     LinkedInStrategy,
-    SessionSerializer         
+    SessionSerializer,
+    LinkedInTimezoneMiddleware,
   ],
   exports: [
     AuthService, 
     JwtStrategy,                
   ],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LinkedInTimezoneMiddleware).forRoutes({
+      path: 'auth/linkedin',
+      method: RequestMethod.GET,
+    });
+  }
+}

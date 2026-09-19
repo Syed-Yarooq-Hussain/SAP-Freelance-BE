@@ -1,3 +1,4 @@
+import { literal, ProjectionAlias } from 'sequelize';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Project } from '../models/project.model';
@@ -29,14 +30,24 @@ export class ProjectRepository {
   }
 
   // 🔍 Get Project By Id
-  async findById(id: number): Promise<Project | null> {
+  async findById(id: number, transaction?: any): Promise<Project | null> {
     return this.projectModel.findByPk(id, {
+      transaction,
+      attributes: { include: [[literal(`(
+        SELECT jsonb_build_object(
+          'unconfigured_milestones',(SELECT count(*) FROM project_milestone WHERE project_id="Project".id AND deleted_at IS NULL AND NOT team_configured),
+          'by_currency',COALESCE((SELECT jsonb_agg(totals) FROM (
+            SELECT team_currency AS currency,sum(team_estimated_amount) AS estimated_amount,sum(team_payable_amount) AS payable_amount
+            FROM project_milestone WHERE project_id="Project".id AND deleted_at IS NULL AND team_configured GROUP BY team_currency
+          ) totals),'[]'::jsonb))
+      )`), 'milestone_billing'] as ProjectionAlias] },
       include: [
       {
         association: 'projectDetails', 
         
       },{
         association: 'client',
+        attributes: ['id', 'username', 'email', 'status', 'profit_margin_percentage'],
       }], 
       raw: false
     });
@@ -51,8 +62,10 @@ export class ProjectRepository {
   async update(
     id: number,
     data: Partial<Project>,
+    transaction?: import('sequelize').Transaction,
   ): Promise<[number, Project[]]> {
     return this.projectModel.update(data, {
+      transaction,
       where: { id },
       returning: true,
     });
@@ -81,6 +94,7 @@ export class ProjectRepository {
         'projectDetails',
         {
           model: User,
+          as: 'client',
           attributes: ['username'],
         }
       ],

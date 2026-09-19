@@ -15,8 +15,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CustomError } from 'src/config/custom-error.exception';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { LinkedInAuthGuard } from './linkedin-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -26,16 +26,18 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
   
   @Get('linkedin')
-  @UseGuards(AuthGuard('linkedin'))
+  @UseGuards(LinkedInAuthGuard)
   loginWithLinkedIn() {}
 
   @Get('linkedin/callback')
-  @UseGuards(AuthGuard('linkedin'))
+  @UseGuards(LinkedInAuthGuard)
   async linkedinCallback(@Req() req, @Res() res: Response) {
     if (!req.user) {
       return res.status(401).json({ error: 'LinkedIn auth failed' });
     }
-    const result = await this.authService.loginWithLinkedIn(req.user);
+    const timezone = req.session?.linkedinTimezone;
+    if (req.session) delete req.session.linkedinTimezone;
+    const result = await this.authService.loginWithLinkedIn(req.user, timezone);
     console.log('🔵 LinkedIn login result:', result);
     const params = new URLSearchParams({ token: result.token });
     if (result.user?.linkedin_url) {
@@ -74,6 +76,7 @@ export class AuthController {
     const result = await this.authService.login(
       loginDto.email,
       loginDto.password,
+      loginDto.timezone,
     );
     return CustomResponse.success<any>(res, {
       data: result,

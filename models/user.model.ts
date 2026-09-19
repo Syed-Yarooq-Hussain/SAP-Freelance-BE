@@ -7,6 +7,7 @@ import { MeetingInvitee } from './meeting-invitee.model';
 import { ModuleEntity } from './module.model';
 import { ConsultantModule } from './consultant-module.model';
 import { ProjectDocument } from './project-document.model';
+import { ModuleRequest } from './module-request.model';
 
 @Table({ tableName: 'users', timestamps: false })
 export class User extends Model<User> {
@@ -38,9 +39,17 @@ export class User extends Model<User> {
 
   @Column({
     type: DataType.STRING,
-    allowNull: true,
+    allowNull: false,
+    defaultValue: 'USD',
   })
   currency: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: 'Asia/Karachi',
+  })
+  timezone: string;
 
   @Column({
     type: DataType.INTEGER,
@@ -78,6 +87,13 @@ export class User extends Model<User> {
     defaultValue: 1 || 'active',
   })
   status: string | number;
+
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  })
+  profit_margin_percentage: number;
   
   @Column({
     type: DataType.DATE,
@@ -110,7 +126,7 @@ export class User extends Model<User> {
   @HasOne(() => Consultant)
   consultants: Consultant;
 
-  @HasMany(() => Project)
+  @HasMany(() => Project, 'client_id')
   projects: Project[];
 
   @HasMany(() => Meeting, 'sender_id')
@@ -128,10 +144,47 @@ export class User extends Model<User> {
   })
   deleted_at: Date | null;
 
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: 'not_started',
+  })
+  onboarding_status: string;
+  
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_step: string | null;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_started_at: Date | null;
+  
+  @Column({
+    type: DataType.DATE,
+    allowNull: true,
+    defaultValue: null,
+  })
+  onboarding_completed_at: Date | null;
+  
+  @Column({
+    type: DataType.JSON,
+    allowNull: false,
+    defaultValue: {},
+  })
+  feature_tours: Record<string, { status: string; completed_at?: string }>;
 
   @HasMany(() => ConsultantModule)
   modules: ConsultantModule[];
 
   @HasMany(() => ProjectDocument)
   projectDocuments: ProjectDocument[];
+
+  @HasMany(() => ModuleRequest)
+  moduleRequests: ModuleRequest[];
 }

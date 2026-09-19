@@ -1,7 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsNumberString, IsString } from 'class-validator';
+import { IsOptional, IsNumberString, IsString, IsIn } from 'class-validator';
 
 export class GetConsultantsQueryDto {
+  @ApiPropertyOptional({ enum: ['USD'], description: 'Convert rates for the read-only milestone billing preview' })
+  @IsOptional()
+  @IsIn(['USD'])
+  billing_currency?: 'USD';
   @ApiPropertyOptional({
    description: 'Comma separated statuses (e.g. shortlisted,interview_done,rejected)',
    type: String,

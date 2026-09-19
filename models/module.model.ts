@@ -21,8 +21,23 @@ export class ModuleEntity extends Model<ModuleEntity> {
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    get(this: ModuleEntity) {
+      const name = this.getDataValue('name');
+      const abbreviation = this.getDataValue('abbreviation');
+      return abbreviation ? `${name} (${abbreviation})` : name;
+    },
+    set(this: ModuleEntity, value: string) {
+      this.setDataValue('name', value);
+    },
   })
   name: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+  })
+  abbreviation: string | null;
+
 
   @Column({
     type: DataType.BOOLEAN,

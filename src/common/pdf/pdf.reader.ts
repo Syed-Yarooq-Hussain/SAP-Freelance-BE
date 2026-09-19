@@ -1,6 +1,7 @@
 const pdfParse = require('pdf-parse'); 
 import * as fs from 'fs';
 import OpenAI from 'openai';
+import * as mammoth from 'mammoth';
 
 let openai: OpenAI;
 
@@ -22,6 +23,29 @@ export async function extractText(filePath: string): Promise<string> {
 export async function extractTextFromBuffer(buffer: Buffer): Promise<string> {
   const data = await pdfParse(buffer);
   return data.text;
+}
+
+export async function extractResumeTextFromBuffer(
+  buffer: Buffer,
+  mimetype?: string,
+  filename?: string,
+): Promise<string> {
+  const normalizedMime = String(mimetype || '').toLowerCase();
+  const normalizedName = String(filename || '').toLowerCase();
+  const isDocx =
+    normalizedMime ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    normalizedName.endsWith('.docx');
+  const isPdf =
+    normalizedMime === 'application/pdf' || normalizedName.endsWith('.pdf');
+
+  if (isDocx) {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value;
+  }
+  if (isPdf) return extractTextFromBuffer(buffer);
+
+  throw new Error('Only PDF and DOCX resume files are supported');
 }
 
 export async function parseWithOpenAI(text: string) {
@@ -154,8 +178,29 @@ Dates format: YYYY-MM or YYYY-MM-DD
 CLIENT SUMMARY (keep as before)
 -------------------------------------
 
-Include concise SAP consultant summary with:
-Name, Role, Experience, Modules, Industries, Projects, Location, SAP Versions
+
+Generate EXACTLY 5 lines (or 4 if no extra modules).
+
+Line 1:
+<Experience Level> SAP <Core Module(s)> Consultant with <X+ years> of experience in <core modules>.
+
+Line 2:
+Experienced in <project types> with strong expertise in <key capabilities>.
+
+Line 3 (ONLY if applicable):
+Also skilled in <Other Modules> supporting cross-functional process design and governance.
+
+Line 4:
+Has worked across industries including <industry1>, <industry2>, <industry3>.
+
+Line 5:
+Delivered <X+ SAP projects> including <implementation/rollout/support types>.
+
+Rules:
+- No headings
+- No bullets
+- No extra text
+- Strict professional tone
 
 -------------------------------------
 IMPORTANT RULES

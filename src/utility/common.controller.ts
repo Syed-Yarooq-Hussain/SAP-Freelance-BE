@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Put, Delete, UseGuards, Req, Res, Patch, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
+import { Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CommonService } from './common.service';
 import { CreateCommonDto } from './dto/create-common.dto';
 import { UpdateCommonDto } from './dto/update-common.dto';
@@ -10,11 +11,41 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ModuleEntity } from 'models/module.model';
+import { UserRole } from 'constant/enums';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { CreateModuleRequestDto } from './dto/create-module-request.dto';
 
 @ApiTags('Common')
 @Controller('common')
 export class CommonController {
   constructor(private readonly commonService: CommonService) {}  
+
+  @Post('module/requests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CONSULTANT)
+  @ApiOperation({ summary: 'Submit a new SAP module request' })
+  createModuleRequest(@Req() req: any, @Body() body: CreateModuleRequestDto) {
+    return this.commonService.createModuleRequest(req.user, body);
+  }
+
+  @Get('countries')
+  @ApiOperation({ summary: 'Get all countries for location selection' })
+  @ApiResponse({ status: 200, description: 'List of countries with id, name, code, and slug' })
+  getCountries() {
+    return this.commonService.getCountries();
+  }
+
+  @Get('cities/:country')
+  @ApiOperation({ summary: 'Get cities by country name or slug' })
+  @ApiParam({
+    name: 'country',
+    description: 'Country name or slug, for example United States or united-states',
+  })
+  @ApiResponse({ status: 200, description: 'List of cities for the selected country' })
+  getCitiesByCountry(@Param('country') country: string) {
+    return this.commonService.getCitiesByCountry(country);
+  }
 
   @Post("industry")
   @ApiOperation({ summary: 'Create a new industry entry' })
@@ -58,7 +89,7 @@ export class CommonController {
   @ApiResponse({ status: 201, description: 'Invitition created successfully.' })
   @ApiBody({ type: CreateMeetingDto })
   sendInvite(@Body() body: CreateMeetingDto, @Req() req: any) {
-    return this.commonService.sendInvite(body, req.user.id);
+    return this.commonService.sendInvite(body, req.user);
   }
 
   @Get("meeting-status")
@@ -69,13 +100,15 @@ export class CommonController {
   }
 
   @Patch('meetings/:id/status')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update Meeting Status' })
   @ApiResponse({ status: 200, description: 'update meeting status by Id ' })
   async changeStatus(
     @Param('id') id: string,
     @Body() dto: UpdateMeetingStatusDto,
+    @Req() req: any,
   ) {
-    return this.commonService.updateMeetingStatus(Number(id), dto);
+    return this.commonService.updateMeetingStatus(Number(id), dto, req.user);
   }
 
   @Get("meetings")
@@ -104,7 +137,7 @@ export class CommonController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('pdf-reader')
+  @Post(['pdf-reader', 'resume-reader'])
   @UseInterceptors(FileInterceptor('file'))
   async readerPdf(
     @UploadedFile() file: Express.Multer.File,
@@ -178,9 +211,25 @@ export class CommonController {
   @UseInterceptors(FileInterceptor('file'))
   async readExcelProfiles(
     @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
   ) {
     if (!file) throw new BadRequestException('Excel file required');
-    return this.commonService.readExcelWithDriveProfiles(file);
+    const result = await this.commonService.exportExcelWithDriveProfiles(file);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    return res.send(result.buffer);
+  }
+
+  @Post('import-excel-profiles')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  async importExcelProfiles(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    if (!file) throw new BadRequestException('Reviewed Excel file required');
+    return this.commonService.importReviewedExcelProfiles(file, req.user);
   }
 
   @Post('upload')

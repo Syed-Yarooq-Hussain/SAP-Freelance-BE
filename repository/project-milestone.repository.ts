@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ProjectMilestone } from '../models/project-milestone.model';
-import { Op } from 'sequelize';
+import { Op, literal, ProjectionAlias } from 'sequelize';
+
+const teamAttributes = {
+  include: [[literal('milestone_team_snapshot("ProjectMilestone"."id")'), 'team'] as ProjectionAlias],
+};
 
 @Injectable()
 export class ProjectMilestoneRepository {
@@ -17,17 +21,18 @@ export class ProjectMilestoneRepository {
 
   // 📋 Get All Milestones (With Optional Filter)
   async findAll(options?: any): Promise<ProjectMilestone[]> {
-    return this.projectMilestoneModel.findAll(options);
+    return this.projectMilestoneModel.findAll({ attributes: teamAttributes, ...options });
   }
 
   // 🔍 Get Milestone By Id
   async findById(id: number): Promise<ProjectMilestone | null> {
-    return this.projectMilestoneModel.findByPk(id);
+    return this.projectMilestoneModel.findByPk(id, { attributes: teamAttributes });
   }
 
   // 🔍 Get Milestone Task By Id
   async findByIdWithTasks(id: number): Promise<ProjectMilestone | null> {
     return await this.projectMilestoneModel.findOne({
+    attributes: teamAttributes,
     where: { id },
     include: [
       {
@@ -38,8 +43,8 @@ export class ProjectMilestoneRepository {
   }
 
   // 🔎 Get Milestones By Project Id
-  async findByProjectId(project_id: number): Promise<ProjectMilestone[]> {
-    return this.projectMilestoneModel.findAll({ where: { project_id } });
+  async findByProjectId(project_id: number, transaction?: any): Promise<ProjectMilestone[]> {
+    return this.projectMilestoneModel.findAll({ where: { project_id }, transaction });
   }
 
   // 🧠 Update Milestone

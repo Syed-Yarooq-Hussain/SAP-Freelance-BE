@@ -24,6 +24,7 @@ import { groupBillsByMonth } from './transformer/monthly-bill.transformer';
 import { createThreeMonthScheduleWindow } from 'src/common/calender/schedule-window.util';
 import { LogConsultantHoursDto } from './dto/log-consultant-hours.dto';
 import { ProjectMilestoneRepository } from 'repository/project-milestone.repository';
+import { convertMonthlyScheduleTimezone } from 'src/common/calender/timezone.util';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -43,6 +44,59 @@ export class ConsultantService {
     return Math.round(Number(value) || 0);
   }
 
+  private getSlotDurationInHours(startTime: string, endTime: string): number {
+    const toMinutes = (time: string) => {
+      const [hours, minutes] = String(time).split(':').map(Number);
+      if (
+        !Number.isInteger(hours) ||
+        !Number.isInteger(minutes) ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59
+      ) {
+        return null;
+      }
+
+      return hours * 60 + minutes;
+    };
+
+    const start = toMinutes(startTime);
+    const end = toMinutes(endTime);
+    if (start === null || end === null || end <= start) return 0;
+
+    return (end - start) / 60;
+  }
+
+  private async calculateCurrentMonthProjectedEarning(
+    workingSchedule: any,
+    hourlyRate: number,
+    now: Date,
+  ): Promise<number> {
+    if (!workingSchedule || !Number(hourlyRate)) return 0;
+
+    const monthlySchedule = await buildMonthlySchedule(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      workingSchedule,
+    );
+
+    const availableHours = monthlySchedule.days.reduce((monthTotal, day) => {
+      if (!day.availability.available) return monthTotal;
+
+      const dailyHours = day.availability.slots.reduce((dayTotal, slot) => {
+        return dayTotal + this.getSlotDurationInHours(
+          slot.start_time,
+          slot.end_time,
+        );
+      }, 0);
+
+      return monthTotal + dailyHours;
+    }, 0);
+
+    return this.roundAmount(availableHours * Number(hourlyRate));
+  }
+
   private normalizeLinkedInProfileUrl(url: string): string {
     const normalized = url.trim().replace(/\/+$/, '');
     const isValidLinkedInProfile =
@@ -53,6 +107,107 @@ export class ConsultantService {
     }
 
     return normalized;
+  }
+
+  private normalizeTimeZone(timezone: string): string {
+    const normalized = timezone.trim();
+
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: normalized }).format();
+    } catch {
+      throw new CustomError(
+        400,
+        'Timezone must be a valid IANA timezone, e.g. Asia/Karachi',
+      );
+    }
+
+    return normalized;
+  }
+
+  private normalizeTime(value: any): string | null {
+    if (typeof value !== 'string') return null;
+
+    const trimmed = value.trim();
+    const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (!match) return null;
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  private normalizeScheduleSlot(slot: any) {
+    const start = this.normalizeTime(slot?.start ?? slot?.start_time);
+    const end = this.normalizeTime(slot?.end ?? slot?.end_time);
+
+    if (!start || !end) return null;
+
+    return { start, end };
+  }
+
+  private normalizeScheduleSlots(value: any) {
+    const rawSlots = Array.isArray(value?.slot)
+      ? value.slot
+      : Array.isArray(value?.slots)
+        ? value.slots
+        : value?.start || value?.start_time || value?.end || value?.end_time
+          ? [value]
+          : [];
+
+    return rawSlots
+      .map((slot: any) => this.normalizeScheduleSlot(slot))
+      .filter(Boolean);
+  }
+
+  private normalizeScheduleDay(value: any) {
+    const day = value?.day || value?.day_name;
+    if (!day) return null;
+
+    const slots = this.normalizeScheduleSlots(value);
+    const active =
+      typeof value?.active === 'boolean'
+        ? value.active
+        : typeof value?.available === 'boolean'
+          ? value.available
+          : slots.length > 0;
+
+    return {
+      ...value,
+      day,
+      active,
+      slot: active ? slots : [],
+    };
+  }
+
+  private normalizeCustomSchedule(value: any) {
+    const date = value?.date;
+    if (!date) return null;
+
+    const slots = this.normalizeScheduleSlots(value);
+    const active =
+      typeof value?.active === 'boolean'
+        ? value.active
+        : typeof value?.available === 'boolean'
+          ? value.available
+          : slots.length > 0;
+
+    return {
+      ...value,
+      date,
+      active,
+      slot: active ? slots : [],
+    };
+  }
+
+  private getScheduleDayName(date: string): string | null {
+    if (!date) return null;
+
+    const parsedDate = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+
+    return parsedDate.toLocaleDateString('en-US', { weekday: 'long' });
   }
 
     
@@ -224,8 +379,10 @@ export class ConsultantService {
       throw new CustomError(404, 'Consultant profile not found');
     }
 
-    await this.consultantModuleRepo.delete(userId);
     await this.projectConsultantRepo.deleteByConsultantId(userId);
+    // Membership deletion checks paid allocation locks before any profile data
+    // is removed, and prunes unpaid allocations in the same transaction.
+    await this.consultantModuleRepo.delete(userId);
     await this.meetingRepo.deleteBySenderId(userId);
     await this.meetingRepo.deleteInviteesByUserId(userId);
     await this.chatRepo.deleteByUserId(userId);
@@ -242,14 +399,28 @@ export class ConsultantService {
 
   private normalizeSchedulePayload(body: any) {
     const payload = body?.working_schedule || body?.schedule || body || {};
-
-    return {
-      weekly: Array.isArray(payload.weekly) ? payload.weekly : [],
-      custom: Array.isArray(payload.custom)
-        ? payload.custom
+    const weeklySource = Array.isArray(payload.weekly)
+      ? payload.weekly
+      : Array.isArray(payload.days)
+        ? payload.days
+        : payload.day || payload.day_name
+          ? [payload]
+          : [];
+    const customSource = Array.isArray(payload.custom)
+      ? payload.custom
+      : Array.isArray(payload.dates)
+        ? payload.dates
         : payload.date
           ? [payload]
-          : [],
+          : [];
+
+    return {
+      weekly: weeklySource
+        .map((item: any) => this.normalizeScheduleDay(item))
+        .filter(Boolean),
+      custom: customSource
+        .map((item: any) => this.normalizeCustomSchedule(item))
+        .filter(Boolean),
       effective_from: payload.effective_from,
       effective_to: payload.effective_to,
     };
@@ -275,8 +446,24 @@ export class ConsultantService {
     for (const item of existing.custom) {
       if (item?.date) customByDate.set(item.date, item);
     }
+
+    const explicitCustomDates = new Set<string>();
     for (const item of update.custom) {
-      if (item?.date) customByDate.set(item.date, item);
+      if (item?.date) {
+        explicitCustomDates.add(item.date);
+        customByDate.set(item.date, item);
+      }
+    }
+
+    for (const item of update.weekly) {
+      if (item?.active !== false || !item?.day) continue;
+
+      for (const [date] of customByDate) {
+        if (explicitCustomDates.has(date)) continue;
+        if (this.getScheduleDayName(date) === item.day) {
+          customByDate.delete(date);
+        }
+      }
     }
 
     return {
@@ -334,12 +521,21 @@ export class ConsultantService {
 
   async setConsultantSchedule(id: number, body: any) {
     const consultant = await this.consultantRepository.getSchedulesByUserId(id);
-    const mergedSchedule = this.mergeSchedule(consultant?.working_schedule, body);
+    const mergedSchedule: any = this.mergeSchedule(consultant?.working_schedule, body);
+    const user = await this.userRepo.findById(id);
     const update = this.normalizeSchedulePayload(body);
+
+    if (!update.weekly.length && !update.custom.length) {
+      throw new BadRequestException(
+        'Schedule must include weekly days or custom dated availability',
+      );
+    }
 
     if (update.weekly.length && !update.effective_from && !update.effective_to) {
       Object.assign(mergedSchedule, createThreeMonthScheduleWindow());
     }
+
+    mergedSchedule.timezone = user?.timezone || 'Asia/Karachi';
 
     await this.consultantRepository.updateByUserId(id, {
       working_schedule: mergedSchedule,
@@ -349,16 +545,30 @@ export class ConsultantService {
   }
 
   async getConsultantSchedule(id: number, month: number, year: number) {
+  const now = new Date();
+  const selectedMonth = Number.isFinite(month) && month >= 1 && month <= 12
+    ? month
+    : now.getMonth() + 1;
+  const selectedYear = Number.isFinite(year) && year > 1900
+    ? year
+    : now.getFullYear();
   const consultant = await this.consultantRepository.getSchedulesByUserId(id);
+  const user = await this.userRepo.findById(id);
 
   const meetings =
     await this.meetingRepo.getMeetingWithDetails(id);
 
-  const monthlySchedule = await buildMonthlySchedule(year, month, consultant?.working_schedule || { weekly: [], custom: [] });
+  const workingSchedule: any = consultant?.working_schedule || { weekly: [], custom: [] };
+  const monthlySchedule = await buildMonthlySchedule(selectedYear, selectedMonth, workingSchedule);
+  const localizedSchedule = convertMonthlyScheduleTimezone(
+    monthlySchedule,
+    workingSchedule.timezone || 'Asia/Karachi',
+    user?.timezone || 'Asia/Karachi',
+  );
 
   const eventsByDate = groupEventsByDate(meetings);
 
-  return mergeEventsIntoSchedule(monthlySchedule, eventsByDate);
+  return mergeEventsIntoSchedule(localizedSchedule, eventsByDate);
   }
 
   // update consultant 
@@ -377,6 +587,9 @@ export class ConsultantService {
     if (updateDto.user?.city) userFields.city = updateDto.user.city;
     if (updateDto.user?.country) userFields.country = updateDto.user.country;
     if (updateDto.user?.currency) userFields.currency = updateDto.user.currency;
+    if (updateDto.user?.timezone) {
+      userFields.timezone = this.normalizeTimeZone(updateDto.user.timezone);
+    }
     if (updateDto.user?.linkedin_url) {
       userFields.linkedin_url = this.normalizeLinkedInProfileUrl(
         updateDto.user.linkedin_url,
@@ -685,9 +898,11 @@ export class ConsultantService {
         ========================= */
 
         const projectedEarning =
-          consultant?.weekly_available_hours && consultant?.rate
-            ? this.roundAmount(consultant.weekly_available_hours * consultant.rate * 12)
-            : 0;
+          await this.calculateCurrentMonthProjectedEarning(
+            consultant?.working_schedule,
+            consultant?.rate,
+            now,
+          );
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills
@@ -781,7 +996,7 @@ export class ConsultantService {
           photo: this.hasProfileValue(consultant?.user?.avatar),
           email: this.hasProfileValue(consultant?.user?.email),
           phone: this.hasProfileValue(consultant?.user?.phone),
-          professional_headline: this.hasProfileValue(consultant?.professional_headline),
+          professional_headline: this.hasProfileValue(consultant?.professional_headline || consultant?.clients_summary),
           linkedin_url: this.hasProfileValue(consultant?.user?.linkedin_url),
           experience: this.hasProfileValue(consultant?.experience),
           hourly_rate: this.hasProfileValue(consultant?.rate),
@@ -820,13 +1035,13 @@ export class ConsultantService {
             fields.core_modules,
             fields.other_modules,
           ]),
-          professional_information_completed: this.isProfileSectionComplete([
-            fields.industry_focus,
-            fields.work_experience,
-            fields.education,
-            fields.certifications,
-            fields.projects,
-          ]),
+          professional_information_completed: (
+            fields.industry_focus ||
+            fields.work_experience ||
+            fields.education ||
+            fields.certifications ||
+            fields.projects
+          ),
         };
       }
 
@@ -894,9 +1109,11 @@ export class ConsultantService {
         ========================= */
 
         const projectedEarning =
-          consultant?.weekly_available_hours && consultant?.rate
-            ? this.roundAmount((consultant.weekly_available_hours / 5) * consultant.rate * 66)
-            : 0;
+          await this.calculateCurrentMonthProjectedEarning(
+            consultant?.working_schedule,
+            consultant?.rate,
+            now,
+          );
 
         const bills = await this.monthlyBillRepo.findByConsultant(consultantId);
         const totalEarnings = bills
