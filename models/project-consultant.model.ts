@@ -57,7 +57,7 @@ export class ProjectConsultant extends Model<ProjectConsultant> {
   role?: string;
 
   @Column({
-    type: DataType.INTEGER,
+    type: DataType.DECIMAL(18, 2),
     allowNull: true,
     field: 'decided_rate',
   })

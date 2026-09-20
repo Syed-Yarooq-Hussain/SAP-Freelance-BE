@@ -347,7 +347,8 @@ export class ProjectController {
   getMonthlyBills(
     @Param('projectId') projectId: string,
     @Param('userId') userId: string,
+    @Req() req: any,
   ) {
-    return this.projectService.getConsultantMonthlyBills(+projectId, +userId);
+    return this.projectService.getConsultantMonthlyBills(+projectId, +userId, req.user);
   }
 }

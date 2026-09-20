@@ -27,7 +27,7 @@ import {
   UpdateProjectConsultantStatusDto,
 } from './dto/create-project-consultant.dto';
 import { ConsultantStatus, UserRole, UserStatus } from 'constant/enums';
-import { Op } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { ProjectDetailRepository } from 'repository/project-detail.repository';
 import { CreateProjectMilestoneDto } from './dto/create-project-milestone.dto';
 import {
@@ -189,6 +189,13 @@ export class ProjectService {
       }
 
       if (updateData.name != null) payload.name = updateData.name;
+      if (updateData.status === 'in_progress' && project.status !== 'in_progress') {
+        const paid = await ProjectPayment.findOne({
+          where: { project_id: id, is_paid: true, deleted_at: null, amount: { [Op.gt]: 0 } },
+          transaction,
+        });
+        if (!paid) throw new ConflictException('At least one payment must be paid before starting the project');
+      }
       if (updateData.status != null) payload.status = updateData.status;
       const companyName = updateData.company_name ?? updateData.industry;
       if (companyName != null) payload.company_name = companyName;
@@ -255,10 +262,28 @@ export class ProjectService {
     const payload: any = { status: nextStatus };
     if (body.role !== undefined) payload.role = body.role.trim() || null;
     if (body.booking_schedule !== undefined) payload.booking_schedule = body.booking_schedule;
+    if (body.rate_basis !== undefined && !['base', 'client'].includes(body.rate_basis)) {
+      throw new BadRequestException('rate_basis must be base or client');
+    }
+    if (body.rate_basis !== undefined && body.decided_rate === undefined) {
+      throw new BadRequestException('rate_basis requires decided_rate');
+    }
     if (body.decided_rate !== undefined) {
       const rate = Number(body.decided_rate);
-      if (!Number.isFinite(rate) || rate < 0) throw new BadRequestException('decided_rate must be zero or greater');
+      if (!Number.isFinite(rate) || rate < 0 || rate > 1000000000 ||
+          Math.abs(rate * 100 - Math.round(rate * 100)) > 0.000001) {
+        throw new BadRequestException('decided_rate must be nonnegative, at most 1000000000, with at most two decimals');
+      }
       payload.decided_rate = rate;
+      if (body.rate_basis === 'client') {
+        const client = await this.userRepository.findClientCandidateById(Number(_project.client_id), transaction);
+        const margin = normalizeProfitMargin(client?.profit_margin_percentage);
+        const [converted] = await ProjectConsultant.sequelize.query<{ rate: string }>(
+          'SELECT round(CAST(:rate AS numeric) / (1 + CAST(:margin AS numeric) / 100), 2) AS rate',
+          { replacements: { rate, margin }, type: QueryTypes.SELECT, transaction },
+        );
+        payload.decided_rate = Number(converted.rate);
+      }
     }
     if (body.requested_hours !== undefined) {
       const hours = Number(body.requested_hours);
@@ -427,6 +452,7 @@ export class ProjectService {
         current_page: page,
         limit,
         total_pages: Math.ceil(total / limit),
+        has_next_page: page * limit < total,
       },
     };
   }
@@ -573,7 +599,11 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto, authUser: any
     return milestone.reload({ transaction });
   });
 }
-  async getConsultantMonthlyBills(projectId: number, userId: number) {
+  async getConsultantMonthlyBills(projectId: number, userId: number, authUser: any) {
+  await this.assertProjectAccess(projectId, authUser);
+  if (Number(authUser?.role) === UserRole.CONSULTANT && Number(authUser?.id) !== userId) {
+    throw new ForbiddenException('Consultants can only view their own bills');
+  }
   return this.monthlyBillRepo.findByProjectAndConsultant(projectId, userId);
 }
 

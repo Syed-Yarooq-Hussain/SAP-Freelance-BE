@@ -53,6 +53,10 @@ export class UpdateProjectConsultantStatusDto {
   @Min(0)
   decided_rate?: number;
 
+  @ApiProperty({ description: 'Rate basis in the consultant currency; defaults to agreed base rate', enum: ['base', 'client'], required: false })
+  @IsOptional()
+  rate_basis?: 'base' | 'client';
+
   @ApiProperty({ description: 'Allocated weekly hours', required: false, example: 20 })
   @IsOptional()
   @Type(() => Number)

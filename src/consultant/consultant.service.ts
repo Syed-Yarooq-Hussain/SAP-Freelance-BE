@@ -243,13 +243,12 @@ export class ConsultantService {
     const milestoneId = Number(dto.milestone_id);
     const taskId = dto.task_id ? Number(dto.task_id) : null;
     const hours = Number(dto.hours);
-    console.log('Logging hours with data:', { userId, projectId, milestoneId, taskId, hours });
     if (!projectId || !milestoneId) {
       throw new BadRequestException('project_id and milestone_id are required');
     }
 
-    if (!hours || hours <= 0) {
-      throw new BadRequestException('hours must be greater than 0');
+    if (!Number.isFinite(hours) || hours <= 0 || hours > 100000 || Math.abs(hours * 100 - Math.round(hours * 100)) > 0.000001) {
+      throw new BadRequestException('hours must be positive, at most 100000, with at most two decimals');
     }
 
     const assignment =
@@ -277,10 +276,11 @@ export class ConsultantService {
     const consultant = await this.consultantRepository.findByUserId(userId);
     const rate = Number(assignment.decided_rate || consultant?.rate || 0);
     const logDate = dto.log_date ? new Date(dto.log_date) : new Date();
+    if (!Number.isFinite(logDate.getTime())) throw new BadRequestException('Invalid log_date');
     const month = `${logDate.getFullYear()}-${String(logDate.getMonth() + 1).padStart(2, '0')}`;
     const amount = parseFloat((hours * rate).toFixed(2));
 
-    const bill = await this.monthlyBillRepo.create({
+    const bill = await this.monthlyBillRepo.createHourLog({
       project_id: projectId,
       user_id: userId,
       milestone_id: milestoneId,
@@ -483,6 +483,9 @@ export class ConsultantService {
   }
 
   private generateWeekSchedule(totalHours: number) {
+    if (!Number.isFinite(totalHours) || totalHours < 0 || totalHours >= 75) {
+      throw new BadRequestException('Automatic 09:00 weekday schedules require weekly hours below 75; provide an explicit working_schedule for longer availability');
+    }
     const weekdays = [
       'Monday',
       'Tuesday',
@@ -497,8 +500,9 @@ export class ConsultantService {
     const endHour = startHour + dailyHours;
 
     const formatTime = (hour: number) => {
-      const h = Math.floor(hour);
-      const m = Math.round((hour - h) * 60);
+      const minutes = Math.round(hour * 60);
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
@@ -643,7 +647,8 @@ export class ConsultantService {
         }
 
         consultantFields.working_schedule = mergedSchedule;
-      } else if (updateDto.consultant?.weekly_available_hours !== undefined) {
+      } else if (updateDto.consultant?.weekly_available_hours !== undefined &&
+        (!consultant.working_schedule || Object.keys(consultant.working_schedule).length === 0)) {
         consultantFields.working_schedule = this.generateWeekSchedule(
           Number(updateDto.consultant.weekly_available_hours || 0),
         );
