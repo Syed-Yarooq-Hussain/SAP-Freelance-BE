@@ -569,8 +569,9 @@ export class CommonService {
       if (driveUrl) {
         try {
           const fileId = this.extractDriveFileId(driveUrl);
-          const pdf = await this.downloadFromGoogleDrive(fileId);
-          cvText = await extractTextFromBuffer(pdf);
+          const resume = await this.downloadFromGoogleDrive(fileId);
+          cvText = await extractResumeTextFromBuffer(resume);
+          if (!cvText.trim()) throw new Error('Resume contains no extractable text; scanned files require OCR');
           const retryDelays = [0, 2000, 5000, 10000];
           let lastError: any;
           for (let attempt = 0; attempt < retryDelays.length; attempt++) {
@@ -876,7 +877,7 @@ export class CommonService {
           try {
             const fileId = this.extractDriveFileId(driveUrl);
             const buffer = await this.downloadFromGoogleDrive(fileId);
-            const text = await extractTextFromBuffer(buffer);
+            const text = await extractResumeTextFromBuffer(buffer);
             profileInfo = this.extractProfileFromText(text);
           } catch (err) {
             profileInfo = { error: err ?? 'Unknown error' };

@@ -51,6 +51,13 @@ import { applyClientProfitMargin, normalizeProfitMargin } from 'src/common/utils
 
 @Injectable()
 export class ProjectService {
+  private normalizeRoleTitle(value: unknown): string {
+    if (typeof value !== 'string' || !value.trim() || value.trim().length > 120) {
+      throw new BadRequestException('Role title must be a nonempty string of at most 120 characters');
+    }
+    return value.trim();
+  }
+
   constructor(
     private readonly projectRepo: ProjectRepository,
     private readonly projectConsultantRepo: ProjectConsultantRepository,
@@ -260,7 +267,7 @@ export class ProjectService {
       consultant_id: body.consultant_id,
     };
     const payload: any = { status: nextStatus };
-    if (body.role !== undefined) payload.role = body.role.trim() || null;
+    if (body.role !== undefined) payload.role = this.normalizeRoleTitle(body.role);
     if (body.booking_schedule !== undefined) payload.booking_schedule = body.booking_schedule;
     if (body.rate_basis !== undefined && !['base', 'client'].includes(body.rate_basis)) {
       throw new BadRequestException('rate_basis must be base or client');
@@ -321,7 +328,7 @@ export class ProjectService {
       consultant_id: body.consultant_id,
     };
     const payload: any = {};
-    if (body.role !== undefined) payload.role = body.role;
+    if (body.role !== undefined) payload.role = this.normalizeRoleTitle(body.role);
     if (body.booking_schedule !== undefined) payload.booking_schedule = body.booking_schedule;
     if (!Object.keys(payload).length) {
       throw new BadRequestException('role or booking_schedule is required');
@@ -537,8 +544,8 @@ private async calculateAndSyncPayments(
   transaction?: Transaction,
 ): Promise<void> {
   if (!milestone) return;
-  // Legacy milestones stay unconfigured until an explicit team PUT. The
-  // function never changes paid records or derives hours from project dates.
+  // Selected weekly hours are expanded over the milestone's working weeks.
+  // The database also synchronizes membership, pricing and duration changes.
   await syncMilestoneTeam(milestone.id, transaction);
 }
 
@@ -557,7 +564,7 @@ private async syncProjectMilestonePayments(projectId: number, transaction?: Tran
 private milestoneFields(data: CreateProjectMilestoneDto) {
   const allowed = new Set(['project_id','name','description','start_date','due_date','status','required_hours']);
   if (Object.keys(data).some(key => !allowed.has(key)))
-    throw new BadRequestException('Unknown milestone field; use the milestone team endpoint for allocations');
+    throw new BadRequestException('Unknown milestone field; hours are calculated from the selected team and milestone dates');
   const payload: any = {};
   for (const key of allowed) if (key !== 'project_id' && data[key] !== undefined) payload[key] = data[key];
   return payload;
@@ -572,7 +579,7 @@ async addMilestone(data: CreateProjectMilestoneDto, authUser: any) {
     }
     const milestone = await ProjectMilestone.create({ ...payload, project_id: project.id, team_configured: true }, { transaction });
     await this.calculateAndSyncPayments(milestone, transaction);
-    return milestone.reload({ transaction });
+    return this.milestoneRepo.findById(milestone.id, transaction);
   });
 }
 
@@ -580,7 +587,7 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto, authUser: any
   const existing = await this.milestoneRepo.findById(id);
   if (!existing || existing.deleted_at) throw new NotFoundException('Milestone not found');
   const payload = this.milestoneFields(data);
-  if (data.project_id !== undefined && Number(data.project_id) !== existing.project_id)
+  if (data.project_id !== undefined && Number(data.project_id) !== Number(existing.project_id))
     throw new BadRequestException('Milestones cannot be moved between projects');
   return this.teamBuilder.locked(existing.project_id, authUser, async (_project, transaction) => {
     const milestone = await ProjectMilestone.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
@@ -596,7 +603,7 @@ async updateMilestone(id: number, data: CreateProjectMilestoneDto, authUser: any
     }
     await milestone.update(payload, { transaction });
     await this.calculateAndSyncPayments(milestone, transaction);
-    return milestone.reload({ transaction });
+    return this.milestoneRepo.findById(milestone.id, transaction);
   });
 }
   async getConsultantMonthlyBills(projectId: number, userId: number, authUser: any) {

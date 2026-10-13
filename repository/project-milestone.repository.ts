@@ -4,7 +4,10 @@ import { ProjectMilestone } from '../models/project-milestone.model';
 import { Op, literal, ProjectionAlias } from 'sequelize';
 
 const teamAttributes = {
-  include: [[literal('milestone_team_snapshot("ProjectMilestone"."id")'), 'team'] as ProjectionAlias],
+  include: [
+    [literal('milestone_team_snapshot("ProjectMilestone"."id")'), 'team'] as ProjectionAlias,
+    [literal('milestone_weekly_billing("ProjectMilestone"."id")'), 'billing'] as ProjectionAlias,
+  ],
 };
 
 @Injectable()
@@ -25,8 +28,8 @@ export class ProjectMilestoneRepository {
   }
 
   // 🔍 Get Milestone By Id
-  async findById(id: number): Promise<ProjectMilestone | null> {
-    return this.projectMilestoneModel.findByPk(id, { attributes: teamAttributes });
+  async findById(id: number, transaction?: any): Promise<ProjectMilestone | null> {
+    return this.projectMilestoneModel.findByPk(id, { attributes: teamAttributes, transaction });
   }
 
   // 🔍 Get Milestone Task By Id

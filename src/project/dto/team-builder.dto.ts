@@ -1,10 +1,9 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
-  IsEnum,
   IsInt,
   IsString,
   Matches,
@@ -16,7 +15,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { ConsultantLevel } from 'constant/enums';
 
 export class TeamBuilderRoleDto {
   @ApiProperty({ example: 'f13d1d8f-cd50-40e7-bce4-e3ea585a05b5' })
@@ -26,9 +24,12 @@ export class TeamBuilderRoleDto {
   @Matches(/\S/)
   id: string;
 
-  @ApiProperty({ enum: ConsultantLevel, example: 'senior' })
-  @IsEnum(ConsultantLevel)
-  title: ConsultantLevel;
+  @ApiProperty({ example: 'SAP Integration Lead', maxLength: 120 })
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  title: string;
 
   @ApiProperty({ type: [String], example: ['202'] })
   @IsArray()

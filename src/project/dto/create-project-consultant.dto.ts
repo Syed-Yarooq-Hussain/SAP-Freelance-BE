@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsEnum, IsInt, Min } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ConsultantLevel, ConsultantStatus } from 'constant/enums';
+import { IsOptional, IsString, IsNumber, IsEnum, IsInt, Min, MinLength, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { ConsultantStatus } from 'constant/enums';
 
 export class CreateProjectConsultantDto {
   
@@ -98,12 +98,14 @@ export class UpdateProjectConsultantRoleDto {
 
   @ApiProperty({
     description: 'Set role for the consultant in the project',
-    example: ConsultantLevel.SENIOR,
-    enum: ConsultantLevel 
+    example: 'SAP Integration Lead',
    })
-  @IsEnum(ConsultantLevel, { message: `role must be one of: ${Object.values(ConsultantLevel).join(', ')}` })
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
   @IsOptional()
-  role?: ConsultantLevel;
+  role?: string;
 
   @ApiProperty({ description: 'Booking schedule', required: false, type: Object })
   @IsOptional()
